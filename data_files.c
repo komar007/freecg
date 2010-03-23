@@ -1,5 +1,7 @@
-#include "gfxfile.h"
+#include "data_files.h"
 #include <SDL/SDL_error.h>
+#include <stdio.h>
+#include <assert.h>
 #include <errno.h>
 
 SDL_Surface *read_gfx(const char *path)
