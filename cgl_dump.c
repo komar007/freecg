@@ -34,7 +34,11 @@ int which[] = {-1, -1, -1};
 
 int main(int argc, char *argv[])
 {
+	extern void print_size(const struct cgl*),
+	            print_soin(const struct cgl*),
+		    print_sobs(const struct cgl*);
 	int ret;
+
 	while ((ret = getopt_long(argc, argv, optstr, opts, NULL)) != -1) {
 		if (ret == '?')
 			continue;
@@ -60,22 +64,53 @@ int main(int argc, char *argv[])
 
 	printf("CGL1 (%s level)\n",
 			cgl->type == DEMO ? "demo" : "full version");
-	if (which[SIZE - '1']) {
-		printf("section SIZE\n");
-		printf("\twidth = %d\n\theight = %d\n", cgl->width, cgl->height);
-	}
-
-	if (which[SOIN - '1']) {
-		printf("section SOIN\n");
-		printf("\tnumber of blocks = %d (%d x %d)\nblock dump:\n",
-				cgl->width * cgl->height, cgl->width, cgl->height);
-		for (size_t j = 0; j < cgl->height; ++j) {
-			printf("\t%d", cgl->blocks[j][0].size);
-			for (size_t i = 1; i < cgl->width; ++i)
-				printf(" %d", cgl->blocks[j][i].size);
-			printf("\n");
-		}
-	}
-
+	if (which[SIZE - '1'])
+		print_size(cgl);
+	if (which[SOIN - '1'])
+		print_soin(cgl);
+	if (which[SOBS - '1'])
+		print_sobs(cgl);
 	return 0;
+}
+
+void print_size(const struct cgl *cgl)
+{
+	printf("section SIZE\n");
+	printf("\twidth = %d\n\theight = %d\n", cgl->width, cgl->height);
+}
+
+void print_soin(const struct cgl *cgl)
+{
+	printf("section SOIN\n");
+	printf("\tnumber of blocks = %d (%d x %d)\nblock dump:\n",
+			cgl->width * cgl->height, cgl->width, cgl->height);
+	for (size_t j = 0; j < cgl->height; ++j) {
+		printf("\t%d", cgl->blocks[j][0].size);
+		for (size_t i = 1; i < cgl->width; ++i)
+			printf(" %d", cgl->blocks[j][i].size);
+		printf("\n");
+	}
+}
+
+void print_sobs(const struct cgl *cgl)
+{
+	extern void print_sobs_block(const struct block*, int, int);
+
+	printf("section SOBS\n");
+	for (size_t j = 0; j < cgl->height; ++j)
+		for (size_t i = 0; i < cgl->width; ++i)
+			print_sobs_block(&cgl->blocks[j][i], i, j);
+}
+
+void print_sobs_block(const struct block *b, int x, int y)
+{
+	printf("\tblock at (%d, %d):\n", x, y);
+	for (size_t k = 0; k < b->size; ++k) {
+		printf("\t\ttile %d:" "\t" "size" "\t= " "(%d, %d)\n"
+				"\t\t\t" "offset" "\t= " "(%d, %d)\n"
+				"\t\t\t" "img_pos" "\t= " "(%d, %d)\n", k,
+				b->tiles[k].width, b->tiles[k].height,
+				b->tiles[k].offs_x, b->tiles[k].offs_y,
+				b->tiles[k].img_x, b->tiles[k].img_y);
+	}
 }

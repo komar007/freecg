@@ -4,11 +4,14 @@
 #include <stdio.h>
 #include <stdint.h>
 
+/* side length in pixels of the smallest game unit */
+#define UNIT 4
 #define CGL_HDR_SIZE 16
 /* size of section header */
 #define CGL_SHDR_SIZE 4
 #define CGL_MAGIC_SIZE 4
 #define CGL_MAGIC "\xe1\xd2\xc3\xb4"
+#define SOBS_TILE_SIZE 4
 
 enum {
 	EBADHDR = 1,
