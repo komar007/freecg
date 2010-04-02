@@ -4,6 +4,72 @@
 #include <assert.h>
 #include <errno.h>
 
+/*
+ * CGL file format
+ *
+ * The map is divided into width x height blocks. Each block is 8x8 units
+ * (32x32px). 4x4px units are used in some places for memory optimization and
+ * in the level editor. Unless stated otherwise, dimensions and coordinates
+ * are given in px. The map consists of tiles, each tile is anchored to
+ * a block and represented by offsets from the origin of its block. Each tile
+ * has 2 dimensions and coordinates of its graphical representation in GFX
+ * file. Some special tiles may not have dimensions specified in the CGL file.
+ * Such dimensions are static for a particular special tile.
+ *
+ * The CGL file consists of a 4-byte header containing an ASCII string "CGL1"
+ * and 12 sections, each containing a 4-byte section header representing
+ * section's name in ASCII and data specific for a section.
+ * Where the name `integer' is used, a 32-bit unsigned little-endian int is
+ * meant. `Short' refers to 16-bit unsigned little-endian short.
+ *
+ * Section names with brief descriptions (sizes do not include header):
+ * 	SIZE (8 bytes)
+ * 		2 integers, width and height of map, respectively, in
+ * 		32x32 blocks
+ * 	SOIN (width * height bytes)
+ * 		width * height 1-byte integers holding the number of tiles
+ * 		anchored in each block. Only 7 LSBs count. The MSB should be
+ * 		omitted. The order is left to right, top to bottom.
+ * 	-- between the SOIN and SOBS sections a magic 4-byte string may follow
+ * 	   whose presence means the level is available in unregistered
+ * 	   version of Crazy Gravity.
+ * 	SOBS (width * height * 4 bytes)
+ * 		width * height 4-byte structures describing tiles.
+ * 		Single tile description:
+ * 		offset	(length)
+ * 		0x0	(1) position (first half - x, second - y)
+ * 		0x1	(1) dimensions (as above)
+ * 		0x2	(2) position in gfx file (first byte - x, second - y)
+ * 		All values are given in units, so a conversion to px is
+ * 		necessary (multiply by 4).
+ * 	VENT (4 + nfans * 38 bytes)
+ * 		Fans description. The first 4 bytes is an integer - the number
+ * 		of fans. Then descriptions of fans follow, each 38 bytes long.
+ *		A fan consists of a 48x48 base part and a 16x48 or 48x16
+ *		pipes part. Single fan description:
+ * 		offset	(length)
+ * 		0x00	(2) fan type.
+ * 			First byte:
+ * 			first half: 0 - hi-powered, 1 - low-powered
+ * 			second half: blowing direction, 0, 1, 2 or 3 meaning
+ * 				respectively down, up, left or right.
+ * 			Second byte: unknown.
+ * 		0x02	(4) - two shorts, coordinates of fan's base
+ * 		0x06	(4) - two shorts, coordinates of base's
+ * 			graphics in gfx file
+ * 		0x0a	(4) - two shorts, coordinates of pipes' tile
+ * 		0x0e	(4) - two shorts, dimensions of pipes' tile
+ * 		0x12	(4) - two shorts, coordinates of pipes' graphics in
+ * 			gfx file
+ * 		0x16	(8) - four shorts, bounding box coordinates and
+ * 			dimensions
+ * 		0x1e	(8) - four shorts, coordinates and dimensions of fan's
+ * 			area of interaction.
+ * 	FIXME: others
+ * 	-- after the last section a magic 4-byte string may appear which means
+ * 	   the level was created by a user in the level editor.
+ */
+
 void free_cgl(struct cgl *cgl)
 {
 	if (!cgl)
@@ -186,3 +252,12 @@ int read_block(struct block *block, FILE* fp)
 	return 0;
 }
 
+int cgl_read_vent(struct cgl *cgl, FILE *fp)
+{
+	int err = cgl_read_section_header("VENT", fp);
+
+	if (err)
+		return err;
+
+
+}
