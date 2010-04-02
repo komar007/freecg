@@ -4,13 +4,16 @@
 #include <stdio.h>
 #include <stdint.h>
 
-#define CGL_HEADER_SIZE 16
-#define CGL_SOIN_HDR_SIZE 4
+#define CGL_HDR_SIZE 16
+/* size of section header */
+#define CGL_SHDR_SIZE 4
 #define CGL_MAGIC_SIZE 4
 #define CGL_MAGIC "\xe1\xd2\xc3\xb4"
 
 enum {
 	EBADHDR = 1,
+	EBADSHDR,
+	EBADSIZE,
 	EBADSOIN,
 	EBADSOBS
 };
