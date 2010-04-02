@@ -1,8 +1,6 @@
-#include "data_files.h"
-#include <SDL/SDL_error.h>
-#include <stdio.h>
-#include <assert.h>
+#include "gfx.h"
 #include <errno.h>
+#include <assert.h>
 
 SDL_Surface *read_gfx(const char *path)
 {
@@ -17,16 +15,17 @@ SDL_Surface *read_gfx(const char *path)
 		SDL_SetError("fopen: %s", strerror(errno));
 		return NULL;
 	}
-	fseek(fp, 0, SEEK_END);
+	(void)fseek(fp, 0, SEEK_END);
 	size = ftell(fp);
 	if (size < 2) {
 		SDL_SetError("file is corrupted");
 		fclose(fp);
 		return NULL;
 	}
-	fseek(fp, 0, SEEK_SET);
+	(void)fseek(fp, 0, SEEK_SET);
 	buffer = calloc(size, sizeof(*buffer));
-	if (fread(buffer, sizeof(*buffer), size, fp) != size) {
+	assert(buffer != NULL);
+	if (fread(buffer, sizeof(*buffer), size, fp) < size) {
 		SDL_SetError("fread: %s", strerror(errno));
 		goto cleanup;
 	}
@@ -43,11 +42,10 @@ SDL_Surface *read_gfx(const char *path)
 		goto cleanup;
 	}
 	uint32_t color = SDL_MapRGB(gfx->format, 179, 179, 0);
-	SDL_SetColorKey(gfx, SDL_SRCCOLORKEY|SDL_RLEACCEL, color);
+	SDL_SetColorKey(gfx, SDL_SRCCOLORKEY | SDL_RLEACCEL, color);
 	SDL_FreeRW(rw);
 cleanup:
 	fclose(fp);
 	free(buffer);
 	return gfx;
 }
-

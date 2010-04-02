@@ -1,5 +1,5 @@
-#ifndef DATA_FILES_H
-#define DATA_FILES_H
+#ifndef GFX_H
+#define GFX_H
 
 #include <SDL/SDL.h>
 
