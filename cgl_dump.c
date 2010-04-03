@@ -20,6 +20,7 @@ enum sections {
 };
 
 struct option opts[] = {
+	{"help", no_argument, NULL, 'h'},
 	{"all", no_argument, NULL, 'a'},
 	{"size", no_argument, NULL, -SIZE},
 	{"no-size", no_argument, NULL, -SIZE},
@@ -27,22 +28,44 @@ struct option opts[] = {
 	{"no-soin", no_argument, NULL, -SOIN},
 	{"sobs", no_argument, NULL, -SOBS},
 	{"no-sobs", no_argument, NULL, -SOBS},
+	{"vent", no_argument, NULL, -SOBS},
+	{"no-vent", no_argument, NULL, -SOBS},
 	{NULL, 0, NULL, 0}
 };
-char *optstr = "a123";
-int which[] = {-1, -1, -1};
+char *optstr = "ha1234";
+int which[] = {-1, -1, -1, -1};
+
+void print_help(const char *name)
+{
+	printf("Dump CGL file\n\n" "Usage: %s [options] <file>\n\n"
+			"Options:\n"
+			"  -h, --help\t* print this help and exit\n"
+			"  -a, --all\t* print all sections of file\n"
+			"  --SECT\t* print section SECT\n"
+			"  --no-SECT\t* don't print section SECT "
+			"(overrides --SECT)\n"
+			"Where SECT can be one of: size, soin, sobs, vent, "
+			"magn, dist,\ncano, pipe, onew, barr, lpts, lvin.\n\n"
+			"Example:\n"
+			"%s --all --no-sobs level.cgl\n",
+			name, name);
+}
 
 int main(int argc, char *argv[])
 {
 	extern void print_size(const struct cgl*),
 	            print_soin(const struct cgl*),
-		    print_sobs(const struct cgl*);
+		    print_sobs(const struct cgl*),
+		    print_vent(const struct cgl*);
 	int ret;
 
 	while ((ret = getopt_long(argc, argv, optstr, opts, NULL)) != -1) {
 		if (ret == '?')
 			continue;
-		if (ret == 'a') {
+		if (ret == 'h') {
+			print_help(argv[0]);
+			exit(0);
+		} else if (ret == 'a') {
 			for (size_t i = 0; i < ARR_SZ(which); ++i)
 				if (which[i] == -1)
 					which[i] = 1;
@@ -56,6 +79,10 @@ int main(int argc, char *argv[])
 	for (size_t i = 0; i < ARR_SZ(which); ++i)
 		if (which[i] == -1)
 			which[i] = 0;
+	if (optind >= argc) {
+		print_help(argv[0]);
+		exit(-1);
+	}
 	struct cgl *cgl = read_cgl(argv[optind]);
 	if (!cgl) {
 		fprintf(stderr, "read_cgl: %s\n", SDL_GetError());
@@ -63,13 +90,15 @@ int main(int argc, char *argv[])
 	}
 
 	printf("CGL1 (%s level)\n",
-			cgl->type == DEMO ? "demo" : "full version");
+			cgl->type == Demo ? "demo" : "full version");
 	if (which[SIZE - '1'])
 		print_size(cgl);
 	if (which[SOIN - '1'])
 		print_soin(cgl);
 	if (which[SOBS - '1'])
 		print_sobs(cgl);
+	if (which[VENT - '1'])
+		print_vent(cgl);
 	return 0;
 }
 
@@ -113,4 +142,8 @@ void print_sobs_block(const struct block *b, int x, int y)
 				b->tiles[k].offs_x, b->tiles[k].offs_y,
 				b->tiles[k].img_x, b->tiles[k].img_y);
 	}
+}
+
+void print_vent(const struct cgl *cgl)
+{
 }
