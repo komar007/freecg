@@ -22,14 +22,14 @@ enum sections {
 struct option opts[] = {
 	{"help", no_argument, NULL, 'h'},
 	{"all", no_argument, NULL, 'a'},
-	{"size", no_argument, NULL, -SIZE},
+	{"size", no_argument, NULL, SIZE},
 	{"no-size", no_argument, NULL, -SIZE},
-	{"soin", no_argument, NULL, -SOIN},
+	{"soin", no_argument, NULL, SOIN},
 	{"no-soin", no_argument, NULL, -SOIN},
-	{"sobs", no_argument, NULL, -SOBS},
+	{"sobs", no_argument, NULL, SOBS},
 	{"no-sobs", no_argument, NULL, -SOBS},
-	{"vent", no_argument, NULL, -SOBS},
-	{"no-vent", no_argument, NULL, -SOBS},
+	{"vent", no_argument, NULL, VENT},
+	{"no-vent", no_argument, NULL, -VENT},
 	{NULL, 0, NULL, 0}
 };
 char *optstr = "ha1234";
@@ -105,18 +105,18 @@ int main(int argc, char *argv[])
 void print_size(const struct cgl *cgl)
 {
 	printf("section SIZE\n");
-	printf("\twidth = %d\n\theight = %d\n", cgl->width, cgl->height);
+	printf("\twidth = %zu\n\theight = %zu\n", cgl->width, cgl->height);
 }
 
 void print_soin(const struct cgl *cgl)
 {
 	printf("section SOIN\n");
-	printf("\tnumber of blocks = %d (%d x %d)\nblock dump:\n",
+	printf("\tnumber of blocks = %lu (%zu x %zu)\nblock dump:\n",
 			cgl->width * cgl->height, cgl->width, cgl->height);
 	for (size_t j = 0; j < cgl->height; ++j) {
-		printf("\t%d", cgl->blocks[j][0].size);
+		printf("\t%zu", cgl->blocks[j][0].size);
 		for (size_t i = 1; i < cgl->width; ++i)
-			printf(" %d", cgl->blocks[j][i].size);
+			printf(" %zu", cgl->blocks[j][i].size);
 		printf("\n");
 	}
 }
@@ -135,15 +135,44 @@ void print_sobs_block(const struct block *b, int x, int y)
 {
 	printf("\tblock at (%d, %d):\n", x, y);
 	for (size_t k = 0; k < b->size; ++k) {
-		printf("\t\ttile %d:" "\t" "size" "\t= " "(%d, %d)\n"
-				"\t\t\t" "offset" "\t= " "(%d, %d)\n"
-				"\t\t\t" "img_pos" "\t= " "(%d, %d)\n", k,
-				b->tiles[k].width, b->tiles[k].height,
-				b->tiles[k].offs_x, b->tiles[k].offs_y,
+		printf("\t\ttile %zu:\tsize\t= (%d, %d)\n"
+				"\t\t\tpos\t= (%d, %d)\n"
+				"\t\t\timg_pos\t= (%d, %d)\n", k,
+				b->tiles[k].w, b->tiles[k].h,
+				b->tiles[k].x, b->tiles[k].y,
 				b->tiles[k].img_x, b->tiles[k].img_y);
 	}
 }
 
 void print_vent(const struct cgl *cgl)
 {
+	extern void print_one_vent(struct fan *fan, int);
+
+	printf("section VENT\n");
+	for (size_t i = 0; i < cgl->nfans; ++i)
+		print_one_vent(&cgl->fans[i], i);
+}
+
+void print_one_vent(struct fan *fan, int num)
+{
+	printf("\tfan %d: power = %s, dir = %s\n", num,
+			fan->power == Hi ? "hi" : "low",
+			fan->dir == Down ? "Down" : fan->dir == Up ? "Up" :
+			fan->dir == Left ? "Left" : "Right");
+	printf("\t\tbase:\tpos\t= (%d, %d)\n"
+			"\t\t\timg_pos\t= (%d, %d)\n",
+			fan->base.x, fan->base.y,
+			fan->base.img_x, fan->base.img_y);
+	printf("\t\tpipes:\tsize\t= (%d, %d)\n"
+			"\t\t\tpos\t= (%d, %d)\n"
+			"\t\t\timg_pos\t= (%d, %d)\n",
+			fan->pipes.w, fan->pipes.h,
+			fan->pipes.x, fan->pipes.y,
+			fan->pipes.img_x, fan->pipes.img_y);
+	printf("\t\tbbox\t= (%d, %d, %d, %d)\n"
+			"\t\trange\t= (%d, %d, %d, %d)\n",
+			fan->bbox.x, fan->bbox.y,
+			fan->bbox.w, fan->bbox.h,
+			fan->range.x, fan->range.y,
+			fan->range.w, fan->range.h);
 }
