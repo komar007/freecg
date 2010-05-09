@@ -54,8 +54,8 @@ void print_help(const char *name)
 int main(int argc, char *argv[])
 {
 	extern void print_size(const struct cgl*),
-	            print_soin(const struct cgl*),
-		    print_sobs(const struct cgl*),
+	            print_soin(const struct cgl*, const uint8_t *),
+		    print_sobs(const struct cgl*, const uint8_t *),
 		    print_vent(const struct cgl*);
 	int ret;
 
@@ -83,7 +83,8 @@ int main(int argc, char *argv[])
 		print_help(argv[0]);
 		exit(-1);
 	}
-	struct cgl *cgl = read_cgl(argv[optind]);
+	uint8_t *soin;
+	struct cgl *cgl = read_cgl(argv[optind], &soin);
 	if (!cgl) {
 		fprintf(stderr, "read_cgl: %s\n", SDL_GetError());
 		return -1;
@@ -94,9 +95,9 @@ int main(int argc, char *argv[])
 	if (which[SIZE - '1'])
 		print_size(cgl);
 	if (which[SOIN - '1'])
-		print_soin(cgl);
+		print_soin(cgl, soin);
 	if (which[SOBS - '1'])
-		print_sobs(cgl);
+		print_sobs(cgl, soin);
 	if (which[VENT - '1'])
 		print_vent(cgl);
 	return 0;
@@ -108,39 +109,44 @@ void print_size(const struct cgl *cgl)
 	printf("\twidth = %zu\n\theight = %zu\n", cgl->width, cgl->height);
 }
 
-void print_soin(const struct cgl *cgl)
+void print_soin(const struct cgl *cgl, const uint8_t *soin)
 {
 	printf("section SOIN\n");
 	printf("\tnumber of blocks = %lu (%zu x %zu)\nblock dump:\n",
 			cgl->width * cgl->height, cgl->width, cgl->height);
 	for (size_t j = 0; j < cgl->height; ++j) {
-		printf("\t%zu", cgl->blocks[j][0].size);
+		printf("\t%hhu", soin[j*cgl->width]);
 		for (size_t i = 1; i < cgl->width; ++i)
-			printf(" %zu", cgl->blocks[j][i].size);
+			printf(" %hhu", soin[i + j*cgl->width]);
 		printf("\n");
 	}
 }
 
-void print_sobs(const struct cgl *cgl)
+void print_sobs(const struct cgl *cgl, const uint8_t *soin)
 {
-	extern void print_sobs_block(const struct block*, int, int);
+	extern void print_sobs_block(const struct tile*, size_t, int, int);
 
+	struct tile *cur_tile = cgl->tiles;
 	printf("section SOBS\n");
-	for (size_t j = 0; j < cgl->height; ++j)
-		for (size_t i = 0; i < cgl->width; ++i)
-			print_sobs_block(&cgl->blocks[j][i], i, j);
+	for (size_t j = 0; j < cgl->height; ++j) {
+		for (size_t i = 0; i < cgl->width; ++i) {
+			print_sobs_block(cur_tile,
+					(size_t)soin[i + j*cgl->width], i, j);
+			cur_tile += soin[i + j*cgl->width];
+		}
+	}
 }
 
-void print_sobs_block(const struct block *b, int x, int y)
+void print_sobs_block(const struct tile *tiles, size_t num, int x, int y)
 {
 	printf("\tblock at (%d, %d):\n", x, y);
-	for (size_t k = 0; k < b->size; ++k) {
+	for (size_t k = 0; k < num; ++k) {
 		printf("\t\ttile %zu:\tsize\t= (%d, %d)\n"
 				"\t\t\tpos\t= (%d, %d)\n"
 				"\t\t\timg_pos\t= (%d, %d)\n", k,
-				b->tiles[k].w, b->tiles[k].h,
-				b->tiles[k].x, b->tiles[k].y,
-				b->tiles[k].img_x, b->tiles[k].img_y);
+				tiles[k].w, tiles[k].h,
+				tiles[k].x, tiles[k].y,
+				tiles[k].img_x, tiles[k].img_y);
 	}
 }
 

@@ -36,6 +36,11 @@ struct tile {
 	int x, y;	/* tile's origin */
 	unsigned int w, h;
 	unsigned int img_x, img_y;	/* position of image in gfx file */
+	enum {
+		Normal = 0,
+		Special
+	} type;
+
 };
 /* 8x8 unit = 32x32 px square tile containter */
 struct block {
@@ -68,12 +73,13 @@ struct cgl {
 		Demo
 	} type;
 	size_t width, height;
-	struct block **blocks;
+	int ntiles;
+	struct tile *tiles;
 	size_t nfans;
 	struct fan *fans;
 };
 
-struct cgl *read_cgl(const char *path);
+struct cgl *read_cgl(const char *path, uint8_t**);
 void free_cgl(struct cgl *cgl);
 
 #endif

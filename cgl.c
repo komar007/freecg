@@ -77,56 +77,59 @@ void free_cgl(struct cgl *cgl)
 {
 	if (!cgl)
 		return;
-	if (cgl->blocks) {
-		for (size_t j = 0; j < cgl->height; ++j) {
-			for (size_t i = 0; i < cgl->width; ++i)
-				free(cgl->blocks[j][i].tiles);
-			free(cgl->blocks[j]);
-		}
-		free(cgl->blocks);
-	}
+	if (cgl->tiles)
+		free(cgl->tiles);
 	if (cgl->fans)
 		free(cgl->fans);
 	free(cgl);
 }
 
-struct cgl *read_cgl(const char *path)
+struct cgl *read_cgl(const char *path, uint8_t **out_soin)
 {
 	extern int cgl_read_section_header(const char*, FILE*),
 		   cgl_read_header(struct cgl*, FILE*),
 		   cgl_read_size(struct cgl*, FILE*),
-	           cgl_read_soin(struct cgl*, FILE*),
+	           cgl_read_soin(struct cgl*, uint8_t*, FILE*),
 		   cgl_read_magic(struct cgl*, FILE*),
-		   cgl_read_sobs(struct cgl*, FILE *),
+		   cgl_read_sobs(struct cgl*, const uint8_t*, FILE*),
 		   cgl_read_vent(struct cgl*, FILE *);
 	struct cgl *cgl;
 	FILE *fp;
+	uint8_t *soin = NULL;
 	fp = fopen(path, "r");
 	if (!fp) {
 		SDL_SetError("fopen: %s", strerror(errno));
 		return NULL;
 	}
-	cgl = malloc(sizeof(*cgl));
-	memset(cgl, 0, sizeof(*cgl));
+	cgl = calloc(1, sizeof(*cgl));
+	cgl->tiles = NULL;
+	cgl->fans = NULL;
 	if (cgl_read_section_header("CGL1", fp) != 0)
 		goto error;
 	if (cgl_read_size(cgl, fp) != 0)
 		goto error;
-	if (cgl_read_soin(cgl, fp) != 0)
+	soin = calloc(cgl->width * cgl->height, sizeof(*soin));
+	if (cgl_read_soin(cgl, soin, fp) != 0)
 		goto error;
 	if (cgl_read_magic(cgl, fp) != 0)
 		goto error;
-	if (cgl_read_sobs(cgl, fp) != 0)
+	if (cgl_read_sobs(cgl, soin, fp) != 0)
 		goto error;
 	if (cgl->type == Demo && cgl_read_magic(cgl, fp) != 0)
 		goto error;
 	if (cgl_read_vent(cgl, fp) != 0)
 		goto error;
 
+	if (out_soin)
+		*out_soin = soin;
+	else
+		free(soin);
 	fclose(fp);
 	return cgl;
 error:
 	fclose(fp);
+	if (soin)
+		free(soin);
 	free_cgl(cgl);
 	return NULL;
 }
@@ -201,32 +204,23 @@ int cgl_read_size(struct cgl *cgl, FILE *fp)
 	return 0;
 }
 
-int cgl_read_soin(struct cgl *cgl, FILE *fp)
+int cgl_read_soin(struct cgl *cgl, uint8_t *nums, FILE *fp)
 {
 	size_t nread,
 	       nblocks = cgl->height * cgl->width;
-	uint8_t *nums, *pnum;
 
 	int err = cgl_read_section_header("SOIN", fp);
 	if (err)
 		return err;
-	pnum = nums = calloc(nblocks, sizeof(*nums));
 	nread = fread(nums, sizeof(uint8_t), nblocks, fp);
 	if (nread < nblocks) {
-		free(nums);
 		SDL_SetError("cgl SOIN section corrupted (incomplete)");
 		return -EBADSOIN;
 	}
-	cgl->blocks = calloc(cgl->height, sizeof(*cgl->blocks));
-	for (size_t j = 0; j < cgl->height; ++j) {
-		cgl->blocks[j] = calloc(cgl->width, sizeof(*cgl->blocks[j]));
-		for (size_t i = 0; i < cgl->width; ++i) {
-			cgl->blocks[j][i].size = *pnum++ & 0x7f;
-			cgl->blocks[j][i].tiles = calloc(cgl->blocks[j][i].size,
-					sizeof(*cgl->blocks[j][i].tiles));
-		}
-	}
-	free(nums);
+	cgl->ntiles = 0;
+	for (size_t j = 0; j < cgl->height; ++j)
+		for (size_t i = 0; i < cgl->width; ++i)
+			cgl->ntiles += (*nums++ &= 0x7f);
 	return 0;
 }
 
@@ -251,42 +245,48 @@ int cgl_read_magic(struct cgl *cgl, FILE *fp)
 	return 0;
 }
 
-int cgl_read_sobs(struct cgl *cgl, FILE *fp)
+int cgl_read_sobs(struct cgl *cgl, const uint8_t *soin, FILE *fp)
 {
-	extern int read_block(struct block*, int, int, FILE*);
+	extern int read_block(struct tile*, size_t, int, int, FILE*);
 	int err;
 
 	err = cgl_read_section_header("SOBS", fp);
 	if (err)
 		return err;
+	cgl->tiles = calloc(cgl->ntiles, sizeof(*cgl->tiles));
+	struct tile *tile_ptr = cgl->tiles;
+	size_t cur_block = 0;
 	for (size_t j = 0; j < cgl->height; ++j) {
-		for (size_t i = 0; i < cgl->width; ++i) {
-			err = read_block(&cgl->blocks[j][i], i * TILE_SIZE, j * TILE_SIZE, fp);
+		for (size_t i = 0; i < cgl->width; ++i, ++cur_block) {
+			err = read_block(tile_ptr, (size_t)soin[cur_block],
+					i * TILE_SIZE, j * TILE_SIZE, fp);
+
 			if (err)
 				return err;
+			tile_ptr += soin[cur_block];
 		}
 	}
 	return 0;
 }
 
-int read_block(struct block *block, int x, int y, FILE* fp)
+int read_block(struct tile *tiles, size_t num, int x, int y, FILE* fp)
 {
 	uint8_t buf[4];
 	int nread;
 
-	for (size_t k = 0; k < block->size; ++k) {
+	for (size_t k = 0; k < num; ++k) {
 		nread = fread(buf, sizeof(uint8_t), SOBS_TILE_SIZE, fp);
 		if (nread < SOBS_TILE_SIZE) {
 			SDL_SetError("cgl SOBS section corrupted "
 					"(incomplete)");
 			return -EBADSOBS;
 		}
-		block->tiles[k].x = x + UNIT * (buf[0] >> 4);
-		block->tiles[k].y = y + UNIT * (buf[0] & 0x0f);
-		block->tiles[k].w = UNIT * (buf[1] >> 4);
-		block->tiles[k].h = UNIT * (buf[1] & 0x0f);
-		block->tiles[k].img_x = UNIT * buf[2];
-		block->tiles[k].img_y = UNIT * buf[3];
+		tiles[k].x = x + UNIT * (buf[0] >> 4);
+		tiles[k].y = y + UNIT * (buf[0] & 0x0f);
+		tiles[k].w = UNIT * (buf[1] >> 4);
+		tiles[k].h = UNIT * (buf[1] & 0x0f);
+		tiles[k].img_x = UNIT * buf[2];
+		tiles[k].img_y = UNIT * buf[3];
 	}
 	return 0;
 }
@@ -304,7 +304,6 @@ int cgl_read_vent(struct cgl *cgl, FILE *fp)
 	if (err)
 		goto error;
 	cgl->nfans = num;
-	printf("%i\n", num);
 	cgl->fans = calloc(num, sizeof(*cgl->fans));
 	for (size_t i = 0; i < num; ++i) {
 		err = cgl_read_one_vent(&cgl->fans[i], fp);
