@@ -2,7 +2,7 @@
 #include <SDL/SDL_opengl.h>
 
 enum config {
-	TEX_FILTER = GL_NEAREST,
+	TEX_FILTER = GL_LINEAR,
 };
 
 struct texture {
@@ -16,6 +16,6 @@ struct texture_manager {
 };
 
 void init_texture_manager(const SDL_Surface *);
-GLuint tm_request_texture(SDL_Rect*);
+GLuint tm_request_texture(size_t x, size_t y, size_t w, size_t h);
 
 extern struct texture_manager texmgr;

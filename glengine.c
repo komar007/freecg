@@ -25,16 +25,12 @@ void test_draw(struct cgl *cgl, double x1, double y1, double x2, double y2)
 	glLoadIdentity();
 	glClear(GL_COLOR_BUFFER_BIT);
 	GLuint texno;
-	SDL_Rect rect;
 	for (size_t i = 0; i < cgl->ntiles; ++i) {
-		rect.x = cgl->tiles[i].img_x;
-		rect.y = cgl->tiles[i].img_y;
 		if (cgl->tiles[i].x < x1 || cgl->tiles[i].x > x2 ||
 				cgl->tiles[i].y < y1 || cgl->tiles[i].y > y2)
 			continue;
-		rect.w = cgl->tiles[i].w;
-		rect.h = cgl->tiles[i].h;
-		texno = tm_request_texture(&rect);
+		texno = tm_request_texture(cgl->tiles[i].img_x, cgl->tiles[i].img_y,
+				cgl->tiles[i].w, cgl->tiles[i].h);
 		glBindTexture(GL_TEXTURE_2D, texno);
 		glBegin(GL_QUADS);
 		glTexCoord2f(0.0, 0.0);
