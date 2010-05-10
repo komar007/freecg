@@ -1,4 +1,5 @@
 #include "glengine.h"
+#include "texmgr.h"
 #include "gfx.h"
 
 #include <stdio.h>
@@ -12,15 +13,16 @@ int main()
 		fprintf(stderr, "SDL failed: %s\n", SDL_GetError());
 		abort();
 	}
-	SDL_Surface *screen = SDL_SetVideoMode(2560, 1024, 32,
-			SDL_OPENGL|SDL_FULLSCREEN);
+	SDL_SetVideoMode(1024, 768, 32,
+			SDL_OPENGL);
 	init_opengl();
 	SDL_Surface *gfx = read_gfx("data/GRAVITY.GFX");
-	struct cgl *cgl = read_cgl("data/LEVEL12.CGL", NULL);
+	init_texture_manager(gfx);
+	struct cgl *cgl = read_cgl("data/LEVEL14.CGL", NULL);
 	assert(gfx);
-	GLuint texno = load_texture(gfx);
-	change_viewport(0, 0, 2560, 1024);
-	test_draw(cgl, gfx);
-	SDL_Delay(5000);
+	for (double x = 0; x < 100; x += 0.1) {
+		change_viewport(x, 0, 1024, 768);
+		test_draw(cgl, x, 0, x + 1024, 0 + 768);
+	}
 	return 0;
 }

@@ -8,5 +8,4 @@ enum {
 
 void init_opengl(void);
 void change_viewport(double, double, double, double);
-void test_draw(struct cgl *, SDL_Surface *);
-GLuint load_texture(SDL_Surface *);
+void test_draw(struct cgl *, double, double, double, double);
