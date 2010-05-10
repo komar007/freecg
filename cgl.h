@@ -73,7 +73,7 @@ struct cgl {
 		Demo
 	} type;
 	size_t width, height;
-	int ntiles;
+	size_t ntiles;
 	struct tile *tiles;
 	size_t nfans;
 	struct fan *fans;

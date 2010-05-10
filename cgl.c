@@ -285,8 +285,8 @@ int read_block(struct tile *tiles, size_t num, int x, int y, FILE* fp)
 		tiles[k].y = y + UNIT * (buf[0] & 0x0f);
 		tiles[k].w = UNIT * (buf[1] >> 4);
 		tiles[k].h = UNIT * (buf[1] & 0x0f);
-		tiles[k].img_x = UNIT * buf[2];
-		tiles[k].img_y = UNIT * buf[3];
+		tiles[k].img_y = UNIT * buf[2];
+		tiles[k].img_x = UNIT * buf[3];
 	}
 	return 0;
 }
