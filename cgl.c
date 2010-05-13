@@ -77,10 +77,8 @@ void free_cgl(struct cgl *cgl)
 {
 	if (!cgl)
 		return;
-	if (cgl->tiles)
-		free(cgl->tiles);
-	if (cgl->fans)
-		free(cgl->fans);
+	free(cgl->tiles);
+	free(cgl->fans);
 	free(cgl);
 }
 
@@ -92,7 +90,8 @@ struct cgl *read_cgl(const char *path, uint8_t **out_soin)
 	           cgl_read_soin(struct cgl*, uint8_t*, FILE*),
 		   cgl_read_magic(struct cgl*, FILE*),
 		   cgl_read_sobs(struct cgl*, const uint8_t*, FILE*),
-		   cgl_read_vent(struct cgl*, FILE *);
+		   /* dynamic element reading functions: */
+		   cgl_read_vent(struct cgl*, struct tile **, size_t*, FILE*);
 	struct cgl *cgl;
 	FILE *fp;
 	uint8_t *soin = NULL;
@@ -117,8 +116,17 @@ struct cgl *read_cgl(const char *path, uint8_t **out_soin)
 		goto error;
 	if (cgl->type == Demo && cgl_read_magic(cgl, fp) != 0)
 		goto error;
-	if (cgl_read_vent(cgl, fp) != 0)
+	struct tile *vent_tiles;
+	size_t nvent_tiles;
+	if (cgl_read_vent(cgl, &vent_tiles, &nvent_tiles, fp) != 0)
 		goto error;
+	/* join extra tiles from the other sections with those from SOBS */
+	size_t num_tiles = cgl->ntiles + (nvent_tiles /* + ... */);
+	cgl->tiles = realloc(cgl->tiles, num_tiles * sizeof(*cgl->tiles));
+	mempcpy(cgl->tiles + cgl->ntiles, vent_tiles,
+			nvent_tiles * sizeof(*cgl->tiles));
+	cgl->ntiles += nvent_tiles;
+	free(vent_tiles);
 
 	if (out_soin)
 		*out_soin = soin;
@@ -291,7 +299,14 @@ int read_block(struct tile *tiles, size_t num, int x, int y, FILE* fp)
 	return 0;
 }
 
-int cgl_read_vent(struct cgl *cgl, FILE *fp)
+/*
+ * Each of these functions reads one section of dynamic objects from the cgl
+ * file. They allocate space for tiles needed by these objects, place the
+ * objects there and return a pointer through the pointer in the second argument.
+ */
+
+int cgl_read_vent(struct cgl *cgl, struct tile **out_tiles, size_t *ntiles,
+		FILE *fp)
 {
 	extern int cgl_read_one_vent(struct fan*, FILE*);
 	uint32_t num;
@@ -304,8 +319,14 @@ int cgl_read_vent(struct cgl *cgl, FILE *fp)
 	if (err)
 		goto error;
 	cgl->nfans = num;
+	*ntiles = 2 * cgl->nfans;
 	cgl->fans = calloc(num, sizeof(*cgl->fans));
+	struct tile *tiles = calloc(num, 2 * sizeof(*tiles));
+	*out_tiles = tiles;
 	for (size_t i = 0; i < num; ++i) {
+		/* prepare pointers to tiles */
+		cgl->fans[i].base = &tiles[2*i];
+		cgl->fans[i].pipes = &tiles[2*i + 1];
 		err = cgl_read_one_vent(&cgl->fans[i], fp);
 		if (err)
 			goto error;
@@ -331,12 +352,12 @@ int cgl_read_one_vent(struct fan *fan, FILE *fp)
 		return -EBADVENT;
 	fan->power = (buf[0] >> 4) & 0x01;
 	fan->dir = buf[0] & 0x03;
-	fan->base.x = buf2[0], fan->base.y = buf2[1];
-	fan->base.w = fan->base.h = 48;
-	fan->base.img_x = buf2[2], fan->base.img_y = buf2[3];
-	fan->pipes.x = buf2[4], fan->pipes.y = buf2[5];
-	fan->pipes.w = buf2[6], fan->pipes.h = buf2[7];
-	fan->pipes.img_x = buf2[8], fan->pipes.img_y = buf2[9];
+	fan->base->x = buf2[0], fan->base->y = buf2[1];
+	fan->base->w = fan->base->h = 48;
+	fan->base->img_x = buf2[2], fan->base->img_y = buf2[3];
+	fan->pipes->x = buf2[4], fan->pipes->y = buf2[5];
+	fan->pipes->w = buf2[6], fan->pipes->h = buf2[7];
+	fan->pipes->img_x = buf2[8], fan->pipes->img_y = buf2[9];
 	fan->bbox.x = buf2[10], fan->bbox.y = buf2[11];
 	fan->bbox.w = buf2[12], fan->bbox.h = buf2[13];
 	fan->range.x = buf2[14], fan->range.y = buf2[15];

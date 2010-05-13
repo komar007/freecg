@@ -61,8 +61,8 @@ struct fan {
 		Low
 	} power;
 	enum dir dir;
-	struct tile base,
-		    pipes;
+	struct tile *base,
+		    *pipes;
 	struct rect bbox,
 		    range;
 };

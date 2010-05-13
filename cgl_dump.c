@@ -167,14 +167,14 @@ void print_one_vent(struct fan *fan, int num)
 			fan->dir == Left ? "Left" : "Right");
 	printf("\t\tbase:\tpos\t= (%d, %d)\n"
 			"\t\t\timg_pos\t= (%d, %d)\n",
-			fan->base.x, fan->base.y,
-			fan->base.img_x, fan->base.img_y);
+			fan->base->x, fan->base->y,
+			fan->base->img_x, fan->base->img_y);
 	printf("\t\tpipes:\tsize\t= (%d, %d)\n"
 			"\t\t\tpos\t= (%d, %d)\n"
 			"\t\t\timg_pos\t= (%d, %d)\n",
-			fan->pipes.w, fan->pipes.h,
-			fan->pipes.x, fan->pipes.y,
-			fan->pipes.img_x, fan->pipes.img_y);
+			fan->pipes->w, fan->pipes->h,
+			fan->pipes->x, fan->pipes->y,
+			fan->pipes->img_x, fan->pipes->img_y);
 	printf("\t\tbbox\t= (%d, %d, %d, %d)\n"
 			"\t\trange\t= (%d, %d, %d, %d)\n",
 			fan->bbox.x, fan->bbox.y,
