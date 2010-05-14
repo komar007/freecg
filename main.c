@@ -7,7 +7,7 @@
 #include <SDL/SDL.h>
 #include <math.h>
 
-int main()
+int main(int argc, char *argv[])
 {
 	if (SDL_Init(SDL_INIT_VIDEO) != 0) {
 		fprintf(stderr, "SDL failed: %s\n", SDL_GetError());
@@ -15,10 +15,12 @@ int main()
 	}
 	SDL_SetVideoMode(1024, 768, 32,
 			SDL_OPENGL);
-	init_opengl();
 	SDL_Surface *gfx = read_gfx("data/GRAVITY.GFX");
 	init_texture_manager(gfx);
-	struct cgl *cgl = read_cgl("data/LEVEL14.CGL", NULL);
+	struct cgl *cgl = read_cgl(argv[1], NULL);	
+	cgl_preprocess(cgl);
+	struct cg *cg = cg_init(cgl);
+	gl_init(cg);
 	assert(gfx);
 	//int i;
 	//for (double x = 0; x < 4*M_PI; x += 0.005) {
@@ -28,12 +30,13 @@ int main()
 	//}
 	int i = 0;
 	int t = SDL_GetTicks();
-	for (double x = 0; x < 100; x += 0.1) {
-		change_viewport(x, 0, 1024, 768);
-		test_draw(cgl, x, 0, x + 1024, 0 + 768);
+	for (double x = 0; x < 200; x += 0.1) {
+		gl_change_viewport(x, 0, 1024, 768);
+		gl_draw_scene();
 		++i;
 	}
 	t = SDL_GetTicks() - t;
 	printf("%d frames in %d ms. %f fps\n", i, t, (float)i / t * 1000);
+	free_cgl(cgl);
 	return 0;
 }
