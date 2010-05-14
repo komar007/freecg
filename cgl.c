@@ -79,6 +79,14 @@ void free_cgl(struct cgl *cgl)
 		return;
 	free(cgl->tiles);
 	free(cgl->fans);
+	if (cgl->blocks) {
+		for (size_t j = 0; j < cgl->height; ++j) {
+			for (size_t i = 0; i < cgl->width; ++i)
+				free(cgl->blocks[j][i]);
+			free(cgl->blocks[j]);
+		}
+		free(cgl->blocks);
+	}
 	free(cgl);
 }
 
@@ -103,6 +111,7 @@ struct cgl *read_cgl(const char *path, uint8_t **out_soin)
 	cgl = calloc(1, sizeof(*cgl));
 	cgl->tiles = NULL;
 	cgl->fans = NULL;
+	cgl->blocks = NULL;
 	if (cgl_read_section_header("CGL1", fp) != 0)
 		goto error;
 	if (cgl_read_size(cgl, fp) != 0)
@@ -363,4 +372,44 @@ int cgl_read_one_vent(struct fan *fan, FILE *fp)
 	fan->range.x = buf2[14], fan->range.y = buf2[15];
 	fan->range.w = buf2[16], fan->range.h = buf2[17];
 	return 0;
+}
+
+/* ------------------------------------------------------------------------*/
+
+void cgl_preprocess(struct cgl *cgl)
+{
+	size_t *sizes = calloc(cgl->width * cgl->height, sizeof(*sizes)),
+	       *is = calloc(cgl->width * cgl->height, sizeof(*is));
+	for (size_t k = 0; k < cgl->ntiles; ++k) {
+		size_t x = cgl->tiles[k].x / TILE_SIZE,
+		       y = cgl->tiles[k].y / TILE_SIZE;
+		assert(x < cgl->width);
+		assert(y < cgl->height);
+		for (size_t j = y; j*TILE_SIZE < cgl->tiles[k].y +
+				cgl->tiles[k].h; ++j)
+			for (size_t i = x; i*TILE_SIZE < cgl->tiles[k].x +
+					cgl->tiles[k].w; ++i)
+				sizes[i + j * cgl->width]++;
+	}
+	cgl->blocks = calloc(cgl->height, sizeof(*cgl->blocks));
+	for (size_t j = 0; j < cgl->height; ++j) {
+		cgl->blocks[j] = calloc(cgl->width, sizeof(**cgl->blocks));
+		for (size_t i = 0; i < cgl->width; ++i)
+			cgl->blocks[j][i] = calloc(sizes[i + j*cgl->width] + 1,
+					sizeof(**cgl->blocks));
+	}
+	for (size_t k = 0; k < cgl->ntiles; ++k) {
+		size_t x = cgl->tiles[k].x / TILE_SIZE,
+		       y = cgl->tiles[k].y / TILE_SIZE;
+		for (size_t j = y; j*TILE_SIZE < cgl->tiles[k].y +
+				cgl->tiles[k].h; ++j)
+			for (size_t i = x; i*TILE_SIZE < cgl->tiles[k].x +
+					cgl->tiles[k].w; ++i)
+				cgl->blocks[j][i][is[i + j*cgl->width]++] = &cgl->tiles[k];
+	}
+	for (size_t j = 0; j < cgl->height; ++j)
+		for (size_t i = 0; i < cgl->width; ++i)
+			cgl->blocks[j][i][is[i + j*cgl->width]] = NULL;
+	free(sizes);
+	free(is);
 }

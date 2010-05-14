@@ -1,6 +1,7 @@
 #ifndef CGL_H
 #define CGL_H
 
+#include "opencg.h"
 #include <stdio.h>
 #include <stdint.h>
 
@@ -27,10 +28,6 @@ enum {
 	EBADINT
 };
 
-struct rect {
-	int x, y;
-	unsigned int w, h;
-};
 /* basic tile, max. 8x8 units = 32x32 px */
 struct tile {
 	int x, y;	/* tile's origin */
@@ -40,7 +37,9 @@ struct tile {
 		Normal = 0,
 		Special
 	} type;
-
+	/* necessary for renderer, the number of the most recent frame in
+	 * which the tile was rendered */
+	unsigned int lframe;
 };
 /* 8x8 unit = 32x32 px square tile containter */
 struct block {
@@ -77,9 +76,11 @@ struct cgl {
 	struct tile *tiles;
 	size_t nfans;
 	struct fan *fans;
+	struct tile ****blocks;
 };
 
-struct cgl *read_cgl(const char *path, uint8_t**);
-void free_cgl(struct cgl *cgl);
+struct cgl *read_cgl(const char *, uint8_t**);
+void cgl_preprocess(struct cgl *);
+void free_cgl(struct cgl *);
 
 #endif
