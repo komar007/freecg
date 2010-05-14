@@ -5,15 +5,18 @@
 #include <stdio.h>
 #include <stdint.h>
 
-/* side length in pixels of the smallest game unit */
-#define UNIT 4
-#define TILE_SIZE (8 * UNIT)
-/* size of section header */
-#define CGL_SHDR_SIZE 4
-#define CGL_MAGIC_SIZE 4
+enum {
+	/* side length in pixels of the smallest game unit */
+	UNIT = 4,
+	CGL_BLOCK_SIZE = (8 * UNIT),
+	BLOCK_SIZE = 32,
+	/* size of section header */
+	CGL_SHDR_SIZE = 4,
+	CGL_MAGIC_SIZE = 4,
+	SOBS_TILE_SIZE = 4,
+	VENT_NUM_SHORTS = 18,
+};
 #define CGL_MAGIC "\xe1\xd2\xc3\xb4"
-#define SOBS_TILE_SIZE 4
-#define VENT_NUM_SHORTS 18
 
 enum {
 	EBADHDR = 1,
@@ -27,7 +30,6 @@ enum {
 	EBADSHORT,
 	EBADINT
 };
-
 /* basic tile, max. 8x8 units = 32x32 px */
 struct tile {
 	int x, y;	/* tile's origin */

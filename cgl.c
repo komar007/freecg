@@ -1,6 +1,7 @@
 #include "cgl.h"
 #include <SDL/SDL_error.h>
 #include <stdio.h>
+#include <math.h>
 #include <assert.h>
 #include <errno.h>
 
@@ -276,7 +277,7 @@ int cgl_read_sobs(struct cgl *cgl, const uint8_t *soin, FILE *fp)
 	for (size_t j = 0; j < cgl->height; ++j) {
 		for (size_t i = 0; i < cgl->width; ++i, ++cur_block) {
 			err = read_block(tile_ptr, (size_t)soin[cur_block],
-					i * TILE_SIZE, j * TILE_SIZE, fp);
+					i * CGL_BLOCK_SIZE, j * CGL_BLOCK_SIZE, fp);
 
 			if (err)
 				return err;
@@ -378,16 +379,22 @@ int cgl_read_one_vent(struct fan *fan, FILE *fp)
 
 void cgl_preprocess(struct cgl *cgl)
 {
+	size_t width_px = cgl->width * CGL_BLOCK_SIZE,
+	       height_px = cgl->height * CGL_BLOCK_SIZE;
+	/* express the dimensions of level in new block units (BLOCK_SIZE
+	 * instead of CGL_BLOCK_SIZE */
+	cgl->width = (size_t)ceil((double)width_px / BLOCK_SIZE);
+	cgl->height = (size_t)ceil((double)height_px / BLOCK_SIZE);
 	size_t *sizes = calloc(cgl->width * cgl->height, sizeof(*sizes)),
 	       *is = calloc(cgl->width * cgl->height, sizeof(*is));
 	for (size_t k = 0; k < cgl->ntiles; ++k) {
-		size_t x = cgl->tiles[k].x / TILE_SIZE,
-		       y = cgl->tiles[k].y / TILE_SIZE;
+		size_t x = cgl->tiles[k].x / BLOCK_SIZE,
+		       y = cgl->tiles[k].y / BLOCK_SIZE;
 		assert(x < cgl->width);
 		assert(y < cgl->height);
-		for (size_t j = y; j*TILE_SIZE < cgl->tiles[k].y +
+		for (size_t j = y; j*BLOCK_SIZE < cgl->tiles[k].y +
 				cgl->tiles[k].h; ++j)
-			for (size_t i = x; i*TILE_SIZE < cgl->tiles[k].x +
+			for (size_t i = x; i*BLOCK_SIZE < cgl->tiles[k].x +
 					cgl->tiles[k].w; ++i)
 				sizes[i + j * cgl->width]++;
 	}
@@ -399,11 +406,11 @@ void cgl_preprocess(struct cgl *cgl)
 					sizeof(**cgl->blocks));
 	}
 	for (size_t k = 0; k < cgl->ntiles; ++k) {
-		size_t x = cgl->tiles[k].x / TILE_SIZE,
-		       y = cgl->tiles[k].y / TILE_SIZE;
-		for (size_t j = y; j*TILE_SIZE < cgl->tiles[k].y +
+		size_t x = cgl->tiles[k].x / BLOCK_SIZE,
+		       y = cgl->tiles[k].y / BLOCK_SIZE;
+		for (size_t j = y; j*BLOCK_SIZE < cgl->tiles[k].y +
 				cgl->tiles[k].h; ++j)
-			for (size_t i = x; i*TILE_SIZE < cgl->tiles[k].x +
+			for (size_t i = x; i*BLOCK_SIZE < cgl->tiles[k].x +
 					cgl->tiles[k].w; ++i)
 				cgl->blocks[j][i][is[i + j*cgl->width]++] = &cgl->tiles[k];
 	}

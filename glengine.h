@@ -6,10 +6,6 @@
 #include <SDL/SDL.h>
 #include <SDL/SDL_opengl.h>
 
-enum {
-	BLOCK_SIZE = 32,
-};
-
 struct glengine {
 	struct drect viewport;
 	struct cg *cg;

@@ -9,6 +9,10 @@
 
 int main(int argc, char *argv[])
 {
+	if (argc != 2) {
+		printf("Usage: %s file.cgl\n", argv[0]);
+		exit(-1);
+	}
 	if (SDL_Init(SDL_INIT_VIDEO) != 0) {
 		fprintf(stderr, "SDL failed: %s\n", SDL_GetError());
 		abort();
@@ -17,7 +21,7 @@ int main(int argc, char *argv[])
 			SDL_OPENGL);
 	SDL_Surface *gfx = read_gfx("data/GRAVITY.GFX");
 	init_texture_manager(gfx);
-	struct cgl *cgl = read_cgl(argv[1], NULL);	
+	struct cgl *cgl = read_cgl(argv[1], NULL);
 	cgl_preprocess(cgl);
 	struct cg *cg = cg_init(cgl);
 	gl_init(cg);

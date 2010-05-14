@@ -57,8 +57,8 @@ void gl_draw_scene()
 	struct cgl *l = gl.cg->level;
 	glLoadIdentity();
 	glClear(GL_COLOR_BUFFER_BIT);
-	for (size_t j = y1 / TILE_SIZE; j*TILE_SIZE < y2; ++j)
-		for (size_t i = x1 / TILE_SIZE; i*TILE_SIZE < x2; ++i)
+	for (size_t j = y1/BLOCK_SIZE; j*BLOCK_SIZE < y2; ++j)
+		for (size_t i = x1/BLOCK_SIZE; i*BLOCK_SIZE < x2; ++i)
 			draw_block(l->blocks[j][i]);
 	SDL_GL_SwapBuffers();
 	gl.frame++;
