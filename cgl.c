@@ -40,7 +40,7 @@
  * 		offset	(length)
  * 		0x0	(1) position (first half - x, second - y)
  * 		0x1	(1) dimensions (as above)
- * 		0x2	(2) position in gfx file (first byte - x, second - y)
+ * 		0x2	(2) position in gfx file (first byte - y, second - x)
  * 		All values are given in units, so a conversion to px is
  * 		necessary (multiply by 4).
  * 	-- the same magic 4-byte string appears here iif the level is a demo

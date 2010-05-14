@@ -2,7 +2,7 @@
 
 struct texture_manager texmgr;
 
-void init_texture_manager(const SDL_Surface *image)
+void tm_init(const SDL_Surface *image)
 {
 	texmgr.img = image;
 	texmgr.lookup_table = calloc(texmgr.img->w/4 * texmgr.img->h/4,

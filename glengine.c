@@ -2,6 +2,7 @@
 #include "glengine.h"
 #include "texmgr.h"
 #include <assert.h>
+#include <math.h>
 #include <SDL/SDL.h>
 #include <SDL/SDL_opengl.h>
 
@@ -50,10 +51,12 @@ void gl_draw_scene()
 	extern void draw_block(struct tile *[]);
 	if (gl.frame == 0)
 		fix_lframes(gl.cg->level);
-	double x1 = gl.viewport.x,
-	       y1 = gl.viewport.y,
-	       x2 = gl.viewport.x + gl.viewport.w,
-	       y2 = gl.viewport.y + gl.viewport.h;
+	double x1 = fmax(gl.viewport.x, 0),
+	       y1 = fmax(gl.viewport.y, 0),
+	       x2 = fmin(gl.viewport.x + gl.viewport.w,
+			       gl.cg->level->width * BLOCK_SIZE),
+	       y2 = fmin(gl.viewport.y + gl.viewport.h,
+			       gl.cg->level->height * BLOCK_SIZE);
 	struct cgl *l = gl.cg->level;
 	glLoadIdentity();
 	glClear(GL_COLOR_BUFFER_BIT);

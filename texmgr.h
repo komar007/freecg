@@ -18,7 +18,7 @@ struct texture_manager {
 	struct texture *lookup_table;
 };
 
-void init_texture_manager(const SDL_Surface *);
+void tm_init(const SDL_Surface *);
 GLuint tm_request_texture(size_t x, size_t y, size_t w, size_t h);
 
 extern struct texture_manager texmgr;
