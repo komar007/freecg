@@ -31,9 +31,9 @@
  * 		width * height 1-byte integers holding the number of tiles
  * 		anchored in each block. Only 7 LSBs count. The MSB should be
  * 		omitted. The order is left to right, top to bottom.
- * 	-- between the SOIN and SOBS sections a magic 4-byte string may follow
- * 	   whose presence means the level is available in unregistered
- * 	   version of Crazy Gravity (demo level).
+ * 	-- directly before headers of all following sections a magic 4-byte
+ * 	   string may follow whose presence means the level is available in
+ * 	   unregistered version of Crazy Gravity (demo level).
  * 	SOBS (width * height * 4 bytes)
  * 		width * height 4-byte structures describing tiles.
  * 		Single tile description:
@@ -43,8 +43,6 @@
  * 		0x2	(2) position in gfx file (first byte - y, second - x)
  * 		All values are given in units, so a conversion to px is
  * 		necessary (multiply by 4).
- * 	-- the same magic 4-byte string appears here iif the level is a demo
- * 	   level.
  * 	VENT (4 + nfans * 38 bytes)
  * 		Fans description. The first 4 bytes is an integer - the number
  * 		of fans. Then descriptions of fans follow, each 38 bytes long.
@@ -68,6 +66,21 @@
  * 			dimensions
  * 		0x1e	(8) - four shorts, coordinates and dimensions of fan's
  * 			area of interaction.
+ * 	MAGN (4 + nmagnets * 38 bytes)
+ * 		Magnets description. All like in VENT.
+ * 		Single magnet description:
+ * 		offset	(length)
+ * 		0x00	(2) magnet type
+ * 			First byte: direction, values as in VENT.
+ * 			Second byte: unknown.
+ * 		next as in VENT
+ * 	DIST (4 + nairgens * 38 bytes)
+ * 		Air current generators. Like VENT.
+ * 		First byte:
+ *		first half: turning direction: 0 - CCW, 1 - CW
+ *		second half: direction (as in VENT)
+ *		Second byte: unknown
+ * 		The rest as in VENT
  * 	FIXME: others
  * 	-- after the last section a magic 4-byte string may appear which means
  * 	   the level was created by a user in the level editor (or maybe in
@@ -100,7 +113,9 @@ struct cgl *read_cgl(const char *path, uint8_t **out_soin)
 		   cgl_read_magic(struct cgl*, FILE*),
 		   cgl_read_sobs(struct cgl*, const uint8_t*, FILE*),
 		   /* dynamic element reading functions: */
-		   cgl_read_vent(struct cgl*, struct tile **, size_t*, FILE*);
+		   cgl_read_vent(struct cgl*, struct tile**, size_t*, FILE*),
+		   cgl_read_magn(struct cgl*, struct tile**, size_t*, FILE*),
+		   cgl_read_dist(struct cgl*, struct tile**, size_t*, FILE*);
 	struct cgl *cgl;
 	FILE *fp;
 	uint8_t *soin = NULL;
@@ -124,19 +139,36 @@ struct cgl *read_cgl(const char *path, uint8_t **out_soin)
 		goto error;
 	if (cgl_read_sobs(cgl, soin, fp) != 0)
 		goto error;
-	if (cgl->type == Demo && cgl_read_magic(cgl, fp) != 0)
+	struct tile *vent_tiles, *magn_tiles, *dist_tiles;
+	size_t nvent_tiles, nmagn_tiles, ndist_tiles;
+	if (cgl_read_magic(cgl, fp) != 0)
 		goto error;
-	struct tile *vent_tiles;
-	size_t nvent_tiles;
 	if (cgl_read_vent(cgl, &vent_tiles, &nvent_tiles, fp) != 0)
 		goto error;
+	if (cgl_read_magic(cgl, fp) != 0)
+		goto error;
+	if (cgl_read_magn(cgl, &magn_tiles, &nmagn_tiles, fp) != 0)
+		goto error;
+	if (cgl_read_magic(cgl, fp) != 0)
+		goto error;
+	if (cgl_read_dist(cgl, &dist_tiles, &ndist_tiles, fp) != 0)
+		goto error;
 	/* join extra tiles from the other sections with those from SOBS */
-	size_t num_tiles = cgl->ntiles + (nvent_tiles /* + ... */);
+	size_t num_tiles = cgl->ntiles + (nvent_tiles + nmagn_tiles +
+			ndist_tiles /* + ... */);
 	cgl->tiles = realloc(cgl->tiles, num_tiles * sizeof(*cgl->tiles));
-	mempcpy(cgl->tiles + cgl->ntiles, vent_tiles,
+	memcpy(cgl->tiles + cgl->ntiles, vent_tiles,
 			nvent_tiles * sizeof(*cgl->tiles));
 	cgl->ntiles += nvent_tiles;
 	free(vent_tiles);
+	memcpy(cgl->tiles + cgl->ntiles, magn_tiles,
+			nmagn_tiles * sizeof(*cgl->tiles));
+	cgl->ntiles += nmagn_tiles;
+	free(magn_tiles);
+	memcpy(cgl->tiles + cgl->ntiles, dist_tiles,
+			ndist_tiles * sizeof(*cgl->tiles));
+	cgl->ntiles += ndist_tiles;
+	free(dist_tiles);
 
 	if (out_soin)
 		*out_soin = soin;
@@ -250,7 +282,7 @@ int cgl_read_magic(struct cgl *cgl, FILE *fp)
 	nread = fread(mgc, sizeof(uint8_t), CGL_MAGIC_SIZE, fp);
 	if (nread < CGL_MAGIC_SIZE) {
 		fseek(fp, -nread, SEEK_CUR);
-		SDL_SetError("cgl corrupted after SOIN section");
+		SDL_SetError("cgl corrupted (error reading magic/header");
 		return -EBADSOBS;
 	} else if (memcmp(mgc, CGL_MAGIC, CGL_MAGIC_SIZE) != 0) {
 		/* Magic absent, level works only in registered version */
@@ -309,6 +341,27 @@ int read_block(struct tile *tiles, size_t num, int x, int y, FILE* fp)
 	return 0;
 }
 
+/* Auxilliary functions to extract a single rectangle or tile description from
+ * an array of int16_t */
+void parse_rect(int16_t *data, struct rect *rect)
+{
+	rect->x = data[0], rect->y = data[1];
+	rect->w = data[2], rect->h = data[3];
+}
+void parse_tile(int16_t *data, struct tile *tile)
+{
+	tile->x = data[0], tile->y = data[1];
+	tile->w = data[2], tile->h = data[3];
+	tile->img_x = data[4], tile->img_y = data[5];
+}
+void parse_tile_simple(int16_t *data, struct tile *tile,
+		size_t width, size_t height)
+{
+	tile->x = data[0], tile->y = data[1];
+	tile->img_x = data[2], tile->img_y = data[3];
+	tile->w = width, tile->h = height;
+}
+
 /*
  * Each of these functions reads one section of dynamic objects from the cgl
  * file. They allocate space for tiles needed by these objects, place the
@@ -362,16 +415,117 @@ int cgl_read_one_vent(struct fan *fan, FILE *fp)
 		return -EBADVENT;
 	fan->power = (buf[0] >> 4) & 0x01;
 	fan->dir = buf[0] & 0x03;
-	fan->base->x = buf2[0], fan->base->y = buf2[1];
-	fan->base->w = fan->base->h = 48;
-	fan->base->img_x = buf2[2], fan->base->img_y = buf2[3];
-	fan->pipes->x = buf2[4], fan->pipes->y = buf2[5];
-	fan->pipes->w = buf2[6], fan->pipes->h = buf2[7];
-	fan->pipes->img_x = buf2[8], fan->pipes->img_y = buf2[9];
-	fan->bbox.x = buf2[10], fan->bbox.y = buf2[11];
-	fan->bbox.w = buf2[12], fan->bbox.h = buf2[13];
-	fan->range.x = buf2[14], fan->range.y = buf2[15];
-	fan->range.w = buf2[16], fan->range.h = buf2[17];
+	parse_tile_simple(buf2 + 0x00, fan->base, 48, 48);
+	parse_tile(buf2 + 0x04, fan->pipes);
+	parse_rect(buf2 + 0x0a, &fan->bbox);
+	parse_rect(buf2 + 0x0e, &fan->range);
+	return 0;
+}
+
+int cgl_read_magn(struct cgl *cgl, struct tile **out_tiles, size_t *ntiles,
+		FILE *fp)
+{
+	extern int cgl_read_one_magn(struct magnet*, FILE*);
+	uint32_t num;
+	int err;
+
+	err = cgl_read_section_header("MAGN", fp);
+	if (err)
+		return err;
+	err = read_integer((int32_t*)&num, 1, fp);
+	if (err)
+		goto error;
+	cgl->nmagnets = num;
+	*ntiles = 2 * cgl->nmagnets;
+	cgl->magnets = calloc(num, sizeof(*cgl->magnets));
+	struct tile *tiles = calloc(num, 2 * sizeof(*tiles));
+	*out_tiles = tiles;
+	for (size_t i = 0; i < num; ++i) {
+		/* prepare pointers to tiles */
+		cgl->magnets[i].base = &tiles[2*i];
+		cgl->magnets[i].magn = &tiles[2*i + 1];
+		err = cgl_read_one_magn(&cgl->magnets[i], fp);
+		if (err)
+			goto error;
+	}
+	return 0;
+error:
+	SDL_SetError("cgl MAGN section corrupted (incomplete)");
+	return -EBADMAGN;
+}
+
+int cgl_read_one_magn(struct magnet *magnet, FILE *fp)
+{
+	int err;
+	uint8_t buf[2];
+	int16_t buf2[MAGN_NUM_SHORTS];
+	size_t nread;
+
+	nread = fread(buf, sizeof(uint8_t), 2, fp);
+	if (nread < 2)
+		return -EBADMAGN;
+	err = read_short((int16_t*)buf2, MAGN_NUM_SHORTS, fp);
+	if (err)
+		return -EBADMAGN;
+	magnet->dir = (buf[0] >> 4) & 0x03;
+	parse_tile_simple(buf2 + 0x00, magnet->base, 32, 32);
+	parse_tile(buf2 + 0x04, magnet->magn);
+	parse_rect(buf2 + 0x0a, &magnet->bbox);
+	parse_rect(buf2 + 0x0e, &magnet->range);
+	return 0;
+}
+
+int cgl_read_dist(struct cgl *cgl, struct tile **out_tiles, size_t *ntiles,
+		FILE *fp)
+{
+	extern int cgl_read_one_dist(struct airgen*, FILE*);
+	uint32_t num;
+	int err;
+
+	err = cgl_read_section_header("DIST", fp);
+	if (err)
+		return err;
+	err = read_integer((int32_t*)&num, 1, fp);
+	if (err)
+		goto error;
+	cgl->nairgens = num;
+	*ntiles = 2 * cgl->nairgens;
+	cgl->airgens = calloc(num, sizeof(*cgl->airgens));
+	struct tile *tiles = calloc(num, 2 * sizeof(*tiles));
+	*out_tiles = tiles;
+	for (size_t i = 0; i < num; ++i) {
+		/* prepare pointers to tiles */
+		cgl->airgens[i].base = &tiles[2*i];
+		cgl->airgens[i].pipes = &tiles[2*i + 1];
+		err = cgl_read_one_dist(&cgl->airgens[i], fp);
+		if (err)
+			goto error;
+	}
+	return 0;
+error:
+	SDL_SetError("cgl DIST section corrupted (incomplete)");
+	return -EBADDIST;
+}
+
+int cgl_read_one_dist(struct airgen *airgen, FILE *fp)
+{
+	int err;
+	uint8_t buf[2];
+	int16_t buf2[DIST_NUM_SHORTS];
+	size_t nread;
+
+	nread = fread(buf, sizeof(uint8_t), 2, fp);
+	if (nread < 2)
+		return -EBADDIST;
+	err = read_short((int16_t*)buf2, DIST_NUM_SHORTS, fp);
+	if (err)
+		return -EBADDIST;
+	airgen->spin = (buf[0] >> 4) & 0x01;
+	airgen->dir = buf[0] & 0x03;
+	parse_tile_simple(buf2 + 0x00, airgen->base, 40, 40);
+	parse_tile(buf2 + 0x04, airgen->pipes);
+	parse_rect(buf2 + 0x0a, &airgen->bbox);
+	parse_rect(buf2 + 0x0e, &airgen->range);
 	return 0;
 }
 

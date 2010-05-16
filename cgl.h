@@ -15,6 +15,8 @@ enum {
 	CGL_MAGIC_SIZE = 4,
 	SOBS_TILE_SIZE = 4,
 	VENT_NUM_SHORTS = 18,
+	MAGN_NUM_SHORTS = 18,
+	DIST_NUM_SHORTS = 18,
 };
 #define CGL_MAGIC "\xe1\xd2\xc3\xb4"
 
@@ -25,6 +27,8 @@ enum {
 	EBADSOIN,
 	EBADSOBS,
 	EBADVENT,
+	EBADMAGN,
+	EBADDIST,
 	/* ... */
 
 	EBADSHORT,
@@ -36,7 +40,7 @@ struct tile {
 	unsigned int w, h;
 	unsigned int img_x, img_y;	/* position of image in gfx file */
 	enum {
-		Normal = 0,
+		Static = 0,
 		Special
 	} type;
 	/* necessary for renderer, the number of the most recent frame in
@@ -67,6 +71,24 @@ struct fan {
 	struct rect bbox,
 		    range;
 };
+struct magnet {
+	enum dir dir;
+	struct tile *base,
+		    *magn;
+	struct rect bbox,
+		    range;
+};
+struct airgen {
+	enum {
+		CCW = 0,
+		CW
+	} spin;
+	enum dir dir;
+	struct tile *base,
+		    *pipes;
+	struct rect bbox,
+		    range;
+};
 /* cgl level contents */
 struct cgl {
 	enum {
@@ -78,6 +100,10 @@ struct cgl {
 	struct tile *tiles;
 	size_t nfans;
 	struct fan *fans;
+	size_t nmagnets;
+	struct magnet *magnets;
+	size_t nairgens;
+	struct airgen *airgens;
 	struct tile ****blocks;
 };
 
