@@ -30,10 +30,14 @@ struct option opts[] = {
 	{"no-sobs", no_argument, NULL, -SOBS},
 	{"vent", no_argument, NULL, VENT},
 	{"no-vent", no_argument, NULL, -VENT},
+	{"magn", no_argument, NULL, MAGN},
+	{"no-magn", no_argument, NULL, -MAGN},
+	{"dist", no_argument, NULL, DIST},
+	{"no-dist", no_argument, NULL, -DIST},
 	{NULL, 0, NULL, 0}
 };
 char *optstr = "ha1234";
-int which[] = {-1, -1, -1, -1};
+int which[] = {-1, -1, -1, -1, -1, -1};
 
 void print_help(const char *name)
 {
@@ -56,7 +60,9 @@ int main(int argc, char *argv[])
 	extern void print_size(const struct cgl*),
 	            print_soin(const struct cgl*, const uint8_t *),
 		    print_sobs(const struct cgl*, const uint8_t *),
-		    print_vent(const struct cgl*);
+		    print_vent(const struct cgl*),
+		    print_magn(const struct cgl*),
+		    print_dist(const struct cgl*);
 	int ret;
 
 	while ((ret = getopt_long(argc, argv, optstr, opts, NULL)) != -1) {
@@ -100,6 +106,10 @@ int main(int argc, char *argv[])
 		print_sobs(cgl, soin);
 	if (which[VENT - '1'])
 		print_vent(cgl);
+	if (which[MAGN - '1'])
+		print_magn(cgl);
+	if (which[DIST - '1'])
+		print_dist(cgl);
 	return 0;
 }
 
@@ -150,6 +160,22 @@ void print_sobs_block(const struct tile *tiles, size_t num, int x, int y)
 	}
 }
 
+void print_tile(struct tile *tile)
+{
+	printf("size\t= (%d, %d)\n"
+			"\t\t\tpos\t= (%d, %d)\n"
+			"\t\t\timg_pos\t= (%d, %d)\n",
+			tile->w, tile->h,
+			tile->x, tile->y,
+			tile->img_x, tile->img_y);
+}
+void print_rect(struct rect *rect)
+{
+	printf("(%d, %d, %d, %d)\n",
+			rect->x, rect->y,
+			rect->w, rect->h);
+}
+
 void print_vent(const struct cgl *cgl)
 {
 	extern void print_one_vent(struct fan *fan, int);
@@ -158,27 +184,53 @@ void print_vent(const struct cgl *cgl)
 	for (size_t i = 0; i < cgl->nfans; ++i)
 		print_one_vent(&cgl->fans[i], i);
 }
-
 void print_one_vent(struct fan *fan, int num)
 {
 	printf("\tfan %d: power = %s, dir = %s\n", num,
 			fan->power == Hi ? "hi" : "low",
 			fan->dir == Down ? "Down" : fan->dir == Up ? "Up" :
 			fan->dir == Left ? "Left" : "Right");
-	printf("\t\tbase:\tpos\t= (%d, %d)\n"
-			"\t\t\timg_pos\t= (%d, %d)\n",
-			fan->base->x, fan->base->y,
-			fan->base->img_x, fan->base->img_y);
-	printf("\t\tpipes:\tsize\t= (%d, %d)\n"
-			"\t\t\tpos\t= (%d, %d)\n"
-			"\t\t\timg_pos\t= (%d, %d)\n",
-			fan->pipes->w, fan->pipes->h,
-			fan->pipes->x, fan->pipes->y,
-			fan->pipes->img_x, fan->pipes->img_y);
-	printf("\t\tbbox\t= (%d, %d, %d, %d)\n"
-			"\t\trange\t= (%d, %d, %d, %d)\n",
-			fan->bbox.x, fan->bbox.y,
-			fan->bbox.w, fan->bbox.h,
-			fan->range.x, fan->range.y,
-			fan->range.w, fan->range.h);
+	printf("\t\tbase:\t"), print_tile(fan->base);
+	printf("\t\tpipes:\t"), print_tile(fan->pipes);
+	printf("\t\tbbox\t= "), print_rect(&fan->bbox);
+	printf("\t\trange\t= "), print_rect(&fan->range);
+}
+
+void print_magn(const struct cgl *cgl)
+{
+	extern void print_one_magn(struct magnet *magnet, int);
+
+	printf("section MAGN\n");
+	for (size_t i = 0; i < cgl->nmagnets; ++i)
+		print_one_magn(&cgl->magnets[i], i);
+}
+void print_one_magn(struct magnet *magnet, int num)
+{
+	printf("\tmagnet %d: dir = %s\n", num,
+			magnet->dir == Down ? "Down" : magnet->dir == Up ? "Up" :
+			magnet->dir == Left ? "Left" : "Right");
+	printf("\t\tbase:\t"), print_tile(magnet->base);
+	printf("\t\tmagn:\t"), print_tile(magnet->magn);
+	printf("\t\tbbox\t= "), print_rect(&magnet->bbox);
+	printf("\t\trange\t= "), print_rect(&magnet->range);
+}
+
+void print_dist(const struct cgl *cgl)
+{
+	extern void print_one_dist(struct airgen *airgen, int);
+
+	printf("section DIST\n");
+	for (size_t i = 0; i < cgl->nairgens; ++i)
+		print_one_dist(&cgl->airgens[i], i);
+}
+void print_one_dist(struct airgen *airgen, int num)
+{
+	printf("\tairgen %d: spin = %s, dir = %s\n", num,
+			airgen->spin == CCW ? "CCW" : "CW",
+			airgen->dir == Down ? "Down" : airgen->dir == Up ? "Up" :
+			airgen->dir == Left ? "Left" : "Right");
+	printf("\t\tbase:\t"), print_tile(airgen->base);
+	printf("\t\tpipes:\t"), print_tile(airgen->pipes);
+	printf("\t\tbbox\t= "), print_rect(&airgen->bbox);
+	printf("\t\trange\t= "), print_rect(&airgen->range);
 }
