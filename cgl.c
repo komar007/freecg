@@ -153,20 +153,39 @@ struct cgl *read_cgl(const char *path, uint8_t **out_soin)
 		goto error;
 	if (cgl_read_dist(cgl, &dist_tiles, &ndist_tiles, fp) != 0)
 		goto error;
-	/* join extra tiles from the other sections with those from SOBS */
+	/* join extra tiles from the other sections with those from SOBS, fix
+	 * pointers to point to the new memory */
 	size_t num_tiles = cgl->ntiles + (nvent_tiles + nmagn_tiles +
 			ndist_tiles /* + ... */);
 	cgl->tiles = realloc(cgl->tiles, num_tiles * sizeof(*cgl->tiles));
 	memcpy(cgl->tiles + cgl->ntiles, vent_tiles,
 			nvent_tiles * sizeof(*cgl->tiles));
+	for (size_t i = 0; i < cgl->nfans; ++i) {
+		cgl->fans[i].base = cgl->tiles + cgl->ntiles +
+			(cgl->fans[i].base - vent_tiles);
+		cgl->fans[i].pipes = cgl->tiles + cgl->ntiles +
+			(cgl->fans[i].pipes - vent_tiles);
+	}
 	cgl->ntiles += nvent_tiles;
 	free(vent_tiles);
 	memcpy(cgl->tiles + cgl->ntiles, magn_tiles,
 			nmagn_tiles * sizeof(*cgl->tiles));
+	for (size_t i = 0; i < cgl->nmagnets; ++i) {
+		cgl->magnets[i].base = cgl->tiles + cgl->ntiles +
+			(cgl->magnets[i].base - magn_tiles);
+		cgl->magnets[i].magn = cgl->tiles + cgl->ntiles +
+			(cgl->magnets[i].magn - magn_tiles);
+	}
 	cgl->ntiles += nmagn_tiles;
 	free(magn_tiles);
 	memcpy(cgl->tiles + cgl->ntiles, dist_tiles,
 			ndist_tiles * sizeof(*cgl->tiles));
+	for (size_t i = 0; i < cgl->nairgens; ++i) {
+		cgl->airgens[i].base = cgl->tiles + cgl->ntiles +
+			(cgl->airgens[i].base - dist_tiles);
+		cgl->airgens[i].pipes = cgl->tiles + cgl->ntiles +
+			(cgl->airgens[i].pipes - dist_tiles);
+	}
 	cgl->ntiles += ndist_tiles;
 	free(dist_tiles);
 
@@ -384,7 +403,7 @@ int cgl_read_vent(struct cgl *cgl, struct tile **out_tiles, size_t *ntiles,
 	cgl->nfans = num;
 	*ntiles = 2 * cgl->nfans;
 	cgl->fans = calloc(num, sizeof(*cgl->fans));
-	struct tile *tiles = calloc(num, 2 * sizeof(*tiles));
+	struct tile *tiles = calloc(2 * num, sizeof(*tiles));
 	*out_tiles = tiles;
 	for (size_t i = 0; i < num; ++i) {
 		/* prepare pointers to tiles */
@@ -438,7 +457,7 @@ int cgl_read_magn(struct cgl *cgl, struct tile **out_tiles, size_t *ntiles,
 	cgl->nmagnets = num;
 	*ntiles = 2 * cgl->nmagnets;
 	cgl->magnets = calloc(num, sizeof(*cgl->magnets));
-	struct tile *tiles = calloc(num, 2 * sizeof(*tiles));
+	struct tile *tiles = calloc(2 * num, sizeof(*tiles));
 	*out_tiles = tiles;
 	for (size_t i = 0; i < num; ++i) {
 		/* prepare pointers to tiles */
@@ -467,7 +486,7 @@ int cgl_read_one_magn(struct magnet *magnet, FILE *fp)
 	err = read_short((int16_t*)buf2, MAGN_NUM_SHORTS, fp);
 	if (err)
 		return -EBADMAGN;
-	magnet->dir = (buf[0] >> 4) & 0x03;
+	magnet->dir = buf[0] & 0x03;
 	parse_tile_simple(buf2 + 0x00, magnet->base, 32, 32);
 	parse_tile(buf2 + 0x04, magnet->magn);
 	parse_rect(buf2 + 0x0a, &magnet->bbox);
@@ -491,7 +510,7 @@ int cgl_read_dist(struct cgl *cgl, struct tile **out_tiles, size_t *ntiles,
 	cgl->nairgens = num;
 	*ntiles = 2 * cgl->nairgens;
 	cgl->airgens = calloc(num, sizeof(*cgl->airgens));
-	struct tile *tiles = calloc(num, 2 * sizeof(*tiles));
+	struct tile *tiles = calloc(2 * num, sizeof(*tiles));
 	*out_tiles = tiles;
 	for (size_t i = 0; i < num; ++i) {
 		/* prepare pointers to tiles */
