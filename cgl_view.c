@@ -96,7 +96,9 @@ int main(int argc, char *argv[])
 	gl_change_viewport(0, 0, screen->w/scale, screen->h/scale);
 	tm_init(gfx);
 	gl_init(cg);
-	int t = SDL_GetTicks();
+	int t = SDL_GetTicks(),
+	    nt = t,
+	    fr = 0;
 	running = 1;
 	mouse = 0;
 	SDL_Event e;
@@ -114,11 +116,16 @@ int main(int argc, char *argv[])
 			else
 				scale_viewport(scale + SCALE_ASTEP);
 		}
-		cg_step(cg, (SDL_GetTicks() - t) / 1000.0);
+		nt = SDL_GetTicks() - t;
+		cg_step(cg, nt / 1000.0);
+		if (nt > 1000) {
+			printf("%d frames in %d ms - %.1f fps\n",
+					gl.frame - fr, nt, (float)(gl.frame - fr) / nt * 1000);
+			t += nt;
+			fr = gl.frame;
+		}
 		gl_draw_scene();
 	}
-	t = SDL_GetTicks() - t;
-	printf("%d frames in %d ms. %f fps\n", gl.frame, t, (float)gl.frame / t * 1000);
 	free_cgl(cgl);
 	return 0;
 }
