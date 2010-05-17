@@ -133,7 +133,7 @@ struct cgl *read_cgl(const char *path, uint8_t **out_soin)
 	struct cgl *cgl;
 	FILE *fp;
 	uint8_t *soin = NULL;
-	fp = fopen(path, "r");
+	fp = fopen(path, "rb");
 	if (!fp) {
 		SDL_SetError("fopen: %s", strerror(errno));
 		return NULL;

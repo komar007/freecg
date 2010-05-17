@@ -11,7 +11,7 @@ SDL_Surface *read_gfx(const char *path)
 	SDL_Surface *bmp = NULL,
 		    *gfx = NULL;
 
-	fp = fopen(path, "r");
+	fp = fopen(path, "rb");
 	if (!fp) {
 		SDL_SetError("fopen: %s", strerror(errno));
 		return NULL;
