@@ -15,8 +15,13 @@ enum {
 	CGL_MAGIC_SIZE = 4,
 	SOBS_TILE_SIZE = 4,
 	VENT_NUM_SHORTS = 18,
+	VENT_HDR_SIZE = 2,
 	MAGN_NUM_SHORTS = 18,
+	MAGN_HDR_SIZE = 2,
 	DIST_NUM_SHORTS = 18,
+	DIST_HDR_SIZE = 2,
+	CANO_NUM_SHORTS = 22,
+	CANO_HDR_SIZE = 3
 };
 #define CGL_MAGIC "\xe1\xd2\xc3\xb4"
 
@@ -29,6 +34,7 @@ enum {
 	EBADVENT,
 	EBADMAGN,
 	EBADDIST,
+	EBADCANO,
 	/* ... */
 
 	EBADSHORT,
@@ -89,6 +95,18 @@ struct airgen {
 	struct rect bbox,
 		    range;
 };
+struct cannon {
+	enum dir dir;
+	int fire_rate;
+	int speed_x, speed_y;
+	struct tile *begin_base,
+		    *begin_cano,
+		    *end_base,
+		    *end_catch;
+	struct rect bbox;
+	vector begin,
+	       end;
+};
 /* cgl level contents */
 struct cgl {
 	enum {
@@ -104,6 +122,8 @@ struct cgl {
 	struct magnet *magnets;
 	size_t nairgens;
 	struct airgen *airgens;
+	size_t ncannons;
+	struct cannon *cannons;
 	struct tile ****blocks;
 };
 

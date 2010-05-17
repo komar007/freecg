@@ -81,6 +81,19 @@
  *		second half: direction (as in VENT)
  *		Second byte: unknown
  * 		The rest as in VENT
+ *	CANO (4 + ncannons * 51 bytes)
+ *		Single cannon:
+ *		offset	(length)
+ *		0x00	(3) header - first byte: direction, rest - unknown
+ *		0x03	(2) a short: fire rate
+ *		0x05	(2) 2 signed bytes: speed_x, speed_y
+ *		0x07	(8) 4 shorts: coordinates of beginning and end of the
+ *			bullet track
+ * 		0x0f	(4) 2 shorts: coordinates of cannon's base
+ *		0x11	(8) 4 shorts: coords nd gfx coords of cannon tile
+ *		0x1b	(4) 2 shorts: coords of cannon's end
+ *		0x1f	(12)6 shorts: full description of catcher's tile
+ *		0x2b	(8) 4 shorts: bounding box
  * 	FIXME: others
  * 	-- after the last section a magic 4-byte string may appear which means
  * 	   the level was created by a user in the level editor (or maybe in
@@ -115,7 +128,8 @@ struct cgl *read_cgl(const char *path, uint8_t **out_soin)
 		   /* dynamic element reading functions: */
 		   cgl_read_vent(struct cgl*, struct tile**, size_t*, FILE*),
 		   cgl_read_magn(struct cgl*, struct tile**, size_t*, FILE*),
-		   cgl_read_dist(struct cgl*, struct tile**, size_t*, FILE*);
+		   cgl_read_dist(struct cgl*, struct tile**, size_t*, FILE*),
+		   cgl_read_cano(struct cgl*, struct tile**, size_t*, FILE*);
 	struct cgl *cgl;
 	FILE *fp;
 	uint8_t *soin = NULL;
@@ -139,8 +153,8 @@ struct cgl *read_cgl(const char *path, uint8_t **out_soin)
 		goto error;
 	if (cgl_read_sobs(cgl, soin, fp) != 0)
 		goto error;
-	struct tile *vent_tiles, *magn_tiles, *dist_tiles;
-	size_t nvent_tiles, nmagn_tiles, ndist_tiles;
+	struct tile *vent_tiles, *magn_tiles, *dist_tiles, *cano_tiles;
+	size_t nvent_tiles, nmagn_tiles, ndist_tiles, ncano_tiles;
 	if (cgl_read_magic(cgl, fp) != 0)
 		goto error;
 	if (cgl_read_vent(cgl, &vent_tiles, &nvent_tiles, fp) != 0)
@@ -153,10 +167,14 @@ struct cgl *read_cgl(const char *path, uint8_t **out_soin)
 		goto error;
 	if (cgl_read_dist(cgl, &dist_tiles, &ndist_tiles, fp) != 0)
 		goto error;
-	/* join extra tiles from the other sections with those from SOBS, fix
-	 * pointers to point to the new memory */
+	if (cgl_read_magic(cgl, fp) != 0)
+		goto error;
+	if (cgl_read_cano(cgl, &cano_tiles, &ncano_tiles, fp) != 0)
+		goto error;
+	/* join extra tiles from the other sections with those from SOBS,
+	 * fix pointers to point to the new memory */
 	size_t num_tiles = cgl->ntiles + (nvent_tiles + nmagn_tiles +
-			ndist_tiles /* + ... */);
+			ndist_tiles + ncano_tiles/* + ... */);
 	cgl->tiles = realloc(cgl->tiles, num_tiles * sizeof(*cgl->tiles));
 	memcpy(cgl->tiles + cgl->ntiles, vent_tiles,
 			nvent_tiles * sizeof(*cgl->tiles));
@@ -188,6 +206,20 @@ struct cgl *read_cgl(const char *path, uint8_t **out_soin)
 	}
 	cgl->ntiles += ndist_tiles;
 	free(dist_tiles);
+	memcpy(cgl->tiles + cgl->ntiles, cano_tiles,
+			ncano_tiles * sizeof(*cgl->tiles));
+	for (size_t i = 0; i < cgl->ncannons; ++i) {
+		cgl->cannons[i].begin_base = cgl->tiles + cgl->ntiles +
+			(cgl->cannons[i].begin_base - cano_tiles);
+		cgl->cannons[i].begin_cano = cgl->tiles + cgl->ntiles +
+			(cgl->cannons[i].begin_cano - cano_tiles);
+		cgl->cannons[i].end_base = cgl->tiles + cgl->ntiles +
+			(cgl->cannons[i].end_base - cano_tiles);
+		cgl->cannons[i].end_catch = cgl->tiles + cgl->ntiles +
+			(cgl->cannons[i].end_catch - cano_tiles);
+	}
+	cgl->ntiles += ncano_tiles;
+	free(cano_tiles);
 
 	if (out_soin)
 		*out_soin = soin;
@@ -362,6 +394,11 @@ int read_block(struct tile *tiles, size_t num, int x, int y, FILE* fp)
 
 /* Auxilliary functions to extract a single rectangle or tile description from
  * an array of int16_t */
+void parse_point(int16_t *data, vector *a, vector *b)
+{
+	a->x = data[0], a->y = data[1];
+	b->x = data[2], b->y = data[3];
+}
 void parse_rect(int16_t *data, struct rect *rect)
 {
 	rect->x = data[0], rect->y = data[1];
@@ -380,6 +417,13 @@ void parse_tile_simple(int16_t *data, struct tile *tile,
 	tile->img_x = data[2], tile->img_y = data[3];
 	tile->w = width, tile->h = height;
 }
+void parse_tile_very_simple(int16_t *data, struct tile *tile,
+		size_t width, size_t height, size_t img_x, size_t img_y)
+{
+	tile->x = data[0], tile->y = data[1];
+	tile->img_x = img_x, tile->img_y = img_y;
+	tile->w = width, tile->h = height;
+}
 
 /*
  * Each of these functions reads one section of dynamic objects from the cgl
@@ -387,47 +431,54 @@ void parse_tile_simple(int16_t *data, struct tile *tile,
  * objects there and return a pointer through the pointer in the second argument.
  */
 
-int cgl_read_vent(struct cgl *cgl, struct tile **out_tiles, size_t *ntiles,
-		FILE *fp)
-{
-	extern int cgl_read_one_vent(struct fan*, FILE*);
-	uint32_t num;
-	int err;
-
-	err = cgl_read_section_header("VENT", fp);
-	if (err)
-		return err;
-	err = read_integer((int32_t*)&num, 1, fp);
-	if (err)
-		goto error;
-	cgl->nfans = num;
-	*ntiles = 2 * cgl->nfans;
-	cgl->fans = calloc(num, sizeof(*cgl->fans));
-	struct tile *tiles = calloc(2 * num, sizeof(*tiles));
-	*out_tiles = tiles;
+/*
+ * All following functions share the same scaffold:
+ */
+#define BEGIN_CGL_READ_X(what, hdr, obj, howmany) \
+int cgl_read_##what(struct cgl *cgl, struct tile **out_tiles,               \
+		size_t *ntiles, FILE *fp)                                   \
+{                                                                           \
+	extern int cgl_read_one_##what(struct obj*, FILE*);                 \
+	uint32_t num;                                                       \
+	int err;                                                            \
+	err = cgl_read_section_header(#hdr, fp);                            \
+	if (err)                                                            \
+		return err;                                                 \
+	err = read_integer((int32_t*)&num, 1, fp);                          \
+	if (err)                                                            \
+		goto error;                                                 \
+	cgl->n##obj##s = num;                                               \
+	*ntiles = howmany * cgl->n##obj##s;                                 \
+	cgl->obj##s = calloc(num, sizeof(*cgl->obj##s));                    \
+	struct tile *tiles = calloc(howmany * num, sizeof(*tiles));         \
+	*out_tiles = tiles;                                                 \
 	for (size_t i = 0; i < num; ++i) {
-		/* prepare pointers to tiles */
-		cgl->fans[i].base = &tiles[2*i];
-		cgl->fans[i].pipes = &tiles[2*i + 1];
-		err = cgl_read_one_vent(&cgl->fans[i], fp);
-		if (err)
-			goto error;
-	}
-	return 0;
-error:
-	SDL_SetError("cgl VENT section corrupted (incomplete)");
-	return -EBADVENT;
+
+#define END_CGL_READ_X(what, hdr, obj, howmany) \
+		err = cgl_read_one_##what(&cgl->obj##s[i], fp);             \
+		if (err)                                                    \
+			goto error;                                         \
+	}                                                                   \
+	return 0;                                                           \
+error:                                                                      \
+	SDL_SetError("cgl " #hdr " section corrupted (incomplete)");        \
+	return -EBAD##hdr;                                                  \
 }
+
+BEGIN_CGL_READ_X(vent, VENT, fan, 2)
+	cgl->fans[i].base = &tiles[2*i];
+	cgl->fans[i].pipes = &tiles[2*i + 1];
+END_CGL_READ_X(vent, VENT, fan, 2)
 
 int cgl_read_one_vent(struct fan *fan, FILE *fp)
 {
 	int err;
-	uint8_t buf[2];
+	uint8_t buf[VENT_HDR_SIZE];
 	int16_t buf2[VENT_NUM_SHORTS];
 	size_t nread;
 
-	nread = fread(buf, sizeof(uint8_t), 2, fp);
-	if (nread < 2)
+	nread = fread(buf, sizeof(uint8_t), VENT_HDR_SIZE, fp);
+	if (nread < VENT_HDR_SIZE)
 		return -EBADVENT;
 	err = read_short((int16_t*)buf2, VENT_NUM_SHORTS, fp);
 	if (err)
@@ -441,47 +492,20 @@ int cgl_read_one_vent(struct fan *fan, FILE *fp)
 	return 0;
 }
 
-int cgl_read_magn(struct cgl *cgl, struct tile **out_tiles, size_t *ntiles,
-		FILE *fp)
-{
-	extern int cgl_read_one_magn(struct magnet*, FILE*);
-	uint32_t num;
-	int err;
-
-	err = cgl_read_section_header("MAGN", fp);
-	if (err)
-		return err;
-	err = read_integer((int32_t*)&num, 1, fp);
-	if (err)
-		goto error;
-	cgl->nmagnets = num;
-	*ntiles = 2 * cgl->nmagnets;
-	cgl->magnets = calloc(num, sizeof(*cgl->magnets));
-	struct tile *tiles = calloc(2 * num, sizeof(*tiles));
-	*out_tiles = tiles;
-	for (size_t i = 0; i < num; ++i) {
-		/* prepare pointers to tiles */
-		cgl->magnets[i].base = &tiles[2*i];
-		cgl->magnets[i].magn = &tiles[2*i + 1];
-		err = cgl_read_one_magn(&cgl->magnets[i], fp);
-		if (err)
-			goto error;
-	}
-	return 0;
-error:
-	SDL_SetError("cgl MAGN section corrupted (incomplete)");
-	return -EBADMAGN;
-}
+BEGIN_CGL_READ_X(magn, MAGN, magnet, 2)
+	cgl->magnets[i].base = &tiles[2*i];
+	cgl->magnets[i].magn = &tiles[2*i + 1];
+END_CGL_READ_X(magn, MAGN, magnet, 2)
 
 int cgl_read_one_magn(struct magnet *magnet, FILE *fp)
 {
 	int err;
-	uint8_t buf[2];
+	uint8_t buf[MAGN_HDR_SIZE];
 	int16_t buf2[MAGN_NUM_SHORTS];
 	size_t nread;
 
-	nread = fread(buf, sizeof(uint8_t), 2, fp);
-	if (nread < 2)
+	nread = fread(buf, sizeof(uint8_t), MAGN_HDR_SIZE, fp);
+	if (nread < MAGN_HDR_SIZE)
 		return -EBADMAGN;
 	err = read_short((int16_t*)buf2, MAGN_NUM_SHORTS, fp);
 	if (err)
@@ -494,47 +518,20 @@ int cgl_read_one_magn(struct magnet *magnet, FILE *fp)
 	return 0;
 }
 
-int cgl_read_dist(struct cgl *cgl, struct tile **out_tiles, size_t *ntiles,
-		FILE *fp)
-{
-	extern int cgl_read_one_dist(struct airgen*, FILE*);
-	uint32_t num;
-	int err;
-
-	err = cgl_read_section_header("DIST", fp);
-	if (err)
-		return err;
-	err = read_integer((int32_t*)&num, 1, fp);
-	if (err)
-		goto error;
-	cgl->nairgens = num;
-	*ntiles = 2 * cgl->nairgens;
-	cgl->airgens = calloc(num, sizeof(*cgl->airgens));
-	struct tile *tiles = calloc(2 * num, sizeof(*tiles));
-	*out_tiles = tiles;
-	for (size_t i = 0; i < num; ++i) {
-		/* prepare pointers to tiles */
-		cgl->airgens[i].base = &tiles[2*i];
-		cgl->airgens[i].pipes = &tiles[2*i + 1];
-		err = cgl_read_one_dist(&cgl->airgens[i], fp);
-		if (err)
-			goto error;
-	}
-	return 0;
-error:
-	SDL_SetError("cgl DIST section corrupted (incomplete)");
-	return -EBADDIST;
-}
+BEGIN_CGL_READ_X(dist, DIST, airgen, 2)
+	cgl->airgens[i].base = &tiles[2*i];
+	cgl->airgens[i].pipes = &tiles[2*i + 1];
+END_CGL_READ_X(dist, DIST, airgen, 2)
 
 int cgl_read_one_dist(struct airgen *airgen, FILE *fp)
 {
 	int err;
-	uint8_t buf[2];
+	uint8_t buf[DIST_HDR_SIZE];
 	int16_t buf2[DIST_NUM_SHORTS];
 	size_t nread;
 
-	nread = fread(buf, sizeof(uint8_t), 2, fp);
-	if (nread < 2)
+	nread = fread(buf, sizeof(uint8_t), DIST_HDR_SIZE, fp);
+	if (nread < DIST_HDR_SIZE)
 		return -EBADDIST;
 	err = read_short((int16_t*)buf2, DIST_NUM_SHORTS, fp);
 	if (err)
@@ -545,6 +542,48 @@ int cgl_read_one_dist(struct airgen *airgen, FILE *fp)
 	parse_tile(buf2 + 0x04, airgen->pipes);
 	parse_rect(buf2 + 0x0a, &airgen->bbox);
 	parse_rect(buf2 + 0x0e, &airgen->range);
+	return 0;
+}
+
+BEGIN_CGL_READ_X(cano, CANO, cannon, 4)
+	cgl->cannons[i].begin_base = &tiles[4*i];
+	cgl->cannons[i].begin_cano = &tiles[4*i + 1];
+	cgl->cannons[i].end_base   = &tiles[4*i + 2];
+	cgl->cannons[i].end_catch  = &tiles[4*i + 3];
+END_CGL_READ_X(cano, CANO, cannon, 4)
+
+int cgl_read_one_cano(struct cannon *cannon, FILE *fp)
+{
+	int err;
+	uint8_t buf[CANO_HDR_SIZE];
+	int16_t buf2[CANO_NUM_SHORTS];
+	size_t nread;
+
+	nread = fread(buf, sizeof(uint8_t), CANO_HDR_SIZE, fp);
+	if (nread < CANO_HDR_SIZE)
+		return -EBADCANO;
+	err = read_short((int16_t*)buf2, 1, fp);
+	if (err)
+		return -EBADCANO;
+	cannon->fire_rate = buf2[0];
+	nread = fread(buf, sizeof(uint8_t), 2, fp);
+	if (nread < 2)
+		return -EBADCANO;
+	cannon->speed_x = (int8_t)buf[0];
+	cannon->speed_y = (int8_t)buf[1];
+	err = read_short((int16_t*)buf2, CANO_NUM_SHORTS, fp);
+	if (err)
+		return -EBADCANO;
+	cannon->dir = buf[0] & 0x03;
+	parse_point(buf2 + 0x00, &cannon->begin, &cannon->end);
+	parse_tile_very_simple(buf2 + 0x04, cannon->begin_base,
+			24, 24, 512, 188);
+	parse_tile_simple(buf2 + 0x06, cannon->begin_cano,
+			16, 16);
+	parse_tile_very_simple(buf2 + 0x0a, cannon->end_base,
+			16, 16, 472, 196);
+	parse_tile(buf2 + 0x0c, cannon->end_catch);
+	parse_rect(buf2 + 0x12, &cannon->bbox);
 	return 0;
 }
 
