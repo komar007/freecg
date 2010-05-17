@@ -47,11 +47,15 @@ struct tile {
 	unsigned int img_x, img_y;	/* position of image in gfx file */
 	enum {
 		Static = 0,
-		Special
+		Animated
 	} type;
 	/* necessary for renderer, the number of the most recent frame in
 	 * which the tile was rendered */
 	unsigned int lframe;
+	union {
+		int cur_tex;
+		void *data;
+	} dyn;
 };
 /* 8x8 unit = 32x32 px square tile containter */
 struct block {

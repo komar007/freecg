@@ -114,6 +114,7 @@ int main(int argc, char *argv[])
 			else
 				scale_viewport(scale + SCALE_ASTEP);
 		}
+		cg_step(cg, (SDL_GetTicks() - t) / 1000.0);
 		gl_draw_scene();
 	}
 	t = SDL_GetTicks() - t;

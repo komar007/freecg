@@ -3,7 +3,13 @@
 
 #include "cgl.h"
 
-struct rocket {
+enum cg_config {
+	FAN_ANIM_INTERVAL = 66,
+	AIRGEN_ANIM_INTERVAL = 50,
+	MAGNET_ANIM_INTERVAL = 66
+};
+
+struct ship {
 	double x, y;
 	double vx, vy;
 	double ax, ay;
@@ -11,9 +17,11 @@ struct rocket {
 
 struct cg {
 	struct cgl *level;
-	struct rocket *rocket;
+	struct ship *ship;
+	double time;
 };
 
 struct cg *cg_init(struct cgl *level);
+void cg_step(struct cg *cg, double dt);
 
 #endif

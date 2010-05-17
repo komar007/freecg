@@ -28,23 +28,6 @@ void gl_change_viewport(double x, double y, double w, double h)
 	glMatrixMode(GL_MODELVIEW);
 }
 
-void gl_draw_simple_tile(struct tile *tile)
-{
-	struct texture *tex = tm_request_texture(tile->img_x, tile->img_y,
-			tile->w, tile->h);
-	glBindTexture(GL_TEXTURE_2D, tex->no);
-	glBegin(GL_QUADS);
-	tm_coord_tl(tex);
-	glVertex2f(tile->x, tile->y);
-	tm_coord_bl(tex);
-	glVertex2f(tile->x, tile->y + tile->h);
-	tm_coord_br(tex);
-	glVertex2f(tile->x + tile->w, tile->y + tile->h);
-	tm_coord_tr(tex);
-	glVertex2f(tile->x + tile->w, tile->y);
-	glEnd();
-}
-
 void gl_draw_scene()
 {
 	extern void fix_lframes(struct cgl*);
@@ -76,10 +59,45 @@ void fix_lframes(struct cgl *level)
 
 void draw_block(struct tile *tiles[])
 {
+	extern void dispatch_drawing(struct tile*);
 	for (size_t i = 0; tiles[i]; ++i) {
 		if (tiles[i]->lframe != gl.frame) {
-			gl_draw_simple_tile(tiles[i]);
+			dispatch_drawing(tiles[i]);
 			tiles[i]->lframe = gl.frame;
 		}
 	}
+}
+
+void draw_simple_tile(struct tile *tile, int img_x, int img_y)
+{
+	struct texture *tex = tm_request_texture(img_x, img_y,
+			tile->w, tile->h);
+	glBindTexture(GL_TEXTURE_2D, tex->no);
+	glBegin(GL_QUADS);
+	tm_coord_tl(tex);
+	glVertex2f(tile->x, tile->y);
+	tm_coord_bl(tex);
+	glVertex2f(tile->x, tile->y + tile->h);
+	tm_coord_br(tex);
+	glVertex2f(tile->x + tile->w, tile->y + tile->h);
+	tm_coord_tr(tex);
+	glVertex2f(tile->x + tile->w, tile->y);
+	glEnd();
+}
+
+void dispatch_drawing(struct tile *tile)
+{
+	void draw_animated_tile(struct tile*);
+	switch (tile->type) {
+	case Static:
+		draw_simple_tile(tile, tile->img_x, tile->img_y); break;
+	case Animated:
+		draw_animated_tile(tile); break;
+	}
+}
+
+void draw_animated_tile(struct tile *tile)
+{
+	size_t img_x = tile->img_x + tile->dyn.cur_tex * tile->w;
+	draw_simple_tile(tile, img_x, tile->img_y);
 }
