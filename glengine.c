@@ -30,17 +30,17 @@ void gl_change_viewport(double x, double y, double w, double h)
 
 void gl_draw_simple_tile(struct tile *tile)
 {
-	GLuint texno = tm_request_texture(tile->img_x, tile->img_y,
+	struct texture *tex = tm_request_texture(tile->img_x, tile->img_y,
 			tile->w, tile->h);
-	glBindTexture(GL_TEXTURE_2D, texno);
+	glBindTexture(GL_TEXTURE_2D, tex->no);
 	glBegin(GL_QUADS);
-	glTexCoord2f(0.0, 0.0);
+	tm_coord_tl(tex);
 	glVertex2f(tile->x, tile->y);
-	glTexCoord2f(0.0, 1.0);
+	tm_coord_bl(tex);
 	glVertex2f(tile->x, tile->y + tile->h);
-	glTexCoord2f(1.0, 1.0);
+	tm_coord_br(tex);
 	glVertex2f(tile->x + tile->w, tile->y + tile->h);
-	glTexCoord2f(1.0, 0.0);
+	tm_coord_tr(tex);
 	glVertex2f(tile->x + tile->w, tile->y);
 	glEnd();
 }

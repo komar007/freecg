@@ -10,6 +10,9 @@ enum config {
 
 struct texture {
 	GLuint no;	/* opengl texture number */
+	/* How much of an opengl texture is used to hold actual graphics
+	 * (textures must have power-of-two dimensions */
+	double w_ratio, h_ratio;
 	size_t refcount;
 };
 
@@ -19,7 +22,11 @@ struct texture_manager {
 };
 
 void tm_init(const SDL_Surface *);
-GLuint tm_request_texture(size_t x, size_t y, size_t w, size_t h);
+struct texture *tm_request_texture(size_t x, size_t y, size_t w, size_t h);
+void tm_coord_tl(struct texture *);
+void tm_coord_bl(struct texture *);
+void tm_coord_br(struct texture *);
+void tm_coord_tr(struct texture *);
 
 extern struct texture_manager texmgr;
 
