@@ -34,7 +34,6 @@ struct texture *tm_request_texture(size_t x, size_t y, size_t w, size_t h)
 			SDL_UnlockSurface(tile);
 		texmgr.lookup_table[hash].w_ratio = (double)w / tex_w;
 		texmgr.lookup_table[hash].h_ratio = (double)h / tex_h ;
-		printf("%i %i\n", tex_w, tex_h);
 		SDL_FreeSurface(tile);
 	}
 	return &texmgr.lookup_table[hash];
