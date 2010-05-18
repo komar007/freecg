@@ -1,4 +1,4 @@
-#include "glengine.h"
+#include "graphics.h"
 #include "texmgr.h"
 #include "gfx.h"
 

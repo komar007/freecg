@@ -1,5 +1,5 @@
 #include "opencg.h"
-#include "glengine.h"
+#include "graphics.h"
 #include "texmgr.h"
 #include <assert.h>
 #include <math.h>
@@ -100,4 +100,22 @@ void draw_animated_tile(struct tile *tile)
 {
 	size_t img_x = tile->img_x + tile->dyn.cur_tex * tile->w;
 	draw_simple_tile(tile, img_x, tile->img_y);
+}
+
+/* Animators called from cg */
+
+void cg_animate_fan(struct tile *tile, double time)
+{
+	int phase = round(time * 1000 / FAN_ANIM_INTERVAL);
+	tile->dyn.cur_tex = fan_anim_order[phase % 3];
+}
+void cg_animate_magnet(struct tile *tile, double time)
+{
+	int phase = round(time * 1000 / MAGNET_ANIM_INTERVAL);
+	tile->dyn.cur_tex = magnet_anim_order[phase % 4];
+}
+void cg_animate_airgen(struct tile *tile, double time)
+{
+	int phase = round(time * 1000 / AIRGEN_ANIM_INTERVAL);
+	tile->dyn.cur_tex = airgen_anim_order[phase % 8];
 }
