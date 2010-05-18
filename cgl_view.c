@@ -98,6 +98,7 @@ int main(int argc, char *argv[])
 	gl_init(cg);
 	int t = SDL_GetTicks(),
 	    nt = t,
+	    time = t,
 	    fr = 0;
 	running = 1;
 	mouse = 0;
@@ -116,8 +117,9 @@ int main(int argc, char *argv[])
 			else
 				scale_viewport(scale + SCALE_ASTEP);
 		}
-		nt = SDL_GetTicks() - t;
-		cg_step(cg, nt / 1000.0);
+		time = SDL_GetTicks();
+		nt = time - t;
+		cg_step(cg, time / 1000.0);
 		if (nt > 1000) {
 			printf("%d frames in %d ms - %.1f fps\n",
 					gl.frame - fr, nt, (float)(gl.frame - fr) / nt * 1000);
