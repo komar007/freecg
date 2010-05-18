@@ -26,6 +26,13 @@ enum {
 #define CGL_MAGIC "\xe1\xd2\xc3\xb4"
 
 enum {
+	SHIP_ON_IMG_X = 0,
+	SHIP_ON_IMG_Y = 92,
+	SHIP_OFF_IMG_X = 0,
+	SHIP_OFF_IMG_Y = 115
+};
+
+enum {
 	EBADHDR = 1,
 	EBADSHDR,
 	EBADSIZE,

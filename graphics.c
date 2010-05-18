@@ -1,5 +1,6 @@
 #include "opencg.h"
 #include "graphics.h"
+#include "geometry.h"
 #include "texmgr.h"
 #include <assert.h>
 #include <math.h>
@@ -14,6 +15,8 @@ void gl_init(struct cg* cg)
 	gl.cg = cg;
 	glEnable(GL_TEXTURE_2D);
 	glDisable(GL_DEPTH_TEST);
+	glEnable(GL_BLEND);
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 }
 
 void gl_change_viewport(double x, double y, double w, double h)
@@ -32,6 +35,7 @@ void gl_draw_scene()
 {
 	extern void fix_lframes(struct cgl*);
 	extern void draw_block(struct tile *[]);
+	extern void draw_ship(void);
 	if (gl.frame == 0)
 		fix_lframes(gl.cg->level);
 	double x1 = fmax(gl.viewport.x, 0),
@@ -46,6 +50,7 @@ void gl_draw_scene()
 	for (size_t j = y1/BLOCK_SIZE; j*BLOCK_SIZE < y2; ++j)
 		for (size_t i = x1/BLOCK_SIZE; i*BLOCK_SIZE < x2; ++i)
 			draw_block(l->blocks[j][i]);
+	draw_ship();
 	SDL_GL_SwapBuffers();
 	gl.frame++;
 }
@@ -83,6 +88,13 @@ void draw_simple_tile(struct tile *tile, int img_x, int img_y)
 	tm_coord_tr(tex);
 	glVertex2f(tile->x + tile->w, tile->y);
 	glEnd();
+}
+
+void draw_ship(void)
+{
+	struct tile tile;
+	ship_to_tile(gl.cg->ship, &tile);
+	draw_simple_tile(&tile, tile.img_x, tile.img_y);
 }
 
 void dispatch_drawing(struct tile *tile)

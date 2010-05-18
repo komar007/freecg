@@ -411,18 +411,18 @@ void parse_tile(int16_t *data, struct tile *tile)
 	tile->img_x = data[4], tile->img_y = data[5];
 }
 void parse_tile_simple(int16_t *data, struct tile *tile,
-		size_t width, size_t height)
+		unsigned width, unsigned height)
 {
 	tile->x = data[0], tile->y = data[1];
 	tile->img_x = data[2], tile->img_y = data[3];
 	tile->w = width, tile->h = height;
 }
 void parse_tile_very_simple(int16_t *data, struct tile *tile,
-		size_t width, size_t height, size_t img_x, size_t img_y)
+		unsigned w, unsigned h, unsigned img_x, unsigned img_y)
 {
 	tile->x = data[0], tile->y = data[1];
 	tile->img_x = img_x, tile->img_y = img_y;
-	tile->w = width, tile->h = height;
+	tile->w = w, tile->h = h;
 }
 
 /*
@@ -597,8 +597,8 @@ int cgl_read_one_cano(struct cannon *cannon, FILE *fp)
 
 void cgl_preprocess(struct cgl *cgl)
 {
-	size_t width_px = cgl->width * CGL_BLOCK_SIZE,
-	       height_px = cgl->height * CGL_BLOCK_SIZE;
+	unsigned width_px = cgl->width * CGL_BLOCK_SIZE,
+		 height_px = cgl->height * CGL_BLOCK_SIZE;
 	/* express the dimensions of level in new block units (BLOCK_SIZE
 	 * instead of CGL_BLOCK_SIZE */
 	cgl->width = (size_t)ceil((double)width_px / BLOCK_SIZE);
