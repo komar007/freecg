@@ -1,7 +1,7 @@
 #ifndef CGL_H
 #define CGL_H
 
-#include "opencg.h"
+#include "basic_types.h"
 #include <stdio.h>
 #include <stdint.h>
 

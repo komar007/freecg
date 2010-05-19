@@ -1,5 +1,6 @@
 #include "cg.h"
 #include "graphics.h"
+#include "geometry.h"
 #include <stdlib.h>
 #include <math.h>
 
@@ -9,8 +10,9 @@ struct cg *cg_init(struct cgl *level)
 	cg->level = level;
 	cg->time = 0.0;
 	cg->ship = calloc(1, sizeof(*cg->ship));
-	cg->ship->w = SHIP_W;
-	cg->ship->h = SHIP_H;
+	//cg->ship->vx = 10;
+	//cg->ship->vy = 10;
+	cg->ship->engine = 1;
 	return cg;
 }
 
@@ -24,20 +26,30 @@ void ship_step(struct ship* r, double dt)
 
 void cg_detect_collisions(struct cg *cg)
 {
-	extern void cg_detect_collisions_block(struct tile**);
+	extern void cg_detect_collisions_block(struct cg*, struct tile**);
 	size_t x = cg->ship->x / BLOCK_SIZE,
 	       y = cg->ship->y / BLOCK_SIZE;
-	unsigned end_x = cg->ship->x + cg->ship->w,
-		 end_y = cg->ship->y + cg->ship->h;
+	unsigned end_x = cg->ship->x + SHIP_W,
+		 end_y = cg->ship->y + SHIP_H;
 	for (size_t j = y; j*BLOCK_SIZE < end_y; ++j)
 		for (size_t i = x; i*BLOCK_SIZE < end_x; ++i)
-			cg_detect_collisions_block(cg->level->blocks[j][i]);
+			cg_detect_collisions_block(cg, cg->level->blocks[j][i]);
 }
 
-void cg_detect_collisions_block(struct tile **blocks)
+void cg_detect_collisions_block(struct cg *cg, struct tile **blocks)
 {
+	struct rect r;
+	struct tile shipt;
 	for (size_t i = 0; blocks[i] != NULL; ++i) {
-		
+		ship_to_tile(cg->ship, &shipt);
+		if (tiles_intersect(&shipt, blocks[i], &r)) {
+			printf("1\n");
+			printf("Collision %i %i %i %i, %i %i %i %i\n",
+					shipt.x, shipt.y, shipt.w, shipt.h,
+					blocks[i]->x, blocks[i]->y,
+					blocks[i]->w, blocks[i]->h);
+		} else
+			printf("0\n");
 	}
 }
 

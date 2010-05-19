@@ -1,13 +1,11 @@
-#include "opencg.h"
 #include "graphics.h"
 #include "geometry.h"
 #include "texmgr.h"
 #include <assert.h>
 #include <math.h>
-#include <SDL/SDL.h>
-#include <SDL/SDL_opengl.h>
 
 struct glengine gl;
+void draw_sprite(double, double, double, double, int, int);
 
 void gl_init(struct cg* cg)
 {
@@ -61,11 +59,14 @@ void fix_lframes(struct cgl *level)
 		level->tiles[i].lframe = 0;
 	gl.frame = 1;
 }
-
+/* Each tile may be referenced by many blocks. This function makes sure each
+ * tile is drawn to the buffer only once */
 void draw_block(struct tile *tiles[])
 {
 	extern void dispatch_drawing(struct tile*);
 	for (size_t i = 0; tiles[i]; ++i) {
+		/* if the tile has not been drawn in current frame yet, draw
+		 * and update tile's frame number */
 		if (tiles[i]->lframe != gl.frame) {
 			dispatch_drawing(tiles[i]);
 			tiles[i]->lframe = gl.frame;
@@ -73,28 +74,33 @@ void draw_block(struct tile *tiles[])
 	}
 }
 
-void draw_simple_tile(struct tile *tile, int img_x, int img_y)
-{
-	struct texture *tex = tm_request_texture(img_x, img_y,
-			tile->w, tile->h);
-	glBindTexture(GL_TEXTURE_2D, tex->no);
-	glBegin(GL_QUADS);
-	tm_coord_tl(tex);
-	glVertex2f(tile->x, tile->y);
-	tm_coord_bl(tex);
-	glVertex2f(tile->x, tile->y + tile->h);
-	tm_coord_br(tex);
-	glVertex2f(tile->x + tile->w, tile->y + tile->h);
-	tm_coord_tr(tex);
-	glVertex2f(tile->x + tile->w, tile->y);
-	glEnd();
-}
-
 void draw_ship(void)
 {
 	struct tile tile;
-	ship_to_tile(gl.cg->ship, &tile);
-	draw_simple_tile(&tile, tile.img_x, tile.img_y);
+	ship_to_tile(gl.cg->ship, &tile); /* to get tex coordinates */
+	draw_sprite(gl.cg->ship->x, gl.cg->ship->y,
+			SHIP_W, SHIP_H, tile.img_x, tile.img_y);
+}
+
+void draw_sprite(double x, double y, double w, double h, int img_x, int img_y)
+{
+	struct texture *tex = tm_request_texture(img_x, img_y, (int)w, (int)h);
+	glBindTexture(GL_TEXTURE_2D, tex->no);
+	glBegin(GL_QUADS);
+	tm_coord_tl(tex);
+	glVertex2f(x, y);
+	tm_coord_bl(tex);
+	glVertex2f(x, y + h);
+	tm_coord_br(tex);
+	glVertex2f(x + w, y + h);
+	tm_coord_tr(tex);
+	glVertex2f(x + w, y);
+	glEnd();
+}
+
+void draw_simple_tile(struct tile *tile, int img_x, int img_y)
+{
+	draw_sprite(tile->x, tile->y, tile->w, tile->h, img_x, img_y);
 }
 
 void dispatch_drawing(struct tile *tile)

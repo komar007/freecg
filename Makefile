@@ -3,7 +3,7 @@ WARN=-Wall -Wextra
 LIBS=-lm `sdl-config --libs` -lGL
 CFLAGS=`sdl-config --cflags` -O2 -pedantic -std=c99 $(WARN)
 SOURCES=cgl.c cgl_dump.c gfx.c cgl_view.c graphics.c texmgr.c cg.c geometry.c
-HEADERS=cgl.h gfx.h texmgr.h graphics.h cg.h opencg.h geometry.h
+HEADERS=cgl.h gfx.h texmgr.h graphics.h cg.h geometry.h basic_types.h
 FILES=$(SOURCES) $(HEADERS)
 
 all: dep

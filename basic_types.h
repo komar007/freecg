@@ -1,5 +1,5 @@
-#ifndef OPENCG_H
-#define OPENCG_H
+#ifndef BASIC_TYPES_H
+#define BASIC_TYPES_H
 
 typedef struct vector {
 	int x,

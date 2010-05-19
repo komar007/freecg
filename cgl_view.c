@@ -37,10 +37,14 @@ void process_event(SDL_Event *e)
 		running = 0;
 		break;
 	case SDL_MOUSEMOTION:
-		if (mouse)
+		if (mouse) {
 			gl_change_viewport(gl.viewport.x - e->motion.xrel/scale,
 				gl.viewport.y - e->motion.yrel/scale,
 				gl.viewport.w, gl.viewport.h);
+		} else {
+			gl.cg->ship->x += e->motion.xrel/scale;
+			gl.cg->ship->y += e->motion.yrel/scale;
+		}
 		break;
 	case SDL_MOUSEBUTTONUP:
 		switch (e->button.button) {

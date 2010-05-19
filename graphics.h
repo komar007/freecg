@@ -19,6 +19,11 @@ void gl_draw_scene();
 extern struct glengine gl;
 
 /* Animators */
+enum graphics_config {
+	FAN_ANIM_INTERVAL = 66,
+	AIRGEN_ANIM_INTERVAL = 50,
+	MAGNET_ANIM_INTERVAL = 66
+};
 static const int magnet_anim_order[] = {0, 1, 2, 1};
 static const int fan_anim_order[] = {0, 1, 2};
 static const int airgen_anim_order[] = {0, 1, 2, 3, 4, 5, 6, 7};
