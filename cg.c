@@ -27,12 +27,14 @@ void ship_step(struct ship* r, double dt)
 void cg_detect_collisions(struct cg *cg)
 {
 	extern void cg_detect_collisions_block(struct cg*, struct tile**);
-	size_t x = cg->ship->x / BLOCK_SIZE,
-	       y = cg->ship->y / BLOCK_SIZE;
-	unsigned end_x = cg->ship->x + SHIP_W,
-		 end_y = cg->ship->y + SHIP_H;
-	for (size_t j = y; j*BLOCK_SIZE < end_y; ++j)
-		for (size_t i = x; i*BLOCK_SIZE < end_x; ++i)
+	size_t x = max(0, cg->ship->x / BLOCK_SIZE),
+	       y = max(0, cg->ship->y / BLOCK_SIZE);
+	int end_x = min(cg->ship->x + SHIP_W,
+			cg->level->width * BLOCK_SIZE),
+	    end_y = min(cg->ship->y + SHIP_H,
+			cg->level->height * BLOCK_SIZE);
+	for (size_t j = y; (signed)j*BLOCK_SIZE < end_y; ++j)
+		for (size_t i = x; (signed)i*BLOCK_SIZE < end_x; ++i)
 			cg_detect_collisions_block(cg, cg->level->blocks[j][i]);
 }
 

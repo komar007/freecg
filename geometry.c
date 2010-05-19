@@ -3,15 +3,6 @@
 #include "cgl.h"
 #include <math.h>
 
-inline int max(int a, int b)
-{
-	return a > b ? a : b;
-}
-inline int min(int a, int b)
-{
-	return a < b ? a : b;
-}
-
 void ship_to_tile(const struct ship *s, struct tile *t)
 {
 	t->w = SHIP_W, t->h = SHIP_H;

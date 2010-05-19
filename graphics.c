@@ -36,8 +36,8 @@ void gl_draw_scene()
 	extern void draw_ship(void);
 	if (gl.frame == 0)
 		fix_lframes(gl.cg->level);
-	double x1 = fmax(gl.viewport.x, 0),
-	       y1 = fmax(gl.viewport.y, 0),
+	double x1 = fmax(0, gl.viewport.x),
+	       y1 = fmax(0, gl.viewport.y),
 	       x2 = fmin(gl.viewport.x + gl.viewport.w,
 			       gl.cg->level->width * BLOCK_SIZE),
 	       y2 = fmin(gl.viewport.y + gl.viewport.h,
