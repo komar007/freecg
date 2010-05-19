@@ -58,11 +58,11 @@ void cg_step(struct cg *cg, double time)
 	double dt = time - cg->time;
 
 	for (size_t i = 0; i < cg->level->nmagnets; ++i)
-		cg_animate_magnet(cg->level->magnets[i].magn, time);
+		cg_animate_magnet(&cg->level->magnets[i], time);
 	for (size_t i = 0; i < cg->level->nfans; ++i)
-		cg_animate_fan(cg->level->fans[i].base, time);
+		cg_animate_fan(&cg->level->fans[i], time);
 	for (size_t i = 0; i < cg->level->nairgens; ++i)
-		cg_animate_airgen(cg->level->airgens[i].base, time);
+		cg_animate_airgen(&cg->level->airgens[i], time);
 	ship_step(cg->ship, dt);
 	cg_detect_collisions(cg);
 	cg->time = time;

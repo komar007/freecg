@@ -105,35 +105,29 @@ void draw_simple_tile(struct tile *tile, int img_x, int img_y)
 
 void dispatch_drawing(struct tile *tile)
 {
-	void draw_animated_tile(struct tile*);
 	switch (tile->type) {
-	case Static:
+	case Simple:
 		draw_simple_tile(tile, tile->img_x, tile->img_y); break;
-	case Animated:
-		draw_animated_tile(tile); break;
 	}
-}
-
-void draw_animated_tile(struct tile *tile)
-{
-	size_t img_x = tile->img_x + tile->dyn.cur_tex * tile->w;
-	draw_simple_tile(tile, img_x, tile->img_y);
 }
 
 /* Animators called from cg */
 
-void cg_animate_fan(struct tile *tile, double time)
+void cg_animate_fan(struct fan *fan, double time)
 {
 	int phase = round(time * 1000 / FAN_ANIM_INTERVAL);
-	tile->dyn.cur_tex = fan_anim_order[phase % 3];
+	int cur_tex = fan_anim_order[phase % 3];
+	fan->base->img_x = fan->img_x + cur_tex * fan->base->w;
 }
-void cg_animate_magnet(struct tile *tile, double time)
+void cg_animate_magnet(struct magnet *magnet, double time)
 {
 	int phase = round(time * 1000 / MAGNET_ANIM_INTERVAL);
-	tile->dyn.cur_tex = magnet_anim_order[phase % 4];
+	int cur_tex = magnet_anim_order[phase % 4];
+	magnet->magn->img_x = magnet->img_x + cur_tex * magnet->magn->w;
 }
-void cg_animate_airgen(struct tile *tile, double time)
+void cg_animate_airgen(struct airgen *airgen, double time)
 {
 	int phase = round(time * 1000 / AIRGEN_ANIM_INTERVAL);
-	tile->dyn.cur_tex = airgen_anim_order[phase % 8];
+	int cur_tex = airgen_anim_order[phase % 8];
+	airgen->base->img_x = airgen->img_x + cur_tex * airgen->base->w;
 }

@@ -487,8 +487,7 @@ int cgl_read_one_vent(struct fan *fan, FILE *fp)
 	fan->dir = buf[0] & 0x03;
 	parse_tile_simple(buf2 + 0x00, fan->base, 48, 48);
 	parse_tile(buf2 + 0x04, fan->pipes);
-	fan->base->type = Animated;
-	fan->base->dyn.cur_tex = 0;
+	fan->img_x = fan->base->img_x;
 	parse_rect(buf2 + 0x0a, &fan->bbox);
 	parse_rect(buf2 + 0x0e, &fan->range);
 	return 0;
@@ -515,8 +514,7 @@ int cgl_read_one_magn(struct magnet *magnet, FILE *fp)
 	magnet->dir = buf[0] & 0x03;
 	parse_tile_simple(buf2 + 0x00, magnet->base, 32, 32);
 	parse_tile(buf2 + 0x04, magnet->magn);
-	magnet->magn->type = Animated;
-	magnet->magn->dyn.cur_tex = 0;
+	magnet->img_x = magnet->magn->img_x;
 	parse_rect(buf2 + 0x0a, &magnet->bbox);
 	parse_rect(buf2 + 0x0e, &magnet->range);
 	return 0;
@@ -543,9 +541,8 @@ int cgl_read_one_dist(struct airgen *airgen, FILE *fp)
 	airgen->spin = (buf[0] >> 4) & 0x01;
 	airgen->dir = buf[0] & 0x03;
 	parse_tile_simple(buf2 + 0x00, airgen->base, 40, 40);
-	airgen->base->type = Animated;
-	airgen->base->dyn.cur_tex = 0;
 	parse_tile(buf2 + 0x04, airgen->pipes);
+	airgen->img_x = airgen->base->img_x;
 	parse_rect(buf2 + 0x0a, &airgen->bbox);
 	parse_rect(buf2 + 0x0e, &airgen->range);
 	return 0;

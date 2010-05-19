@@ -53,16 +53,13 @@ struct tile {
 	unsigned int w, h;
 	unsigned int img_x, img_y;	/* position of image in gfx file */
 	enum {
-		Static = 0,
+		Simple = 0,
 		Animated
 	} type;
 	/* necessary for renderer, the number of the most recent frame in
 	 * which the tile was rendered */
 	unsigned int lframe;
-	union {
-		int cur_tex;
-		void *data;
-	} dyn;
+	void *data;
 };
 /* 8x8 unit = 32x32 px square tile containter */
 struct block {
@@ -83,17 +80,19 @@ struct fan {
 		Low
 	} power;
 	enum dir dir;
+	int img_x; /* x position of primary texture */
 	struct tile *base,
-		    *pipes;
-	struct rect bbox,
-		    range;
+		    *pipes; /* unused */
+	struct rect bbox, /* unused */
+		    range; /* unused */
 };
 struct magnet {
 	enum dir dir;
-	struct tile *base,
+	int img_x; /* x position of primary texture */
+	struct tile *base, /* unused */
 		    *magn;
-	struct rect bbox,
-		    range;
+	struct rect bbox, /* unused */
+		    range; /* unused */
 };
 struct airgen {
 	enum {
@@ -101,10 +100,11 @@ struct airgen {
 		CW
 	} spin;
 	enum dir dir;
+	int img_x; /* position of primary texture */
 	struct tile *base,
-		    *pipes;
-	struct rect bbox,
-		    range;
+		    *pipes; /* unused */
+	struct rect bbox, /* unused */
+		    range; /* unused */
 };
 struct cannon {
 	enum dir dir;

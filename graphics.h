@@ -28,8 +28,8 @@ static const int magnet_anim_order[] = {0, 1, 2, 1};
 static const int fan_anim_order[] = {0, 1, 2};
 static const int airgen_anim_order[] = {0, 1, 2, 3, 4, 5, 6, 7};
 
-void cg_animate_fan(struct tile*, double);
-void cg_animate_magnet(struct tile*, double);
-void cg_animate_airgen(struct tile*, double);
+void cg_animate_fan(struct fan*, double);
+void cg_animate_magnet(struct magnet*, double);
+void cg_animate_airgen(struct airgen*, double);
 
 #endif
