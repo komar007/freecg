@@ -45,8 +45,8 @@ SDL_Surface *read_gfx(const char *path)
 	SDL_SetColorKey(bmp, SDL_SRCCOLORKEY,
 			SDL_MapRGB(bmp->format, 179, 179, 0));
 	SDL_FreeRW(rw);
-	gfx = SDL_CreateRGBSurface(0, bmp->w, bmp->h, 32,
-			0x000000ff, 0x0000ff00, 0x00ff0000, 0xff000000);
+	gfx = SDL_CreateRGBSurface(SDL_SWSURFACE, bmp->w, bmp->h, 32,
+			RMASK, GMASK, BMASK, AMASK);
 	SDL_BlitSurface(bmp, NULL, gfx, NULL);
 	/* Make sure all next blits copy all channels, including alpha */
 	SDL_SetAlpha(gfx, 0, 255);
@@ -55,4 +55,10 @@ cleanup:
 	fclose(fp);
 	free(buffer);
 	return gfx;
+}
+
+uint8_t gfx_get_alpha(SDL_Surface *surf, int x, int y)
+{
+	uint32_t *pixel = (uint32_t*)((uint8_t*)surf->pixels + y*surf->pitch) + x;
+	return (*pixel & AMASK) != 0;
 }

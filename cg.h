@@ -8,6 +8,7 @@ struct ship {
 	double vx, vy;
 	double ax, ay;
 	int engine;
+	unsigned char collision_map[2][SHIP_ANIM_LEN][SHIP_H][SHIP_W];
 };
 
 struct cg {

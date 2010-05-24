@@ -5,11 +5,6 @@
 #include "cgl.h"
 #include "basic_types.h"
 
-enum {
-	SHIP_W = 23,
-	SHIP_H = 23
-};
-
 inline int max(int a, int b)
 {
 	return a > b ? a : b;

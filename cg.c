@@ -6,14 +6,17 @@
 
 struct cg *cg_init(struct cgl *level)
 {
+	extern void cg_init_ship(struct ship*);
 	struct cg *cg = calloc(1, sizeof(*cg));
 	cg->level = level;
 	cg->time = 0.0;
 	cg->ship = calloc(1, sizeof(*cg->ship));
-	//cg->ship->vx = 10;
-	//cg->ship->vy = 10;
-	cg->ship->engine = 1;
+	cg_init_ship(cg->ship);
 	return cg;
+}
+void cg_init_ship(struct ship *s)
+{
+	s->engine = 1;
 }
 
 void ship_step(struct ship* r, double dt)

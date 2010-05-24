@@ -1,4 +1,5 @@
 #include "texmgr.h"
+#include "gfx.h"
 #include <math.h>
 
 struct texture_manager texmgr;
@@ -18,7 +19,7 @@ struct texture *tm_request_texture(size_t x, size_t y, size_t w, size_t h)
 		int tex_w = 1 << (int)ceil(log2(w)),
 		    tex_h = 1 << (int)ceil(log2(h));
 		SDL_Surface *tile = SDL_CreateRGBSurface(0, tex_w, tex_h, 32,
-				0x000000ff, 0x0000ff00, 0x00ff0000, 0xff000000);
+				RMASK, GMASK, BMASK, AMASK);
 		SDL_Rect rect = {
 			.x = x,
 			.y = y,

@@ -29,7 +29,10 @@ enum {
 	SHIP_ON_IMG_X = 0,
 	SHIP_ON_IMG_Y = 92,
 	SHIP_OFF_IMG_X = 0,
-	SHIP_OFF_IMG_Y = 115
+	SHIP_OFF_IMG_Y = 115,
+	SHIP_ANIM_LEN = 24,
+	SHIP_W = 23,
+	SHIP_H = 23
 };
 
 enum {
