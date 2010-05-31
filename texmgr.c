@@ -53,21 +53,3 @@ GLuint load_texture(SDL_Surface *image)
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
 	return texno;
 }
-
-void tm_coord_tl(struct texture *tex)
-{
-	glTexCoord2f(0.0, 0.0);
-}
-void tm_coord_bl(struct texture *tex)
-{
-	glTexCoord2f(0.0, tex->h_ratio);
-}
-void tm_coord_br(struct texture *tex)
-{
-	glTexCoord2f(tex->w_ratio, tex->h_ratio);
-}
-void tm_coord_tr(struct texture *tex)
-{
-	glTexCoord2f(tex->w_ratio, 0.0);
-}
-

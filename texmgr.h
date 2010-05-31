@@ -23,10 +23,23 @@ struct texture_manager {
 
 void tm_init(const SDL_Surface *);
 struct texture *tm_request_texture(size_t x, size_t y, size_t w, size_t h);
-void tm_coord_tl(struct texture *);
-void tm_coord_bl(struct texture *);
-void tm_coord_br(struct texture *);
-void tm_coord_tr(struct texture *);
+
+inline void tm_coord_tl(struct texture *tex)
+{
+	glTexCoord2f(0.0, 0.0);
+}
+inline void tm_coord_bl(struct texture *tex)
+{
+	glTexCoord2f(0.0, tex->h_ratio);
+}
+inline void tm_coord_br(struct texture *tex)
+{
+	glTexCoord2f(tex->w_ratio, tex->h_ratio);
+}
+inline void tm_coord_tr(struct texture *tex)
+{
+	glTexCoord2f(tex->w_ratio, 0.0);
+}
 
 extern struct texture_manager texmgr;
 
