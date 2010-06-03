@@ -1,17 +1,14 @@
 #include "cg.h"
-#include "graphics.h"
 #include "geometry.h"
 #include <stdlib.h>
 #include <math.h>
 
 struct cg *cg_init(struct cgl *level)
 {
-	extern void cg_init_ship(struct ship*);
 	struct cg *cg = calloc(1, sizeof(*cg));
 	cg->level = level;
 	cg->time = 0.0;
 	cg->ship = calloc(1, sizeof(*cg->ship));
-	cg_init_ship(cg->ship);
 	return cg;
 }
 void cg_init_ship(struct ship *s)
@@ -62,12 +59,6 @@ void cg_step(struct cg *cg, double time)
 {
 	double dt = time - cg->time;
 
-	for (size_t i = 0; i < cg->level->nmagnets; ++i)
-		cg_animate_magnet(&cg->level->magnets[i], time);
-	for (size_t i = 0; i < cg->level->nfans; ++i)
-		cg_animate_fan(&cg->level->fans[i], time);
-	for (size_t i = 0; i < cg->level->nairgens; ++i)
-		cg_animate_airgen(&cg->level->airgens[i], time);
 	ship_step(cg->ship, dt);
 	cg_detect_collisions(cg);
 	cg->time = time;

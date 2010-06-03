@@ -29,11 +29,22 @@ void gl_change_viewport(double x, double y, double w, double h)
 	glMatrixMode(GL_MODELVIEW);
 }
 
+void gl_animate_tiles()
+{
+	for (size_t i = 0; i < gl.cg->level->nmagnets; ++i)
+		cg_animate_magnet(&gl.cg->level->magnets[i], gl.cg->time);
+	for (size_t i = 0; i < gl.cg->level->nfans; ++i)
+		cg_animate_fan(&gl.cg->level->fans[i], gl.cg->time);
+	for (size_t i = 0; i < gl.cg->level->nairgens; ++i)
+		cg_animate_airgen(&gl.cg->level->airgens[i], gl.cg->time);
+}
+
 void gl_draw_scene()
 {
 	extern void fix_lframes(struct cgl*);
 	extern void draw_block(struct tile *[]);
 	extern void draw_ship(void);
+	gl_animate_tiles();
 	if (gl.frame == 0)
 		fix_lframes(gl.cg->level);
 	double x1 = fmax(0, gl.viewport.x),
@@ -111,7 +122,7 @@ void dispatch_drawing(struct tile *tile)
 	}
 }
 
-/* Animators called from cg */
+/* Animators */
 
 void cg_animate_fan(struct fan *fan, double time)
 {
