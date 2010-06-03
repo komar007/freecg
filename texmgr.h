@@ -24,7 +24,7 @@ struct texture_manager {
 void tm_init(const SDL_Surface *);
 struct texture *tm_request_texture(size_t x, size_t y, size_t w, size_t h);
 
-inline void tm_coord_tl(struct texture *tex)
+inline void tm_coord_tl(struct texture __attribute__((unused)) *tex)
 {
 	glTexCoord2f(0.0, 0.0);
 }

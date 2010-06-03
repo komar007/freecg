@@ -1,6 +1,4 @@
 #include "geometry.h"
-#include "cg.h"
-#include "cgl.h"
 #include <math.h>
 
 void ship_to_tile(const struct ship *s, struct tile *t)

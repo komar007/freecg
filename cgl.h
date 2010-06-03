@@ -57,7 +57,6 @@ struct tile {
 	unsigned int img_x, img_y;	/* position of image in gfx file */
 	enum {
 		Simple = 0,
-		Animated
 	} type;
 	/* necessary for renderer, the number of the most recent frame in
 	 * which the tile was rendered */

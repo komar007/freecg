@@ -1,7 +1,6 @@
 #ifndef GRAPHICS_H
 #define GRAPHICS_H
 
-#include "cgl.h"
 #include "cg.h"
 #include <SDL/SDL.h>
 #include <SDL/SDL_opengl.h>
