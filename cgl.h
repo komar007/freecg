@@ -58,6 +58,10 @@ struct tile {
 	enum {
 		Simple = 0,
 	} type;
+	enum {
+		Rect = 0,
+		Bitmap
+	} collision_test;
 	/* necessary for renderer, the number of the most recent frame in
 	 * which the tile was rendered */
 	unsigned int lframe;

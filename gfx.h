@@ -1,6 +1,7 @@
 #ifndef GFX_H
 #define GFX_H
 
+#include "cg.h"
 #include <SDL/SDL.h>
 
 #if SDL_BYTEORDER == SDL_BIG_ENDIAN
@@ -16,6 +17,6 @@
 #endif
 
 SDL_Surface *read_gfx(const char *path);
-uint8_t gfx_get_alpha(SDL_Surface*, int, int);
+int make_collision_map(SDL_Surface *gfx, collision_map);
 
 #endif

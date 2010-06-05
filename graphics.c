@@ -89,8 +89,8 @@ void draw_ship(void)
 {
 	struct tile tile;
 	ship_to_tile(gl.cg->ship, &tile); /* to get tex coordinates */
-	draw_sprite(gl.cg->ship->x, gl.cg->ship->y,
-			SHIP_W, SHIP_H, tile.img_x, tile.img_y);
+	draw_sprite(gl.cg->ship->x, gl.cg->ship->y, SHIP_W, SHIP_H,
+			tile.img_x, tile.img_y);
 }
 
 void draw_sprite(double x, double y, double w, double h, int img_x, int img_y)

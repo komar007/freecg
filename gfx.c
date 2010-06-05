@@ -1,4 +1,5 @@
 #include "gfx.h"
+#include "cgl.h"
 #include <errno.h>
 #include <assert.h>
 
@@ -57,8 +58,13 @@ cleanup:
 	return gfx;
 }
 
-uint8_t gfx_get_alpha(SDL_Surface *surf, int x, int y)
+int make_collision_map(SDL_Surface *gfx, collision_map cmap)
 {
-	uint32_t *pixel = (uint32_t*)((uint8_t*)surf->pixels + y*surf->pitch) + x;
-	return (*pixel & AMASK) != 0;
+	for (int y = 0; y < gfx->h; ++y) {
+		uint32_t *pixel = (uint32_t*)((uint8_t*)gfx->pixels +
+				y*gfx->pitch);
+		for (int x = 0; x < gfx->w; ++x, ++pixel)
+			cmap[y][x] = *pixel & AMASK ? 1 : 0;
+	}
+	return 0;
 }

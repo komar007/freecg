@@ -3,18 +3,26 @@
 
 #include "cgl.h"
 
+enum {
+	CMAP_W = 588,
+	CMAP_H = 464
+};
+
+typedef unsigned char collision_map[CMAP_H][CMAP_W];
+
 struct ship {
 	double x, y;
 	double vx, vy;
 	double ax, ay;
+	int rot;
 	int engine;
-	unsigned char collision_map[2][SHIP_ANIM_LEN][SHIP_H][SHIP_W];
 };
 
 struct cg {
 	struct cgl *level;
 	struct ship *ship;
 	double time;
+	collision_map cmap;
 };
 
 struct cg *cg_init(struct cgl *level);

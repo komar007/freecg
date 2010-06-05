@@ -12,6 +12,7 @@ void ship_to_tile(const struct ship *s, struct tile *t)
 		t->img_x = SHIP_OFF_IMG_X;
 		t->img_y = SHIP_OFF_IMG_Y;
 	}
+	t->img_x += s->rot * SHIP_W;
 }
 
 int tiles_intersect(const struct tile *t1, const struct tile *t2,
