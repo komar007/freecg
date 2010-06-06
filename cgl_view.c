@@ -53,8 +53,8 @@ void process_event(SDL_Event *e)
 			break;
 		case 4:
 			nextscale += SCALE_STEP;
-			if (nextscale > 2.5)
-				nextscale = 2.5;
+			if (nextscale > 10)
+				nextscale = 10;
 			break;
 		case 5:
 			nextscale -= SCALE_STEP;

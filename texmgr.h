@@ -5,7 +5,7 @@
 #include <SDL/SDL_opengl.h>
 
 enum tm_config {
-	TEX_FILTER = GL_LINEAR,
+	TEX_FILTER = GL_NEAREST,
 };
 
 struct texture {

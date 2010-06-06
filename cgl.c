@@ -487,6 +487,7 @@ int cgl_read_one_vent(struct fan *fan, FILE *fp)
 	fan->dir = buf[0] & 0x03;
 	parse_tile_simple(buf2 + 0x00, fan->base, 48, 48);
 	parse_tile(buf2 + 0x04, fan->pipes);
+	fan->pipes->collision_test = Bitmap;
 	fan->img_x = fan->base->img_x;
 	parse_rect(buf2 + 0x0a, &fan->bbox);
 	parse_rect(buf2 + 0x0e, &fan->range);
@@ -514,6 +515,7 @@ int cgl_read_one_magn(struct magnet *magnet, FILE *fp)
 	magnet->dir = buf[0] & 0x03;
 	parse_tile_simple(buf2 + 0x00, magnet->base, 32, 32);
 	parse_tile(buf2 + 0x04, magnet->magn);
+	magnet->magn->collision_test = Bitmap;
 	magnet->img_x = magnet->magn->img_x;
 	parse_rect(buf2 + 0x0a, &magnet->bbox);
 	parse_rect(buf2 + 0x0e, &magnet->range);
@@ -542,6 +544,7 @@ int cgl_read_one_dist(struct airgen *airgen, FILE *fp)
 	airgen->dir = buf[0] & 0x03;
 	parse_tile_simple(buf2 + 0x00, airgen->base, 40, 40);
 	parse_tile(buf2 + 0x04, airgen->pipes);
+	airgen->pipes->collision_test = Bitmap;
 	airgen->img_x = airgen->base->img_x;
 	parse_rect(buf2 + 0x0a, &airgen->bbox);
 	parse_rect(buf2 + 0x0e, &airgen->range);
@@ -583,9 +586,11 @@ int cgl_read_one_cano(struct cannon *cannon, FILE *fp)
 			24, 24, 512, 188);
 	parse_tile_simple(buf2 + 0x06, cannon->begin_cano,
 			16, 16);
+	cannon->begin_cano->collision_test = Bitmap;
 	parse_tile_very_simple(buf2 + 0x0a, cannon->end_base,
 			16, 16, 472, 196);
 	parse_tile(buf2 + 0x0c, cannon->end_catch);
+	cannon->end_catch->collision_test = Bitmap;
 	parse_rect(buf2 + 0x12, &cannon->bbox);
 	return 0;
 }

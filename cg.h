@@ -2,13 +2,14 @@
 #define CG_H
 
 #include "cgl.h"
+#include <stdint.h>
 
 enum {
 	CMAP_W = 588,
 	CMAP_H = 464
 };
 
-typedef unsigned char collision_map[CMAP_H][CMAP_W];
+typedef uint8_t collision_map[CMAP_H][CMAP_W];
 
 struct ship {
 	double x, y;

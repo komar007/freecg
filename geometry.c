@@ -4,7 +4,7 @@
 void ship_to_tile(const struct ship *s, struct tile *t)
 {
 	t->w = SHIP_W, t->h = SHIP_H;
-	t->x = (int)s->x, t->y = (int)s->y;
+	t->x = (int)round(s->x), t->y = (int)round(s->y);
 	if (s->engine) {
 		t->img_x = SHIP_ON_IMG_X;
 		t->img_y = SHIP_ON_IMG_Y;
