@@ -58,9 +58,17 @@ struct tile {
 	enum {
 		Simple = 0,
 	} type;
+	/* This is the type of collision test to be performed on a tile */
 	enum {
+		/* The whole rectangular area defined by points (x, y) and
+		 * (x + w, y + h) is used to detect collisions */
 		Rect = 0,
-		Bitmap
+		/* A rectangular part of collision map defined by points
+		 * (img_x, img_y), (img_x + w, img_y + h) is used to detect
+		 * collisions in a rectabgular tile */
+		Bitmap,
+		/* Collisions are detected using a special function */
+		Cannon
 	} collision_test;
 	/* necessary for renderer, the number of the most recent frame in
 	 * which the tile was rendered */

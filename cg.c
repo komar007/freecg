@@ -18,7 +18,7 @@ struct cg *cg_init(struct cgl *level)
 	return cg;
 }
 
-void ship_step(struct ship* s, double dt)
+void cg_ship_step(struct ship* s, double dt)
 {
 	s->vx += s->ax * dt;
 	s->vy += s->ay * dt;
@@ -42,28 +42,32 @@ void cg_detect_collisions(struct cg *cg)
 
 void cg_detect_collisions_block(struct cg *cg, struct tile **blocks)
 {
-	extern int cg_detect_collision_bitmap(struct cg*, struct tile*);
+	extern int cg_collision_rect(struct tile*, struct tile*);
+	extern int cg_collision_bitmap(struct tile*, struct tile*);
 	struct rect r;
 	struct tile shipt;
 	ship_to_tile(cg->ship, &shipt);
 	for (size_t i = 0; blocks[i] != NULL; ++i) {
-		if (tiles_intersect(&shipt, blocks[i], &r)) {
-			int collision = 0;
-			switch (blocks[i]->collision_test) {
-			case Rect:
-				collision = 1;
-				break;
-			case Bitmap:
-				collision = cg_detect_collision_bitmap(cg,
-						blocks[i]);
-				break;
-			}
-			if (collision)
-				printf("Collision %i %i %i %i, %i %i %i %i\n",
-					shipt.x, shipt.y, shipt.w, shipt.h,
-					blocks[i]->x, blocks[i]->y,
-					blocks[i]->w, blocks[i]->h);
+		if (!tiles_intersect(&shipt, blocks[i], &r))
+			continue;
+		int collision = 0;
+		switch (blocks[i]->collision_test) {
+		case Rect:
+			collision = cg_collision_rect(&shipt, blocks[i]);
+			break;
+		case Bitmap:
+			collision = cg_collision_bitmap(&shipt, blocks[i]);
+			break;
+		case Cannon:
+			/* FIXME */
+			collision = 1;
+			break;
 		}
+		if (collision)
+			printf("Collision %i %i %i %i, %i %i %i %i\n",
+				shipt.x, shipt.y, shipt.w, shipt.h,
+				blocks[i]->x, blocks[i]->y,
+				blocks[i]->w, blocks[i]->h);
 	}
 }
 
@@ -71,13 +75,19 @@ void cg_step(struct cg *cg, double time)
 {
 	double dt = time - cg->time;
 
-	ship_step(cg->ship, dt);
+	cg_ship_step(cg->ship, dt);
 	cg_detect_collisions(cg);
 	cg->time = time;
 }
 
 /* Collision detectors */
-int cg_detect_collision_bitmap(struct cg *cg, struct tile *tile)
+int cg_collision_bitmap(struct tile *sh, struct tile *tile)
 {
+	/* FIXME */
+	return 1;
+}
+int cg_collision_rect(struct tile* sh, struct tile *tile)
+{
+	/* FIXME */
 	return 1;
 }
