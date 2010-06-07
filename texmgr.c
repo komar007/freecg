@@ -11,10 +11,18 @@ void tm_init(const SDL_Surface *image)
 			sizeof(*texmgr.lookup_table));
 }
 
-struct texture *tm_request_texture(size_t x, size_t y, size_t w, size_t h)
+inline unsigned real_hash(int x, int y, size_t w, size_t h)
+{
+	return ((x/4) << 24) + ((y/4) << 16) + ((w/4) << 8) + (h/4);
+}
+
+struct texture *tm_request_texture(int x, int y, size_t w, size_t h)
 {
 	extern GLuint load_texture(SDL_Surface *);
+	struct texture *lt = texmgr.lookup_table;
+	unsigned rh = real_hash(x, y, w, h);
 	int hash = x/4 + y/4 * texmgr.img->w/4;
+	for (; lt[hash].refcount != 0 && lt[hash].real_hash != rh; ++hash);
 	if (texmgr.lookup_table[hash].refcount++ == 0) {
 		int tex_w = 1 << (int)ceil(log2(w)),
 		    tex_h = 1 << (int)ceil(log2(h));
@@ -33,11 +41,12 @@ struct texture *tm_request_texture(size_t x, size_t y, size_t w, size_t h)
 		texmgr.lookup_table[hash].no = load_texture(tile);
 		if (SDL_MUSTLOCK(tile))
 			SDL_UnlockSurface(tile);
-		texmgr.lookup_table[hash].w_ratio = (double)w / tex_w;
-		texmgr.lookup_table[hash].h_ratio = (double)h / tex_h ;
+		lt[hash].real_hash = rh;
+		lt[hash].w_ratio = (double)w / tex_w;
+		lt[hash].h_ratio = (double)h / tex_h;
 		SDL_FreeSurface(tile);
 	}
-	return &texmgr.lookup_table[hash];
+	return &lt[hash];
 }
 
 GLuint load_texture(SDL_Surface *image)

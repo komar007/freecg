@@ -13,6 +13,7 @@ struct texture {
 	/* How much of an opengl texture is used to hold actual graphics
 	 * (textures must have power-of-two dimensions) */
 	double w_ratio, h_ratio;
+	unsigned real_hash;
 	size_t refcount;
 };
 
@@ -22,7 +23,7 @@ struct texture_manager {
 };
 
 void tm_init(const SDL_Surface *);
-struct texture *tm_request_texture(size_t x, size_t y, size_t w, size_t h);
+struct texture *tm_request_texture(int x, int y, size_t w, size_t h);
 
 inline void tm_coord_tl(struct texture __attribute__((unused)) *tex)
 {
