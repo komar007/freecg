@@ -5,7 +5,7 @@
 #include <math.h>
 
 struct glengine gl;
-void draw_sprite(double, double, double, double, int, int);
+void gl_draw_sprite(double, double, double, double, int, int);
 
 void gl_init(struct cg* cg)
 {
@@ -29,24 +29,28 @@ void gl_change_viewport(double x, double y, double w, double h)
 	glMatrixMode(GL_MODELVIEW);
 }
 
-void gl_animate_tiles()
+void animate_tiles()
 {
+	extern void animate_fan(struct fan*, double),
+	            animate_magnet(struct magnet*, double),
+	            animate_airgen(struct airgen*, double),
+	            animate_bar(struct bar*, double);
 	for (size_t i = 0; i < gl.cg->level->nmagnets; ++i)
-		cg_animate_magnet(&gl.cg->level->magnets[i], gl.cg->time);
+		animate_magnet(&gl.cg->level->magnets[i], gl.cg->time);
 	for (size_t i = 0; i < gl.cg->level->nfans; ++i)
-		cg_animate_fan(&gl.cg->level->fans[i], gl.cg->time);
+		animate_fan(&gl.cg->level->fans[i], gl.cg->time);
 	for (size_t i = 0; i < gl.cg->level->nairgens; ++i)
-		cg_animate_airgen(&gl.cg->level->airgens[i], gl.cg->time);
+		animate_airgen(&gl.cg->level->airgens[i], gl.cg->time);
 	for (size_t i = 0; i < gl.cg->level->nbars; ++i)
-		cg_animate_bar(&gl.cg->level->bars[i], gl.cg->time);
+		animate_bar(&gl.cg->level->bars[i], gl.cg->time);
 }
 
 void gl_draw_scene()
 {
 	extern void fix_lframes(struct cgl*);
-	extern void draw_block(struct tile *[]);
-	extern void draw_ship(void);
-	gl_animate_tiles();
+	extern void gl_draw_block(struct tile *[]);
+	extern void gl_draw_ship(void);
+	animate_tiles();
 	if (gl.frame == 0)
 		fix_lframes(gl.cg->level);
 	double x1 = fmax(0, gl.viewport.x),
@@ -60,8 +64,8 @@ void gl_draw_scene()
 	glClear(GL_COLOR_BUFFER_BIT);
 	for (size_t j = y1/BLOCK_SIZE; j*BLOCK_SIZE < y2; ++j)
 		for (size_t i = x1/BLOCK_SIZE; i*BLOCK_SIZE < x2; ++i)
-			draw_block(l->blocks[j][i]);
-	draw_ship();
+			gl_draw_block(l->blocks[j][i]);
+	gl_draw_ship();
 	SDL_GL_SwapBuffers();
 	gl.frame++;
 }
@@ -74,28 +78,28 @@ void fix_lframes(struct cgl *level)
 }
 /* Each tile may be referenced by many blocks. This function makes sure each
  * tile is drawn to the buffer only once */
-void draw_block(struct tile *tiles[])
+void gl_draw_block(struct tile *tiles[])
 {
-	extern void dispatch_drawing(struct tile*);
+	extern void gl_dispatch_drawing(struct tile*);
 	for (size_t i = 0; tiles[i]; ++i) {
 		/* if the tile has not been drawn in current frame yet, draw
 		 * and update tile's frame number */
 		if (tiles[i]->lframe != gl.frame) {
-			dispatch_drawing(tiles[i]);
+			gl_dispatch_drawing(tiles[i]);
 			tiles[i]->lframe = gl.frame;
 		}
 	}
 }
 
-void draw_ship(void)
+void gl_draw_ship(void)
 {
 	struct tile tile;
 	ship_to_tile(gl.cg->ship, &tile); /* to get tex coordinates */
-	draw_sprite(gl.cg->ship->x, gl.cg->ship->y, SHIP_W, SHIP_H,
+	gl_draw_sprite(gl.cg->ship->x, gl.cg->ship->y, SHIP_W, SHIP_H,
 			tile.img_x, tile.img_y);
 }
 
-void draw_sprite(double x, double y, double w, double h, int img_x, int img_y)
+void gl_draw_sprite(double x, double y, double w, double h, int img_x, int img_y)
 {
 	struct texture *tex = tm_request_texture(img_x, img_y, (int)w, (int)h);
 	glBindTexture(GL_TEXTURE_2D, tex->no);
@@ -111,40 +115,39 @@ void draw_sprite(double x, double y, double w, double h, int img_x, int img_y)
 	glEnd();
 }
 
-void draw_simple_tile(struct tile *tile, int img_x, int img_y)
+void gl_draw_simple_tile(struct tile *tile, int img_x, int img_y)
 {
-	draw_sprite(tile->x, tile->y, tile->w, tile->h, img_x, img_y);
+	gl_draw_sprite(tile->x, tile->y, tile->w, tile->h, img_x, img_y);
 }
 
-void dispatch_drawing(struct tile *tile)
+void gl_dispatch_drawing(struct tile *tile)
 {
 	switch (tile->type) {
 	case Simple:
-		draw_simple_tile(tile, tile->img_x, tile->img_y); break;
+		gl_draw_simple_tile(tile, tile->img_x, tile->img_y); break;
 	}
 }
 
 /* Animators */
-
-void cg_animate_fan(struct fan *fan, double time)
+void animate_fan(struct fan *fan, double time)
 {
 	int phase = round(time * 1000 / FAN_ANIM_INTERVAL);
 	int cur_tex = fan_anim_order[phase % 3];
 	fan->base->img_x = fan->img_x + cur_tex * fan->base->w;
 }
-void cg_animate_magnet(struct magnet *magnet, double time)
+void animate_magnet(struct magnet *magnet, double time)
 {
 	int phase = round(time * 1000 / MAGNET_ANIM_INTERVAL);
 	int cur_tex = magnet_anim_order[phase % 4];
 	magnet->magn->img_x = magnet->img_x + cur_tex * magnet->magn->w;
 }
-void cg_animate_airgen(struct airgen *airgen, double time)
+void animate_airgen(struct airgen *airgen, double time)
 {
 	int phase = round(time * 1000 / AIRGEN_ANIM_INTERVAL);
 	int cur_tex = airgen_anim_order[phase % 8];
 	airgen->base->img_x = airgen->img_x + cur_tex * airgen->base->w;
 }
-void cg_animate_bar(struct bar *bar, double time)
+void animate_bar(struct bar *bar, double time)
 {
 	int phase = round(time * 1000 / BAR_ANIM_INTERVAL);
 	int cur_tex = bar_anim_order[0][phase % 2];

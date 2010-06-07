@@ -30,9 +30,4 @@ static const int fan_anim_order[] = {0, 1, 2};
 static const int airgen_anim_order[] = {0, 1, 2, 3, 4, 5, 6, 7};
 static const int bar_anim_order[][2] = {{0, 1}, {1, 0}};
 
-void cg_animate_fan(struct fan*, double);
-void cg_animate_magnet(struct magnet*, double);
-void cg_animate_airgen(struct airgen*, double);
-void cg_animate_bar(struct bar*, double);
-
 #endif

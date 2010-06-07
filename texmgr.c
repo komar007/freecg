@@ -18,7 +18,7 @@ inline unsigned real_hash(int x, int y, size_t w, size_t h)
 
 struct texture *tm_request_texture(int x, int y, size_t w, size_t h)
 {
-	extern GLuint load_texture(SDL_Surface *);
+	extern GLuint tm_load_texture(SDL_Surface *);
 	struct texture *lt = texmgr.lookup_table;
 	unsigned rh = real_hash(x, y, w, h);
 	int hash = x/4 + y/4 * texmgr.img->w/4;
@@ -38,7 +38,7 @@ struct texture *tm_request_texture(int x, int y, size_t w, size_t h)
 			SDL_LockSurface(tile);
 		SDL_BlitSurface((SDL_Surface*)texmgr.img, &rect,
 				tile, NULL);
-		texmgr.lookup_table[hash].no = load_texture(tile);
+		texmgr.lookup_table[hash].no = tm_load_texture(tile);
 		if (SDL_MUSTLOCK(tile))
 			SDL_UnlockSurface(tile);
 		lt[hash].real_hash = rh;
@@ -49,7 +49,7 @@ struct texture *tm_request_texture(int x, int y, size_t w, size_t h)
 	return &lt[hash];
 }
 
-GLuint load_texture(SDL_Surface *image)
+GLuint tm_load_texture(SDL_Surface *image)
 {
 	GLuint texno;
 	glGenTextures(1, &texno);
