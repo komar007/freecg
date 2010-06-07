@@ -34,10 +34,12 @@ struct option opts[] = {
 	{"no-magn", no_argument, NULL, -MAGN},
 	{"dist", no_argument, NULL, DIST},
 	{"no-dist", no_argument, NULL, -DIST},
+	{"pipe", no_argument, NULL, PIPE},
+	{"no-pipe", no_argument, NULL, -PIPE},
 	{NULL, 0, NULL, 0}
 };
-char *optstr = "ha1234";
-int which[] = {-1, -1, -1, -1, -1, -1};
+char *optstr = "ha1234567";
+int which[] = {-1, -1, -1, -1, -1, -1, -1, -1};
 
 void print_help(const char *name)
 {
@@ -62,7 +64,8 @@ int main(int argc, char *argv[])
 		    print_sobs(const struct cgl*, const uint8_t *),
 		    print_vent(const struct cgl*),
 		    print_magn(const struct cgl*),
-		    print_dist(const struct cgl*);
+		    print_dist(const struct cgl*),
+		    print_pipe(const struct cgl*);
 	int ret;
 
 	while ((ret = getopt_long(argc, argv, optstr, opts, NULL)) != -1) {
@@ -110,6 +113,8 @@ int main(int argc, char *argv[])
 		print_magn(cgl);
 	if (which[DIST - '1'])
 		print_dist(cgl);
+	if (which[PIPE - '1'])
+		print_pipe(cgl);
 	return 0;
 }
 
@@ -233,4 +238,21 @@ void print_one_dist(struct airgen *airgen, int num)
 	printf("\t\tpipes:\t"), print_tile(airgen->pipes);
 	printf("\t\tbbox\t= "), print_rect(&airgen->bbox);
 	printf("\t\trange\t= "), print_rect(&airgen->range);
+}
+
+void print_pipe(const struct cgl *cgl)
+{
+	extern void print_one_pipe(struct bar *bar, int);
+
+	printf("section PIPE\n");
+	for (size_t i = 0; i < cgl->nbars; ++i)
+		print_one_pipe(&cgl->bars[i], i);
+}
+void print_one_pipe(struct bar *bar, int num)
+{
+	printf("\tbar %d: gap_type = %s, orientation = %s\n", num,
+			bar->gap_type == Constant ? "Const" : "Var",
+			bar->orientation == Horizontal ? "Horiz" : "Vert");
+	printf("\t\tbeg:\t"), print_tile(bar->beg);
+	printf("\t\tend:\t"), print_tile(bar->end);
 }

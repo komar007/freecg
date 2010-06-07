@@ -87,7 +87,7 @@
  *		0x00	(3) header - first byte: direction, rest - unknown
  *		0x03	(2) a short: fire rate
  *		0x05	(2) 2 signed bytes: speed_x, speed_y
- *		0x07	(8) 4 shorts: coordinates of beginning and end of the
+ *		0x07	(8) 4 shorts: coordinates of begning and end of the
  *			bullet track
  * 		0x0f	(4) 2 shorts: coordinates of cannon's base
  *		0x11	(8) 4 shorts: coords nd gfx coords of cannon tile
@@ -129,7 +129,8 @@ struct cgl *read_cgl(const char *path, uint8_t **out_soin)
 		   cgl_read_vent(struct cgl*, struct tile**, size_t*, FILE*),
 		   cgl_read_magn(struct cgl*, struct tile**, size_t*, FILE*),
 		   cgl_read_dist(struct cgl*, struct tile**, size_t*, FILE*),
-		   cgl_read_cano(struct cgl*, struct tile**, size_t*, FILE*);
+		   cgl_read_cano(struct cgl*, struct tile**, size_t*, FILE*),
+		   cgl_read_pipe(struct cgl*, struct tile**, size_t*, FILE*);
 	struct cgl *cgl;
 	FILE *fp;
 	uint8_t *soin = NULL;
@@ -141,6 +142,10 @@ struct cgl *read_cgl(const char *path, uint8_t **out_soin)
 	cgl = calloc(1, sizeof(*cgl));
 	cgl->tiles = NULL;
 	cgl->fans = NULL;
+	cgl->magnets = NULL;
+	cgl->airgens = NULL;
+	cgl->cannons = NULL;
+	cgl->bars = NULL;
 	cgl->blocks = NULL;
 	if (cgl_read_section_header("CGL1", fp) != 0)
 		goto error;
@@ -153,8 +158,10 @@ struct cgl *read_cgl(const char *path, uint8_t **out_soin)
 		goto error;
 	if (cgl_read_sobs(cgl, soin, fp) != 0)
 		goto error;
-	struct tile *vent_tiles, *magn_tiles, *dist_tiles, *cano_tiles;
-	size_t nvent_tiles, nmagn_tiles, ndist_tiles, ncano_tiles;
+	struct tile *vent_tiles, *magn_tiles, *dist_tiles, *cano_tiles,
+		    *pipe_tiles;
+	size_t nvent_tiles, nmagn_tiles, ndist_tiles, ncano_tiles,
+	       npipe_tiles;
 	if (cgl_read_magic(cgl, fp) != 0)
 		goto error;
 	if (cgl_read_vent(cgl, &vent_tiles, &nvent_tiles, fp) != 0)
@@ -171,10 +178,14 @@ struct cgl *read_cgl(const char *path, uint8_t **out_soin)
 		goto error;
 	if (cgl_read_cano(cgl, &cano_tiles, &ncano_tiles, fp) != 0)
 		goto error;
+	if (cgl_read_magic(cgl, fp) != 0)
+		goto error;
+	if (cgl_read_pipe(cgl, &pipe_tiles, &npipe_tiles, fp) != 0)
+		goto error;
 	/* join extra tiles from the other sections with those from SOBS,
 	 * fix pointers to point to the new memory */
 	size_t num_tiles = cgl->ntiles + (nvent_tiles + nmagn_tiles +
-			ndist_tiles + ncano_tiles/* + ... */);
+			ndist_tiles + ncano_tiles + npipe_tiles/* + ... */);
 	cgl->tiles = realloc(cgl->tiles, num_tiles * sizeof(*cgl->tiles));
 	memcpy(cgl->tiles + cgl->ntiles, vent_tiles,
 			nvent_tiles * sizeof(*cgl->tiles));
@@ -209,10 +220,10 @@ struct cgl *read_cgl(const char *path, uint8_t **out_soin)
 	memcpy(cgl->tiles + cgl->ntiles, cano_tiles,
 			ncano_tiles * sizeof(*cgl->tiles));
 	for (size_t i = 0; i < cgl->ncannons; ++i) {
-		cgl->cannons[i].begin_base = cgl->tiles + cgl->ntiles +
-			(cgl->cannons[i].begin_base - cano_tiles);
-		cgl->cannons[i].begin_cano = cgl->tiles + cgl->ntiles +
-			(cgl->cannons[i].begin_cano - cano_tiles);
+		cgl->cannons[i].beg_base = cgl->tiles + cgl->ntiles +
+			(cgl->cannons[i].beg_base - cano_tiles);
+		cgl->cannons[i].beg_cano = cgl->tiles + cgl->ntiles +
+			(cgl->cannons[i].beg_cano - cano_tiles);
 		cgl->cannons[i].end_base = cgl->tiles + cgl->ntiles +
 			(cgl->cannons[i].end_base - cano_tiles);
 		cgl->cannons[i].end_catch = cgl->tiles + cgl->ntiles +
@@ -220,6 +231,16 @@ struct cgl *read_cgl(const char *path, uint8_t **out_soin)
 	}
 	cgl->ntiles += ncano_tiles;
 	free(cano_tiles);
+	memcpy(cgl->tiles + cgl->ntiles, pipe_tiles,
+			npipe_tiles * sizeof(*cgl->tiles));
+	for (size_t i = 0; i < cgl->nbars; ++i) {
+		cgl->bars[i].beg = cgl->tiles + cgl->ntiles +
+			(cgl->bars[i].beg - pipe_tiles);
+		cgl->bars[i].end = cgl->tiles + cgl->ntiles +
+			(cgl->bars[i].end - pipe_tiles);
+	}
+	cgl->ntiles += npipe_tiles;
+	free(pipe_tiles);
 
 	if (out_soin)
 		*out_soin = soin;
@@ -466,7 +487,7 @@ error:                                                                      \
 }
 
 BEGIN_CGL_READ_X(vent, VENT, fan, 2)
-	cgl->fans[i].base = &tiles[2*i];
+	cgl->fans[i].base  = &tiles[2*i + 0];
 	cgl->fans[i].pipes = &tiles[2*i + 1];
 END_CGL_READ_X(vent, VENT, fan, 2)
 
@@ -495,7 +516,7 @@ int cgl_read_one_vent(struct fan *fan, FILE *fp)
 }
 
 BEGIN_CGL_READ_X(magn, MAGN, magnet, 2)
-	cgl->magnets[i].base = &tiles[2*i];
+	cgl->magnets[i].base = &tiles[2*i + 0];
 	cgl->magnets[i].magn = &tiles[2*i + 1];
 END_CGL_READ_X(magn, MAGN, magnet, 2)
 
@@ -523,7 +544,7 @@ int cgl_read_one_magn(struct magnet *magnet, FILE *fp)
 }
 
 BEGIN_CGL_READ_X(dist, DIST, airgen, 2)
-	cgl->airgens[i].base = &tiles[2*i];
+	cgl->airgens[i].base  = &tiles[2*i + 0];
 	cgl->airgens[i].pipes = &tiles[2*i + 1];
 END_CGL_READ_X(dist, DIST, airgen, 2)
 
@@ -552,10 +573,10 @@ int cgl_read_one_dist(struct airgen *airgen, FILE *fp)
 }
 
 BEGIN_CGL_READ_X(cano, CANO, cannon, 4)
-	cgl->cannons[i].begin_base = &tiles[4*i];
-	cgl->cannons[i].begin_cano = &tiles[4*i + 1];
-	cgl->cannons[i].end_base   = &tiles[4*i + 2];
-	cgl->cannons[i].end_catch  = &tiles[4*i + 3];
+	cgl->cannons[i].beg_base  = &tiles[4*i + 0];
+	cgl->cannons[i].beg_cano  = &tiles[4*i + 1];
+	cgl->cannons[i].end_base  = &tiles[4*i + 2];
+	cgl->cannons[i].end_catch = &tiles[4*i + 3];
 END_CGL_READ_X(cano, CANO, cannon, 4)
 
 int cgl_read_one_cano(struct cannon *cannon, FILE *fp)
@@ -581,17 +602,71 @@ int cgl_read_one_cano(struct cannon *cannon, FILE *fp)
 	if (err)
 		return -EBADCANO;
 	cannon->dir = buf[0] & 0x03;
-	parse_point(buf2 + 0x00, &cannon->begin, &cannon->end);
-	parse_tile_very_simple(buf2 + 0x04, cannon->begin_base,
+	parse_point(buf2 + 0x00, &cannon->beg, &cannon->end);
+	parse_tile_very_simple(buf2 + 0x04, cannon->beg_base,
 			24, 24, 512, 188);
-	parse_tile_simple(buf2 + 0x06, cannon->begin_cano,
+	parse_tile_simple(buf2 + 0x06, cannon->beg_cano,
 			16, 16);
-	cannon->begin_cano->collision_test = Bitmap;
+	cannon->beg_cano->collision_test = Bitmap;
 	parse_tile_very_simple(buf2 + 0x0a, cannon->end_base,
 			16, 16, 472, 196);
 	parse_tile(buf2 + 0x0c, cannon->end_catch);
 	cannon->end_catch->collision_test = Bitmap;
 	parse_rect(buf2 + 0x12, &cannon->bbox);
+	return 0;
+}
+
+BEGIN_CGL_READ_X(pipe, PIPE, bar, 4)
+	cgl->bars[i].beg  = &tiles[4*i + 0];
+	cgl->bars[i].end  = &tiles[4*i + 1];
+	cgl->bars[i].fbar = &tiles[4*i + 2];
+	cgl->bars[i].sbar = &tiles[4*i + 3];
+END_CGL_READ_X(pipe, PIPE, bar, 4)
+
+int cgl_read_one_pipe(struct bar *bar, FILE *fp)
+{
+	int err;
+	uint8_t buf[PIPE_HDR_SIZE];
+	int16_t buf2[PIPE_NUM_SHORTS];
+	size_t nread;
+
+	nread = fread(buf, sizeof(uint8_t), PIPE_HDR_SIZE, fp);
+	if (nread < PIPE_HDR_SIZE)
+		return -EBADPIPE;
+	err = read_short((int16_t*)buf2, PIPE_NUM_SHORTS, fp);
+	if (err)
+		return -EBADPIPE;
+	bar->gap_type = (buf[0] >> 4) & 0x01;
+	bar->orientation = buf[0] & 0x01;
+	bar->gap = buf[2];
+	bar->min_speed = buf[6];
+	bar->max_speed = buf[7];
+	bar->freq = buf[10] & 0x01;
+	int width = buf2[2],
+	    height = buf2[3];
+	switch (bar->orientation) {
+	case Vertical:
+		parse_tile_very_simple(buf2, bar->beg,
+				20, 24, 496, 56);
+		bar->end->x = bar->beg->x;
+		bar->end->y = bar->beg->y + height - 24;
+		bar->end->w = bar->beg->w;
+		bar->end->h = bar->beg->h;
+		bar->end->img_x = 524;
+		bar->end->img_y = 52;
+		break;
+	case Horizontal:
+		parse_tile_very_simple(buf2, bar->beg,
+				24, 20, 496, 56);
+		bar->end->x = bar->beg->x + width - 24;
+		bar->end->y = bar->beg->y;
+		bar->end->w = bar->beg->w;
+		bar->end->h = bar->beg->h;
+		bar->end->img_x = 520;
+		bar->end->img_y = 56;
+		break;
+	}
+	bar->beg->collision_test = bar->end->collision_test = Bitmap;
 	return 0;
 }
 

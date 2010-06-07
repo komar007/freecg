@@ -21,7 +21,9 @@ enum {
 	DIST_NUM_SHORTS = 18,
 	DIST_HDR_SIZE = 2,
 	CANO_NUM_SHORTS = 22,
-	CANO_HDR_SIZE = 3
+	CANO_HDR_SIZE = 3,
+	PIPE_NUM_SHORTS = 4,
+	PIPE_HDR_SIZE = 16
 };
 #define CGL_MAGIC "\xe1\xd2\xc3\xb4"
 
@@ -45,6 +47,7 @@ enum {
 	EBADMAGN,
 	EBADDIST,
 	EBADCANO,
+	EBADPIPE,
 	/* ... */
 
 	EBADSHORT,
@@ -124,13 +127,28 @@ struct cannon {
 	enum dir dir;
 	int fire_rate;
 	int speed_x, speed_y;
-	struct tile *begin_base,
-		    *begin_cano,
+	struct tile *beg_base,
+		    *beg_cano,
 		    *end_base,
 		    *end_catch;
 	struct rect bbox;
-	vector begin,
+	vector beg,
 	       end;
+};
+struct bar {
+	enum {
+		Constant = 0,
+		Variable
+	} gap_type;
+	enum {
+		Vertical = 0,
+		Horizontal
+	} orientation;
+	int gap;
+	int min_speed, max_speed;
+	int freq;
+	struct tile *beg,
+		    *end;
 };
 /* cgl level contents */
 struct cgl {
@@ -149,6 +167,8 @@ struct cgl {
 	struct airgen *airgens;
 	size_t ncannons;
 	struct cannon *cannons;
+	size_t nbars;
+	struct bar *bars;
 	struct tile ****blocks;
 };
 
