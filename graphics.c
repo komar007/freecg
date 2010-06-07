@@ -37,6 +37,8 @@ void gl_animate_tiles()
 		cg_animate_fan(&gl.cg->level->fans[i], gl.cg->time);
 	for (size_t i = 0; i < gl.cg->level->nairgens; ++i)
 		cg_animate_airgen(&gl.cg->level->airgens[i], gl.cg->time);
+	for (size_t i = 0; i < gl.cg->level->nbars; ++i)
+		cg_animate_bar(&gl.cg->level->bars[i], gl.cg->time);
 }
 
 void gl_draw_scene()
@@ -141,4 +143,12 @@ void cg_animate_airgen(struct airgen *airgen, double time)
 	int phase = round(time * 1000 / AIRGEN_ANIM_INTERVAL);
 	int cur_tex = airgen_anim_order[phase % 8];
 	airgen->base->img_x = airgen->img_x + cur_tex * airgen->base->w;
+}
+void cg_animate_bar(struct bar *bar, double time)
+{
+	int phase = round(time * 1000 / BAR_ANIM_INTERVAL);
+	int cur_tex = bar_anim_order[0][phase % 2];
+	bar->beg->img_x = bar->bimg_x + cur_tex * BAR_TEX_OFFSET;
+	cur_tex = bar_anim_order[1][phase % 2];
+	bar->end->img_x = bar->eimg_x + cur_tex * BAR_TEX_OFFSET;
 }

@@ -238,6 +238,10 @@ struct cgl *read_cgl(const char *path, uint8_t **out_soin)
 			(cgl->bars[i].beg - pipe_tiles);
 		cgl->bars[i].end = cgl->tiles + cgl->ntiles +
 			(cgl->bars[i].end - pipe_tiles);
+		cgl->bars[i].fbar = cgl->tiles + cgl->ntiles +
+			(cgl->bars[i].fbar - pipe_tiles);
+		cgl->bars[i].sbar = cgl->tiles + cgl->ntiles +
+			(cgl->bars[i].sbar - pipe_tiles);
 	}
 	cgl->ntiles += npipe_tiles;
 	free(pipe_tiles);
@@ -648,21 +652,23 @@ int cgl_read_one_pipe(struct bar *bar, FILE *fp)
 	case Vertical:
 		parse_tile_very_simple(buf2, bar->beg,
 				20, 24, 496, 56);
+		bar->bimg_x = 496;
+		bar->eimg_x = 496;
 		bar->end->x = bar->beg->x;
 		bar->end->y = bar->beg->y + height - 24;
 		bar->end->w = bar->beg->w;
 		bar->end->h = bar->beg->h;
-		bar->end->img_x = 524;
 		bar->end->img_y = 52;
 		break;
 	case Horizontal:
 		parse_tile_very_simple(buf2, bar->beg,
 				24, 20, 496, 56);
+		bar->bimg_x = 496;
+		bar->eimg_x = 492;
 		bar->end->x = bar->beg->x + width - 24;
 		bar->end->y = bar->beg->y;
 		bar->end->w = bar->beg->w;
 		bar->end->h = bar->beg->h;
-		bar->end->img_x = 520;
 		bar->end->img_y = 56;
 		break;
 	}

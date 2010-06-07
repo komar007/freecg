@@ -147,8 +147,12 @@ struct bar {
 	int gap;
 	int min_speed, max_speed;
 	int freq;
+	int bimg_x,
+	    eimg_x;
 	struct tile *beg,
-		    *end;
+		    *end,
+		    *fbar,
+		    *sbar;
 };
 /* cgl level contents */
 struct cgl {
