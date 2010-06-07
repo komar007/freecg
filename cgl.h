@@ -84,13 +84,6 @@ struct block {
 	struct tile *tiles;
 };
 
-enum dir {
-	Down = 0,
-	Up,
-	Left,
-	Right
-};
-
 struct fan {
 	enum {
 		Hi = 0,

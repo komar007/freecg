@@ -656,9 +656,16 @@ int cgl_read_one_pipe(struct bar *bar, FILE *fp)
 		bar->eimg_x = 496;
 		bar->end->x = bar->beg->x;
 		bar->end->y = bar->beg->y + height - 24;
-		bar->end->w = bar->beg->w;
-		bar->end->h = bar->beg->h;
+		bar->end->w = bar->beg->w; bar->end->h = bar->beg->h;
 		bar->end->img_y = 52;
+		bar->fbar->x = bar->beg->x + 4;
+		bar->fbar->y = bar->beg->y + 24;
+		bar->fbar->w = 12, bar->fbar->h = height - 2*24;
+		bar->fbar->img_x = 552, bar->fbar->img_y = 308 - bar->fbar->h;
+		bar->sbar->x = bar->beg->x + 4;
+		bar->sbar->y = bar->beg->y + 24;
+		bar->sbar->w = 12, bar->sbar->h = height - 2*24;
+		bar->sbar->img_x = 552, bar->sbar->img_y = 0;
 		break;
 	case Horizontal:
 		parse_tile_very_simple(buf2, bar->beg,
@@ -667,9 +674,16 @@ int cgl_read_one_pipe(struct bar *bar, FILE *fp)
 		bar->eimg_x = 492;
 		bar->end->x = bar->beg->x + width - 24;
 		bar->end->y = bar->beg->y;
-		bar->end->w = bar->beg->w;
-		bar->end->h = bar->beg->h;
+		bar->end->w = bar->beg->w; bar->end->h = bar->beg->h;
 		bar->end->img_y = 56;
+		bar->fbar->x = bar->beg->x + 24;
+		bar->fbar->y = bar->beg->y + 4;
+		bar->fbar->w = width - 2*24, bar->fbar->h = 12;
+		bar->fbar->img_x = 548 - bar->fbar->w, bar->fbar->img_y = 80;
+		bar->sbar->x = bar->beg->x + 24;
+		bar->sbar->y = bar->beg->y + 4;
+		bar->sbar->w = width - 2*24, bar->sbar->h = 12;
+		bar->sbar->img_x = 240, bar->sbar->img_y = 80;
 		break;
 	}
 	bar->beg->collision_test = bar->end->collision_test = Bitmap;

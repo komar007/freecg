@@ -18,12 +18,19 @@ struct cg *cg_init(struct cgl *level)
 	return cg;
 }
 
-void cg_ship_step(struct ship* s, double dt)
+void cg_step_ship(struct ship* s, double dt)
 {
 	s->vx += s->ax * dt;
 	s->vy += s->ay * dt;
 	s->x += s->vx * dt;
 	s->y += s->vy * dt;
+}
+
+void cg_step_objects(struct cg *cg, double dt)
+{
+	extern void cg_step_bar(struct bar*, double);
+	for (size_t i = 0; i < cg->level->nbars; ++i)
+		cg_step_bar(&cg->level->bars[i], dt);
 }
 
 void cg_detect_collisions(struct cg *cg)
@@ -78,7 +85,8 @@ void cg_detect_collisions_block(struct cg *cg, struct tile **blocks)
 void cg_step(struct cg *cg, double time)
 {
 	double dt = time - cg->time;
-	cg_ship_step(cg->ship, dt);
+	cg_step_ship(cg->ship, dt);
+	cg_step_objects(cg, dt);
 	cg_detect_collisions(cg);
 	cg->time = time;
 }
@@ -104,4 +112,40 @@ int cg_collision_bitmap(struct cg *cg, struct rect *r,
 			    cg->cmap[tile_img_y + j][tile_img_x + i])
 				return 1;
 	return 0;
+}
+
+/* Object steppers */
+void update_sliding_tile(enum dir dir, struct tile *t, int len)
+{
+	switch (dir) {
+	case Right:
+		t->img_x -= len - t->w;
+		t->w = len;
+		break;
+	case Left:
+		t->x -= len - t->w;
+		t->w = len;
+		break;
+	case Down:
+		t->img_y -= len - t->h;
+		t->h = len;
+		break;
+	case Up:
+		t->y -= len - t->h;
+		t->h = len;
+		break;
+	}
+}
+void cg_step_bar(struct bar *bar, double dt)
+{
+	switch (bar->orientation) {
+	case Vertical:
+		update_sliding_tile(Down, bar->fbar, 50);
+		update_sliding_tile(Up, bar->sbar, 20);
+		break;
+	case Horizontal:
+		update_sliding_tile(Right, bar->fbar, 40);
+		update_sliding_tile(Left, bar->sbar, 30);
+		break;
+	}
 }
