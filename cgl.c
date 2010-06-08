@@ -624,7 +624,7 @@ int cgl_read_one_pipe(struct bar *bar, FILE *fp)
 	bar->gap = buf[2];
 	bar->min_s = buf[6] - 1;
 	bar->max_s = buf[7] - 1;
-	bar->speed = 1; /* anything, not 0 */
+	bar->fspeed = bar->sspeed = 1; /* anything, not 0 */
 	bar->freq = buf[10] & 0x01;
 	int width = buf2[2],
 	    height = buf2[3];
@@ -672,11 +672,8 @@ int cgl_read_one_pipe(struct bar *bar, FILE *fp)
 		bar->len = width - 2*24;
 		break;
 	}
-	switch (bar->gap_type) {
-	case Constant:
-		bar->fbar_len = 0;
-		break;
-	}
+	bar->slen = 2;
+	bar->flen = 2;
 	bar->beg->collision_test = bar->end->collision_test = Bitmap;
 	return 0;
 }

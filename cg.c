@@ -144,34 +144,47 @@ inline int rand_range(int min_n, int max_n)
 }
 void cg_step_bar(struct bar *bar, double time, double dt)
 {
+	if (bar->flen + bar->slen > bar->len) {
+		bar->slen = bar->len - bar->flen;
+		bar->fspeed = -bar_speeds[rand_range(bar->min_s, bar->max_s)];
+		bar->sspeed = -bar_speeds[rand_range(bar->min_s, bar->max_s)];
+	} else if (bar->flen <= BAR_MIN_LEN) {
+		bar->fspeed = bar_speeds[rand_range(bar->min_s, bar->max_s)];
+	} else if (bar->gap_type == Constant && bar->slen <= BAR_MIN_LEN) {
+		bar->fspeed = -bar_speeds[rand_range(bar->min_s, bar->max_s)];
+	} else if (bar->freq && bar->fnext_change <= time) {
+		bar->fspeed = (2*rand_range(0, 1) - 1) *
+			bar_speeds[rand_range(bar->min_s, bar->max_s)];
+		bar->fnext_change = time + (rand()/(float)RAND_MAX + 0.5) *
+			BAR_SPEED_CHANGE_INTERVAL;
+	}
+	bar->flen += bar->fspeed * dt;
+	bar->flen = fmin(bar->len, fmax(BAR_MIN_LEN, bar->flen));
 	switch (bar->gap_type) {
 	case Constant:
-		if (bar->fbar_len <= 0 || bar->sbar_len <= 0) {
-			bar->speed = -sgn(bar->speed) *
+		bar->slen = bar->len - bar->flen - bar->gap;
+		break;
+	case Variable:
+		if (bar->slen <= BAR_MIN_LEN) {
+			bar->sspeed = bar_speeds[rand_range(bar->min_s, bar->max_s)];
+		} else if (bar->freq && bar->snext_change <= time) {
+			bar->sspeed = (2*rand_range(0, 1) - 1) *
 				bar_speeds[rand_range(bar->min_s, bar->max_s)];
-			bar->fbar_len = fmax(0, bar->fbar_len);
-			bar->sbar_len = fmax(0, bar->sbar_len);
-		} else if (bar->freq && bar->next_change <= time) {
-			bar->speed = (2*rand_range(0, 1) - 1) *
-				bar_speeds[rand_range(bar->min_s, bar->max_s)];
-			bar->next_change = time + (rand()/(float)RAND_MAX + 0.5) *
-				(bar->len - bar->gap)/abs(bar->speed);
+			bar->snext_change = time + (rand()/(float)RAND_MAX + 0.5) *
+				BAR_SPEED_CHANGE_INTERVAL;
 		}
-		bar->fbar_len += bar->speed * dt;
-		bar->sbar_len = bar->len - bar->fbar_len - bar->gap;
-		/* Make sure sth negative is not drawn */
-		bar->fbar_len = fmax(0, bar->fbar_len);
-		bar->sbar_len = fmax(0, bar->sbar_len);
+		bar->slen += bar->sspeed * dt;
 		break;
 	}
+	bar->slen = fmin(bar->len, fmax(BAR_MIN_LEN, bar->slen));
 	switch (bar->orientation) {
 	case Vertical:
-		update_sliding_tile(Down, bar->fbar, (int)bar->fbar_len);
-		update_sliding_tile(Up, bar->sbar, (int)bar->sbar_len);
+		update_sliding_tile(Down, bar->fbar, (int)bar->flen);
+		update_sliding_tile(Up, bar->sbar, (int)bar->slen);
 		break;
 	case Horizontal:
-		update_sliding_tile(Right, bar->fbar, (int)bar->fbar_len);
-		update_sliding_tile(Left, bar->sbar, (int)bar->sbar_len);
+		update_sliding_tile(Right, bar->fbar, (int)bar->flen);
+		update_sliding_tile(Left, bar->sbar, (int)bar->slen);
 		break;
 	}
 }
