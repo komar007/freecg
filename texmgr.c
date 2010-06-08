@@ -11,16 +11,17 @@ void tm_init(const SDL_Surface *image)
 			sizeof(*texmgr.lookup_table));
 }
 
-inline unsigned real_hash(int x, int y, size_t w, size_t h)
+inline long long real_hash(int x, int y, size_t w, size_t h)
 {
-	return ((x/4) << 24) + ((y/4) << 16) + ((w/4) << 8) + (h/4);
+	return ((long long)x << 30) + ((long long)y << 20) +
+		((long long)w << 10) + (long long)h;
 }
 
 struct texture *tm_request_texture(int x, int y, size_t w, size_t h)
 {
 	extern GLuint tm_load_texture(SDL_Surface *);
 	struct texture *lt = texmgr.lookup_table;
-	unsigned rh = real_hash(x, y, w, h);
+	long long rh = real_hash(x, y, w, h);
 	int hash = x/4 + y/4 * texmgr.img->w/4;
 	for (; lt[hash].refcount != 0 && lt[hash].real_hash != rh; ++hash);
 	if (texmgr.lookup_table[hash].refcount++ == 0) {

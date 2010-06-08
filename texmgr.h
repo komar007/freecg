@@ -13,7 +13,7 @@ struct texture {
 	/* How much of an opengl texture is used to hold actual graphics
 	 * (textures must have power-of-two dimensions) */
 	double w_ratio, h_ratio;
-	unsigned real_hash;
+	long long real_hash;
 	size_t refcount;
 };
 
