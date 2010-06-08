@@ -117,6 +117,9 @@ void free_cgl(struct cgl *cgl)
 	free(cgl);
 }
 
+#define FIX_PTRS(what, tile, howmany, arr)\
+	for (size_t i = 0; i < howmany; ++i) \
+		what[i].tile = cgl->tiles + cgl->ntiles + (what[i].tile - arr);
 struct cgl *read_cgl(const char *path, uint8_t **out_soin)
 {
 	extern int cgl_read_section_header(const char*, FILE*),
@@ -189,60 +192,36 @@ struct cgl *read_cgl(const char *path, uint8_t **out_soin)
 	cgl->tiles = realloc(cgl->tiles, num_tiles * sizeof(*cgl->tiles));
 	memcpy(cgl->tiles + cgl->ntiles, vent_tiles,
 			nvent_tiles * sizeof(*cgl->tiles));
-	for (size_t i = 0; i < cgl->nfans; ++i) {
-		cgl->fans[i].base = cgl->tiles + cgl->ntiles +
-			(cgl->fans[i].base - vent_tiles);
-		cgl->fans[i].pipes = cgl->tiles + cgl->ntiles +
-			(cgl->fans[i].pipes - vent_tiles);
-	}
+	FIX_PTRS(cgl->fans, base, cgl->nfans, vent_tiles)
+	FIX_PTRS(cgl->fans, pipes, cgl->nfans, vent_tiles)
 	cgl->ntiles += nvent_tiles;
 	free(vent_tiles);
 	memcpy(cgl->tiles + cgl->ntiles, magn_tiles,
 			nmagn_tiles * sizeof(*cgl->tiles));
-	for (size_t i = 0; i < cgl->nmagnets; ++i) {
-		cgl->magnets[i].base = cgl->tiles + cgl->ntiles +
-			(cgl->magnets[i].base - magn_tiles);
-		cgl->magnets[i].magn = cgl->tiles + cgl->ntiles +
-			(cgl->magnets[i].magn - magn_tiles);
-	}
+	FIX_PTRS(cgl->magnets, base, cgl->nmagnets, magn_tiles)
+	FIX_PTRS(cgl->magnets, magn, cgl->nmagnets, magn_tiles)
 	cgl->ntiles += nmagn_tiles;
 	free(magn_tiles);
 	memcpy(cgl->tiles + cgl->ntiles, dist_tiles,
 			ndist_tiles * sizeof(*cgl->tiles));
-	for (size_t i = 0; i < cgl->nairgens; ++i) {
-		cgl->airgens[i].base = cgl->tiles + cgl->ntiles +
-			(cgl->airgens[i].base - dist_tiles);
-		cgl->airgens[i].pipes = cgl->tiles + cgl->ntiles +
-			(cgl->airgens[i].pipes - dist_tiles);
-	}
+	FIX_PTRS(cgl->airgens, base, cgl->nairgens, dist_tiles)
+	FIX_PTRS(cgl->airgens, pipes, cgl->nairgens, dist_tiles)
 	cgl->ntiles += ndist_tiles;
 	free(dist_tiles);
 	memcpy(cgl->tiles + cgl->ntiles, cano_tiles,
 			ncano_tiles * sizeof(*cgl->tiles));
-	for (size_t i = 0; i < cgl->ncannons; ++i) {
-		cgl->cannons[i].beg_base = cgl->tiles + cgl->ntiles +
-			(cgl->cannons[i].beg_base - cano_tiles);
-		cgl->cannons[i].beg_cano = cgl->tiles + cgl->ntiles +
-			(cgl->cannons[i].beg_cano - cano_tiles);
-		cgl->cannons[i].end_base = cgl->tiles + cgl->ntiles +
-			(cgl->cannons[i].end_base - cano_tiles);
-		cgl->cannons[i].end_catch = cgl->tiles + cgl->ntiles +
-			(cgl->cannons[i].end_catch - cano_tiles);
-	}
+	FIX_PTRS(cgl->cannons, beg_base, cgl->ncannons, cano_tiles)
+	FIX_PTRS(cgl->cannons, beg_cano, cgl->ncannons, cano_tiles)
+	FIX_PTRS(cgl->cannons, end_base, cgl->ncannons, cano_tiles)
+	FIX_PTRS(cgl->cannons, end_catch, cgl->ncannons, cano_tiles)
 	cgl->ntiles += ncano_tiles;
 	free(cano_tiles);
 	memcpy(cgl->tiles + cgl->ntiles, pipe_tiles,
 			npipe_tiles * sizeof(*cgl->tiles));
-	for (size_t i = 0; i < cgl->nbars; ++i) {
-		cgl->bars[i].beg = cgl->tiles + cgl->ntiles +
-			(cgl->bars[i].beg - pipe_tiles);
-		cgl->bars[i].end = cgl->tiles + cgl->ntiles +
-			(cgl->bars[i].end - pipe_tiles);
-		cgl->bars[i].fbar = cgl->tiles + cgl->ntiles +
-			(cgl->bars[i].fbar - pipe_tiles);
-		cgl->bars[i].sbar = cgl->tiles + cgl->ntiles +
-			(cgl->bars[i].sbar - pipe_tiles);
-	}
+	FIX_PTRS(cgl->bars, beg, cgl->nbars, pipe_tiles)
+	FIX_PTRS(cgl->bars, end, cgl->nbars, pipe_tiles)
+	FIX_PTRS(cgl->bars, fbar, cgl->nbars, pipe_tiles)
+	FIX_PTRS(cgl->bars, sbar, cgl->nbars, pipe_tiles)
 	cgl->ntiles += npipe_tiles;
 	free(pipe_tiles);
 
@@ -658,6 +637,9 @@ int cgl_read_one_pipe(struct bar *bar, FILE *fp)
 		bar->end->y = bar->beg->y + height - 24;
 		bar->end->w = bar->beg->w; bar->end->h = bar->beg->h;
 		bar->end->img_y = 52;
+		/* fbar and sbar must take the whole space available, so that
+		 * cgl_preprocess assigns them to all blocks where they may
+		 * appear */
 		bar->fbar->x = bar->beg->x + 4;
 		bar->fbar->y = bar->beg->y + 24;
 		bar->fbar->w = 12, bar->fbar->h = height - 2*24;
@@ -676,6 +658,7 @@ int cgl_read_one_pipe(struct bar *bar, FILE *fp)
 		bar->end->y = bar->beg->y;
 		bar->end->w = bar->beg->w; bar->end->h = bar->beg->h;
 		bar->end->img_y = 56;
+		/* Same as in case Vertical */
 		bar->fbar->x = bar->beg->x + 24;
 		bar->fbar->y = bar->beg->y + 4;
 		bar->fbar->w = width - 2*24, bar->fbar->h = 12;
