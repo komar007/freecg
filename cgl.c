@@ -1,5 +1,5 @@
 #include "cgl.h"
-#include "geometry.h"
+#include "mathgeom.h"
 #include <SDL/SDL_error.h>
 #include <stdio.h>
 #include <math.h>

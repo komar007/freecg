@@ -1,5 +1,5 @@
 #include "cg.h"
-#include "geometry.h"
+#include "mathgeom.h"
 #include <stdlib.h>
 #include <math.h>
 #include <assert.h>
