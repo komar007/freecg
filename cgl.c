@@ -1,4 +1,5 @@
 #include "cgl.h"
+#include "geometry.h"
 #include <SDL/SDL_error.h>
 #include <stdio.h>
 #include <math.h>
@@ -682,8 +683,15 @@ int cgl_read_one_pipe(struct bar *bar, FILE *fp)
 
 void cgl_preprocess(struct cgl *cgl)
 {
+	/* below are the expected dimensions of the gamefield. Unfortunately,
+	 * some levels have some tiles standing out of the gamefield, thus, a
+	 * correction is necessary afterwards */
 	unsigned width_px = cgl->width * CGL_BLOCK_SIZE,
 		 height_px = cgl->height * CGL_BLOCK_SIZE;
+	for (size_t k = 0; k < cgl->ntiles; ++k) {
+		width_px = max(width_px, cgl->tiles[k].x + cgl->tiles[k].w);
+		height_px = max(height_px, cgl->tiles[k].y + cgl->tiles[k].h);
+	}
 	/* express the dimensions of level in new block units (BLOCK_SIZE
 	 * instead of CGL_BLOCK_SIZE */
 	cgl->width = (size_t)ceil((double)width_px / BLOCK_SIZE);
