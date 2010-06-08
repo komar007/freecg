@@ -2,6 +2,7 @@
 #include "geometry.h"
 #include <stdlib.h>
 #include <math.h>
+#include <assert.h>
 
 void cg_init_ship(struct ship *s)
 {
@@ -26,11 +27,11 @@ void cg_step_ship(struct ship* s, double dt)
 	s->y += s->vy * dt;
 }
 
-void cg_step_objects(struct cg *cg, double dt)
+void cg_step_objects(struct cg *cg, double time, double dt)
 {
-	extern void cg_step_bar(struct bar*, double);
+	extern void cg_step_bar(struct bar*, double, double);
 	for (size_t i = 0; i < cg->level->nbars; ++i)
-		cg_step_bar(&cg->level->bars[i], dt);
+		cg_step_bar(&cg->level->bars[i], time, dt);
 }
 
 void cg_detect_collisions(struct cg *cg)
@@ -86,7 +87,7 @@ void cg_step(struct cg *cg, double time)
 {
 	double dt = time - cg->time;
 	cg_step_ship(cg->ship, dt);
-	cg_step_objects(cg, dt);
+	cg_step_objects(cg, time, dt);
 	cg_detect_collisions(cg);
 	cg->time = time;
 }
@@ -136,16 +137,41 @@ void update_sliding_tile(enum dir dir, struct tile *t, int len)
 		break;
 	}
 }
-void cg_step_bar(struct bar *bar, double dt)
+inline int rand_range(int min_n, int max_n)
 {
+	assert(min_n <= max_n);
+	return rand() % (max_n - min_n + 1) + min_n;
+}
+void cg_step_bar(struct bar *bar, double time, double dt)
+{
+	switch (bar->gap_type) {
+	case Constant:
+		if (bar->fbar_len <= 0 || bar->sbar_len <= 0) {
+			bar->speed = -sgn(bar->speed) *
+				bar_speeds[rand_range(bar->min_s, bar->max_s)];
+			bar->fbar_len = fmax(0, bar->fbar_len);
+			bar->sbar_len = fmax(0, bar->sbar_len);
+		} else if (bar->freq && bar->next_change <= time) {
+			bar->speed = (2*rand_range(0, 1) - 1) *
+				bar_speeds[rand_range(bar->min_s, bar->max_s)];
+			bar->next_change = time + (rand()/(float)RAND_MAX + 0.5) *
+				(bar->len - bar->gap)/abs(bar->speed);
+		}
+		bar->fbar_len += bar->speed * dt;
+		bar->sbar_len = bar->len - bar->fbar_len - bar->gap;
+		/* Make sure sth negative is not drawn */
+		bar->fbar_len = fmax(0, bar->fbar_len);
+		bar->sbar_len = fmax(0, bar->sbar_len);
+		break;
+	}
 	switch (bar->orientation) {
 	case Vertical:
-		update_sliding_tile(Down, bar->fbar, 50);
-		update_sliding_tile(Up, bar->sbar, 20);
+		update_sliding_tile(Down, bar->fbar, (int)bar->fbar_len);
+		update_sliding_tile(Up, bar->sbar, (int)bar->sbar_len);
 		break;
 	case Horizontal:
-		update_sliding_tile(Right, bar->fbar, 40);
-		update_sliding_tile(Left, bar->sbar, 30);
+		update_sliding_tile(Right, bar->fbar, (int)bar->fbar_len);
+		update_sliding_tile(Left, bar->sbar, (int)bar->sbar_len);
 		break;
 	}
 }

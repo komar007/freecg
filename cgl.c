@@ -622,8 +622,9 @@ int cgl_read_one_pipe(struct bar *bar, FILE *fp)
 	bar->gap_type = (buf[0] >> 4) & 0x01;
 	bar->orientation = buf[0] & 0x01;
 	bar->gap = buf[2];
-	bar->min_speed = buf[6];
-	bar->max_speed = buf[7];
+	bar->min_s = buf[6] - 1;
+	bar->max_s = buf[7] - 1;
+	bar->speed = 1; /* anything, not 0 */
 	bar->freq = buf[10] & 0x01;
 	int width = buf2[2],
 	    height = buf2[3];
@@ -648,6 +649,7 @@ int cgl_read_one_pipe(struct bar *bar, FILE *fp)
 		bar->sbar->y = bar->beg->y + 24;
 		bar->sbar->w = 12, bar->sbar->h = height - 2*24;
 		bar->sbar->img_x = 552, bar->sbar->img_y = 0;
+		bar->len = height - 2*24;
 		break;
 	case Horizontal:
 		parse_tile_very_simple(buf2, bar->beg,
@@ -667,6 +669,12 @@ int cgl_read_one_pipe(struct bar *bar, FILE *fp)
 		bar->sbar->y = bar->beg->y + 4;
 		bar->sbar->w = width - 2*24, bar->sbar->h = 12;
 		bar->sbar->img_x = 240, bar->sbar->img_y = 80;
+		bar->len = width - 2*24;
+		break;
+	}
+	switch (bar->gap_type) {
+	case Constant:
+		bar->fbar_len = 0;
 		break;
 	}
 	bar->beg->collision_test = bar->end->collision_test = Bitmap;

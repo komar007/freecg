@@ -137,8 +137,12 @@ struct bar {
 		Vertical = 0,
 		Horizontal
 	} orientation;
+	double fbar_len, sbar_len;
+	double speed;
+	double next_change;
+	int len;
 	int gap;
-	int min_speed, max_speed;
+	int min_s, max_s;
 	int freq;
 	int bimg_x,
 	    eimg_x;

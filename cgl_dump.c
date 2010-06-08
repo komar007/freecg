@@ -253,6 +253,7 @@ void print_one_pipe(struct bar *bar, int num)
 	printf("\tbar %d: gap_type = %s, orientation = %s\n", num,
 			bar->gap_type == Constant ? "Const" : "Var",
 			bar->orientation == Horizontal ? "Horiz" : "Vert");
+	printf("\t\tlength = %d, gap = %d\n", bar->len, bar->gap);
 	printf("\t\tbeg:\t"), print_tile(bar->beg);
 	printf("\t\tend:\t"), print_tile(bar->end);
 }
