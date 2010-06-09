@@ -28,13 +28,13 @@ enum {
 #define CGL_MAGIC "\xe1\xd2\xc3\xb4"
 
 enum {
-	SHIP_ON_IMG_X = 0,
-	SHIP_ON_IMG_Y = 92,
-	SHIP_OFF_IMG_X = 0,
-	SHIP_OFF_IMG_Y = 115,
-	SHIP_ANIM_LEN = 24,
 	SHIP_W = 23,
-	SHIP_H = 23
+	SHIP_H = 23,
+	SHIP_ON_IMG_X = 0,
+	SHIP_ON_IMG_Y = 0,
+	SHIP_OFF_IMG_X = 0,
+	SHIP_OFF_IMG_Y = SHIP_H,
+	SHIP_ANIM_LEN = 24,
 };
 
 enum {
@@ -55,9 +55,11 @@ enum {
 };
 /* basic tile, max. 8x8 units = 32x32 px */
 struct tile {
-	int x, y;	/* tile's origin */
-	unsigned int w, h;
-	unsigned int img_x, img_y;	/* position of image in gfx file */
+	short x, y;	/* tile's origin */
+	unsigned short w, h;
+	short tex_x, tex_y;
+	unsigned short tex_w, tex_h;
+	unsigned short img_x, img_y; /* relative position of image in texture */
 	enum {
 		Simple = 0,
 	} type;
@@ -90,7 +92,6 @@ struct fan {
 		Low
 	} power;
 	enum dir dir;
-	int img_x; /* x position of primary texture */
 	struct tile *base,
 		    *pipes; /* unused */
 	struct rect bbox, /* unused */
@@ -98,7 +99,6 @@ struct fan {
 };
 struct magnet {
 	enum dir dir;
-	int img_x; /* x position of primary texture */
 	struct tile *base, /* unused */
 		    *magn;
 	struct rect bbox, /* unused */
@@ -110,7 +110,6 @@ struct airgen {
 		CW
 	} spin;
 	enum dir dir;
-	int img_x; /* position of primary texture */
 	struct tile *base,
 		    *pipes; /* unused */
 	struct rect bbox, /* unused */

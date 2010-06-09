@@ -389,10 +389,10 @@ int read_block(struct tile *tiles, size_t num, int x, int y, FILE* fp)
 		}
 		tiles[k].x = x + UNIT * (buf[0] >> 4);
 		tiles[k].y = y + UNIT * (buf[0] & 0x0f);
-		tiles[k].w = UNIT * (buf[1] >> 4);
-		tiles[k].h = UNIT * (buf[1] & 0x0f);
-		tiles[k].img_y = UNIT * buf[2];
-		tiles[k].img_x = UNIT * buf[3];
+		tiles[k].w = tiles[k].tex_w = UNIT * (buf[1] >> 4);
+		tiles[k].h = tiles[k].tex_h = UNIT * (buf[1] & 0x0f);
+		tiles[k].tex_y = UNIT * buf[2];
+		tiles[k].tex_x = UNIT * buf[3];
 	}
 	return 0;
 }
@@ -412,22 +412,22 @@ void parse_rect(int16_t *data, struct rect *rect)
 void parse_tile(int16_t *data, struct tile *tile)
 {
 	tile->x = data[0], tile->y = data[1];
-	tile->w = data[2], tile->h = data[3];
-	tile->img_x = data[4], tile->img_y = data[5];
+	tile->w = tile->tex_w = data[2], tile->h = tile->tex_h = data[3];
+	tile->tex_x = data[4], tile->tex_y = data[5];
 }
 void parse_tile_simple(int16_t *data, struct tile *tile,
 		unsigned width, unsigned height)
 {
 	tile->x = data[0], tile->y = data[1];
-	tile->img_x = data[2], tile->img_y = data[3];
-	tile->w = width, tile->h = height;
+	tile->tex_x = data[2], tile->tex_y = data[3];
+	tile->w = tile->tex_w = width, tile->h = tile->tex_h = height;
 }
 void parse_tile_very_simple(int16_t *data, struct tile *tile,
-		unsigned w, unsigned h, unsigned img_x, unsigned img_y)
+		unsigned w, unsigned h, unsigned tex_x, unsigned tex_y)
 {
 	tile->x = data[0], tile->y = data[1];
-	tile->img_x = img_x, tile->img_y = img_y;
-	tile->w = w, tile->h = h;
+	tile->tex_x = tex_x, tile->tex_y = tex_y;
+	tile->w = tile->tex_w = w, tile->h = tile->tex_h = h;
 }
 
 /*
@@ -493,7 +493,7 @@ int cgl_read_one_vent(struct fan *fan, FILE *fp)
 	parse_tile_simple(buf2 + 0x00, fan->base, 48, 48);
 	parse_tile(buf2 + 0x04, fan->pipes);
 	fan->pipes->collision_test = Bitmap;
-	fan->img_x = fan->base->img_x;
+	//fan->tex_x = fan->base->tex_x;
 	parse_rect(buf2 + 0x0a, &fan->bbox);
 	parse_rect(buf2 + 0x0e, &fan->range);
 	return 0;
@@ -521,7 +521,7 @@ int cgl_read_one_magn(struct magnet *magnet, FILE *fp)
 	parse_tile_simple(buf2 + 0x00, magnet->base, 32, 32);
 	parse_tile(buf2 + 0x04, magnet->magn);
 	magnet->magn->collision_test = Bitmap;
-	magnet->img_x = magnet->magn->img_x;
+	//magnet->tex_x = magnet->magn->tex_x;
 	parse_rect(buf2 + 0x0a, &magnet->bbox);
 	parse_rect(buf2 + 0x0e, &magnet->range);
 	return 0;
@@ -550,7 +550,7 @@ int cgl_read_one_dist(struct airgen *airgen, FILE *fp)
 	parse_tile_simple(buf2 + 0x00, airgen->base, 40, 40);
 	parse_tile(buf2 + 0x04, airgen->pipes);
 	airgen->pipes->collision_test = Bitmap;
-	airgen->img_x = airgen->base->img_x;
+	//airgen->tex_x = airgen->base->tex_x;
 	parse_rect(buf2 + 0x0a, &airgen->bbox);
 	parse_rect(buf2 + 0x0e, &airgen->range);
 	return 0;
@@ -638,18 +638,18 @@ int cgl_read_one_pipe(struct bar *bar, FILE *fp)
 		bar->end->x = bar->beg->x;
 		bar->end->y = bar->beg->y + height - 24;
 		bar->end->w = bar->beg->w; bar->end->h = bar->beg->h;
-		bar->end->img_y = 52;
+		bar->end->tex_y = 52;
 		/* fbar and sbar must take the whole space available, so that
 		 * cgl_preprocess assigns them to all blocks where they may
 		 * appear */
 		bar->fbar->x = bar->beg->x + 4;
 		bar->fbar->y = bar->beg->y + 24;
 		bar->fbar->w = 12, bar->fbar->h = height - 2*24;
-		bar->fbar->img_x = 552, bar->fbar->img_y = 308 - bar->fbar->h;
+		bar->fbar->tex_x = 552, bar->fbar->tex_y = 308 - bar->fbar->h;
 		bar->sbar->x = bar->beg->x + 4;
 		bar->sbar->y = bar->beg->y + 24;
 		bar->sbar->w = 12, bar->sbar->h = height - 2*24;
-		bar->sbar->img_x = 552, bar->sbar->img_y = 0;
+		bar->sbar->tex_x = 552, bar->sbar->tex_y = 0;
 		bar->len = height - 2*24;
 		break;
 	case Horizontal:
@@ -660,16 +660,16 @@ int cgl_read_one_pipe(struct bar *bar, FILE *fp)
 		bar->end->x = bar->beg->x + width - 24;
 		bar->end->y = bar->beg->y;
 		bar->end->w = bar->beg->w; bar->end->h = bar->beg->h;
-		bar->end->img_y = 56;
+		bar->end->tex_y = 56;
 		/* Same as in case Vertical */
 		bar->fbar->x = bar->beg->x + 24;
 		bar->fbar->y = bar->beg->y + 4;
 		bar->fbar->w = width - 2*24, bar->fbar->h = 12;
-		bar->fbar->img_x = 548 - bar->fbar->w, bar->fbar->img_y = 80;
+		bar->fbar->tex_x = 548 - bar->fbar->w, bar->fbar->tex_y = 80;
 		bar->sbar->x = bar->beg->x + 24;
 		bar->sbar->y = bar->beg->y + 4;
 		bar->sbar->w = width - 2*24, bar->sbar->h = 12;
-		bar->sbar->img_x = 240, bar->sbar->img_y = 80;
+		bar->sbar->tex_x = 240, bar->sbar->tex_y = 80;
 		bar->len = width - 2*24;
 		break;
 	}
@@ -703,9 +703,9 @@ void cgl_preprocess(struct cgl *cgl)
 		       y = cgl->tiles[k].y / BLOCK_SIZE;
 		assert(x < cgl->width);
 		assert(y < cgl->height);
-		for (size_t j = y; j*BLOCK_SIZE < cgl->tiles[k].y +
+		for (size_t j = y; j*BLOCK_SIZE < (size_t)cgl->tiles[k].y +
 				cgl->tiles[k].h; ++j)
-			for (size_t i = x; i*BLOCK_SIZE < cgl->tiles[k].x +
+			for (size_t i = x; i*BLOCK_SIZE < (size_t)cgl->tiles[k].x +
 					cgl->tiles[k].w; ++i)
 				sizes[i + j * cgl->width]++;
 	}
@@ -719,9 +719,9 @@ void cgl_preprocess(struct cgl *cgl)
 	for (size_t k = 0; k < cgl->ntiles; ++k) {
 		size_t x = cgl->tiles[k].x / BLOCK_SIZE,
 		       y = cgl->tiles[k].y / BLOCK_SIZE;
-		for (size_t j = y; j*BLOCK_SIZE < cgl->tiles[k].y +
+		for (size_t j = y; j*BLOCK_SIZE < (size_t)cgl->tiles[k].y +
 				cgl->tiles[k].h; ++j)
-			for (size_t i = x; i*BLOCK_SIZE < cgl->tiles[k].x +
+			for (size_t i = x; i*BLOCK_SIZE < (size_t)cgl->tiles[k].x +
 					cgl->tiles[k].w; ++i)
 				cgl->blocks[j][i][is[i + j*cgl->width]++] = &cgl->tiles[k];
 	}

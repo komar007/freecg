@@ -5,7 +5,7 @@
 #include <math.h>
 
 struct glengine gl;
-void gl_draw_sprite(double, double, double, double, int, int);
+void gl_draw_sprite(double, double, struct tile*, struct texture*);
 
 void gl_init(struct cg* cg)
 {
@@ -95,36 +95,40 @@ void gl_draw_ship(void)
 {
 	struct tile tile;
 	ship_to_tile(gl.cg->ship, &tile); /* to get tex coordinates */
-	gl_draw_sprite(gl.cg->ship->x, gl.cg->ship->y, SHIP_W, SHIP_H,
-			tile.img_x, tile.img_y);
+	struct texture *tex = tm_request_texture(&tile);
+	gl_draw_sprite(gl.cg->ship->x, gl.cg->ship->y, &tile, tex);
 }
 
-void gl_draw_sprite(double x, double y, double w, double h, int img_x, int img_y)
+/* this function uses x and y as coordinates instead of tile's x and y, to
+ * support subpixel rendering */
+void gl_draw_sprite(double x, double y, struct tile *tile, struct texture *tex)
 {
-	struct texture *tex = tm_request_texture(img_x, img_y, (int)w, (int)h);
 	glBindTexture(GL_TEXTURE_2D, tex->no);
 	glBegin(GL_QUADS);
 	tm_coord_tl(tex);
 	glVertex2f(x, y);
 	tm_coord_bl(tex);
-	glVertex2f(x, y + h);
+	glVertex2f(x, y + tile->h);
 	tm_coord_br(tex);
-	glVertex2f(x + w, y + h);
+	glVertex2f(x + tile->w, y + tile->h);
 	tm_coord_tr(tex);
-	glVertex2f(x + w, y);
+	glVertex2f(x + tile->w, y);
 	glEnd();
 }
 
-void gl_draw_simple_tile(struct tile *tile, int img_x, int img_y)
+inline void gl_draw_simple_tile(struct tile *tile, struct texture *tex)
 {
-	gl_draw_sprite(tile->x, tile->y, tile->w, tile->h, img_x, img_y);
+	gl_draw_sprite(tile->x, tile->y, tile, tex);
 }
 
 void gl_dispatch_drawing(struct tile *tile)
 {
+	struct texture *tex;
 	switch (tile->type) {
 	case Simple:
-		gl_draw_simple_tile(tile, tile->img_x, tile->img_y); break;
+		tex = tm_request_texture(tile);
+		gl_draw_simple_tile(tile, tex);
+		break;
 	}
 }
 
@@ -133,19 +137,19 @@ void animate_fan(struct fan *fan, double time)
 {
 	int phase = round(time * 1000 / FAN_ANIM_INTERVAL);
 	int cur_tex = fan_anim_order[phase % 3];
-	fan->base->img_x = fan->img_x + cur_tex * fan->base->w;
+	//fan->base->img_x = fan->img_x + cur_tex * fan->base->w;
 }
 void animate_magnet(struct magnet *magnet, double time)
 {
 	int phase = round(time * 1000 / MAGNET_ANIM_INTERVAL);
 	int cur_tex = magnet_anim_order[phase % 4];
-	magnet->magn->img_x = magnet->img_x + cur_tex * magnet->magn->w;
+	//magnet->magn->img_x = magnet->img_x + cur_tex * magnet->magn->w;
 }
 void animate_airgen(struct airgen *airgen, double time)
 {
 	int phase = round(time * 1000 / AIRGEN_ANIM_INTERVAL);
 	int cur_tex = airgen_anim_order[phase % 8];
-	airgen->base->img_x = airgen->img_x + cur_tex * airgen->base->w;
+	//airgen->base->img_x = airgen->img_x + cur_tex * airgen->base->w;
 }
 void animate_bar(struct bar *bar, double time)
 {

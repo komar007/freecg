@@ -1,6 +1,7 @@
 #ifndef TEXMGR_H
 #define TEXMGR_H
 
+#include "cgl.h"
 #include <SDL/SDL.h>
 #include <SDL/SDL_opengl.h>
 
@@ -23,7 +24,7 @@ struct texture_manager {
 };
 
 void tm_init(const SDL_Surface *);
-struct texture *tm_request_texture(int x, int y, size_t w, size_t h);
+struct texture *tm_request_texture(struct tile*);
 
 inline void tm_coord_tl(struct texture __attribute__((unused)) *tex)
 {
