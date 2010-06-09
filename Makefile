@@ -1,4 +1,4 @@
-CC=gcc -pg -g -ggdb
+CC=gcc
 WARN=-Wall -Wextra
 LIBS=-lm `sdl-config --libs` -lGL
 CFLAGS=`sdl-config --cflags` -O2 -pedantic -std=c99 $(WARN)
