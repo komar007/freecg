@@ -1,5 +1,4 @@
 #include "gfx.h"
-#include "cgl.h"
 #include <errno.h>
 #include <assert.h>
 
@@ -58,7 +57,7 @@ cleanup:
 	return gfx;
 }
 
-int make_collision_map(SDL_Surface *gfx, collision_map cmap)
+int make_collision_map(const SDL_Surface *gfx, collision_map cmap)
 {
 	for (int y = 0; y < gfx->h; ++y) {
 		uint32_t *pixel = (uint32_t*)((uint8_t*)gfx->pixels +

@@ -5,7 +5,7 @@ void ship_to_tile(const struct ship *s, struct tile *t)
 {
 	t->w = SHIP_W, t->h = SHIP_H;
 	t->x = (int)round(s->x), t->y = (int)round(s->y);
-	t->tex_w = SHIP_W * SHIP_ANIM_LEN;
+	t->tex_w = SHIP_W * SHIP_NUM_ANGLES;
 	t->tex_h = SHIP_H * 2;
 	t->tex_x = 0, t->tex_y = 92;
 	if (s->engine) {

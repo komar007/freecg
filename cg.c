@@ -4,6 +4,8 @@
 #include <math.h>
 #include <assert.h>
 
+static const double bar_speeds[] = {5.65, 7.43, 10.83, 21.67, 43.33, 69.33};
+
 void cg_init_ship(struct ship *s)
 {
 	s->engine = 0;
@@ -143,21 +145,32 @@ inline int rand_range(int min_n, int max_n)
 	assert(min_n <= max_n);
 	return rand() % (max_n - min_n + 1) + min_n;
 }
+inline int rand_sign()
+{
+	return 2 * rand_range(0, 1) - 1;
+}
+static inline double rand_speed(struct bar *bar)
+{
+	return bar_speeds[rand_range(bar->min_s, bar->max_s)];
+}
+inline double next_change(double time)
+{
+	return time + (rand()/(float)RAND_MAX + 0.5) *
+		BAR_SPEED_CHANGE_INTERVAL;
+}
 void cg_step_bar(struct bar *bar, double time, double dt)
 {
 	if (bar->flen + bar->slen > bar->len) {
 		bar->slen = bar->len - bar->flen;
-		bar->fspeed = -bar_speeds[rand_range(bar->min_s, bar->max_s)];
-		bar->sspeed = -bar_speeds[rand_range(bar->min_s, bar->max_s)];
+		bar->fspeed = -rand_speed(bar);
+		bar->sspeed = -rand_speed(bar);
 	} else if (bar->flen <= BAR_MIN_LEN) {
-		bar->fspeed = bar_speeds[rand_range(bar->min_s, bar->max_s)];
+		bar->fspeed = rand_speed(bar);
 	} else if (bar->gap_type == Constant && bar->slen <= BAR_MIN_LEN) {
-		bar->fspeed = -bar_speeds[rand_range(bar->min_s, bar->max_s)];
+		bar->fspeed = -rand_speed(bar);
 	} else if (bar->freq && bar->fnext_change <= time) {
-		bar->fspeed = (2*rand_range(0, 1) - 1) *
-			bar_speeds[rand_range(bar->min_s, bar->max_s)];
-		bar->fnext_change = time + (rand()/(float)RAND_MAX + 0.5) *
-			BAR_SPEED_CHANGE_INTERVAL;
+		bar->fspeed = rand_sign() * rand_speed(bar);
+		bar->fnext_change = next_change(time);
 	}
 	bar->flen += bar->fspeed * dt;
 	bar->flen = fmin(bar->len, fmax(BAR_MIN_LEN, bar->flen));
@@ -167,12 +180,10 @@ void cg_step_bar(struct bar *bar, double time, double dt)
 		break;
 	case Variable:
 		if (bar->slen <= BAR_MIN_LEN) {
-			bar->sspeed = bar_speeds[rand_range(bar->min_s, bar->max_s)];
+			bar->sspeed = rand_speed(bar);
 		} else if (bar->freq && bar->snext_change <= time) {
-			bar->sspeed = (2*rand_range(0, 1) - 1) *
-				bar_speeds[rand_range(bar->min_s, bar->max_s)];
-			bar->snext_change = time + (rand()/(float)RAND_MAX + 0.5) *
-				BAR_SPEED_CHANGE_INTERVAL;
+			bar->sspeed = rand_sign() * rand_speed(bar);
+			bar->snext_change = next_change(time);
 		}
 		bar->slen += bar->sspeed * dt;
 		break;

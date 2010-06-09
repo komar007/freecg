@@ -1,7 +1,6 @@
 #ifndef GFX_H
 #define GFX_H
 
-#include "cg.h"
 #include <SDL/SDL.h>
 
 #if SDL_BYTEORDER == SDL_BIG_ENDIAN
@@ -16,7 +15,20 @@
 #define AMASK 0xff000000
 #endif
 
+enum gfx_consts {
+	TILESET_W = 588,
+	TILESET_H = 464,
+	SHIP_W = 23,
+	SHIP_H = 23,
+	SHIP_ON_IMG_X = 0,
+	SHIP_ON_IMG_Y = 0,
+	SHIP_OFF_IMG_X = 0,
+	SHIP_OFF_IMG_Y = SHIP_H,
+	SHIP_NUM_ANGLES = 24
+};
+typedef uint8_t collision_map[TILESET_H][TILESET_W];
+
 SDL_Surface *read_gfx(const char *path);
-int make_collision_map(SDL_Surface *gfx, collision_map);
+int make_collision_map(const SDL_Surface *gfx, collision_map);
 
 #endif

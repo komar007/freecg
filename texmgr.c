@@ -7,7 +7,8 @@ struct texture_manager texmgr;
 void tm_init(const SDL_Surface *image)
 {
 	texmgr.img = image;
-	texmgr.lookup_table = calloc(texmgr.img->w/4 * texmgr.img->h/4,
+	/* All most important textures' coordinates are multiples of 4 */
+	texmgr.lookup_table = calloc(TILESET_W/4 * TILESET_H/4,
 			sizeof(*texmgr.lookup_table));
 }
 
@@ -17,12 +18,12 @@ inline long long real_hash(int x, int y, size_t w, size_t h)
 		((long long)w << 10) + (long long)h;
 }
 
-struct texture *tm_request_texture(struct tile *t)
+struct texture *tm_request_texture(const struct tile *t)
 {
 	extern GLuint tm_load_texture(SDL_Surface *);
 	struct texture *lt = texmgr.lookup_table;
 	long long rh = real_hash(t->tex_x, t->tex_y, t->tex_w, t->tex_h);
-	int hash = t->tex_x/4 + t->tex_y/4 * texmgr.img->w/4;
+	int hash = t->tex_x/4 + t->tex_y/4 * TILESET_W/4;
 	for (; lt[hash].refcount != 0 && lt[hash].real_hash != rh; ++hash);
 	if (lt[hash].refcount++ == 0) {
 		int tex_w = 1 << (int)ceil(log2(t->tex_w)),

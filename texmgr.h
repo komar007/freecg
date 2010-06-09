@@ -7,6 +7,7 @@
 
 enum tm_config {
 	TEX_FILTER = GL_NEAREST,
+	/* ... */
 };
 
 struct texture {
@@ -18,32 +19,30 @@ struct texture {
 	long long real_hash;
 	size_t refcount;
 };
-
 struct texture_manager {
 	const SDL_Surface *img;
 	struct texture *lookup_table;
 };
+extern struct texture_manager texmgr;
 
 void tm_init(const SDL_Surface *);
-struct texture *tm_request_texture(struct tile*);
+struct texture *tm_request_texture(const struct tile*);
 
-inline void tm_coord_tl(struct texture __attribute__((unused)) *tex)
+inline void tm_coord_tl(const struct texture *tex)
 {
 	glTexCoord2f(tex->x, tex->y);
 }
-inline void tm_coord_bl(struct texture *tex)
+inline void tm_coord_bl(const struct texture *tex)
 {
 	glTexCoord2f(tex->x, tex->y + tex->h);
 }
-inline void tm_coord_br(struct texture *tex)
+inline void tm_coord_br(const struct texture *tex)
 {
 	glTexCoord2f(tex->x + tex->w, tex->y + tex->h);
 }
-inline void tm_coord_tr(struct texture *tex)
+inline void tm_coord_tr(const struct texture *tex)
 {
 	glTexCoord2f(tex->x + tex->w, tex->y);
 }
-
-extern struct texture_manager texmgr;
 
 #endif

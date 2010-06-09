@@ -2,10 +2,12 @@
 #define CGL_H
 
 #include "basic_types.h"
+#include "gfx.h"
 #include <stdio.h>
 #include <stdint.h>
 
-enum {
+#define CGL_MAGIC "\xe1\xd2\xc3\xb4"
+enum cgl_sizes {
 	/* side length in pixels of the smallest game unit */
 	UNIT = 4,
 	CGL_BLOCK_SIZE = (8 * UNIT),
@@ -25,19 +27,7 @@ enum {
 	PIPE_NUM_SHORTS = 4,
 	PIPE_HDR_SIZE = 16
 };
-#define CGL_MAGIC "\xe1\xd2\xc3\xb4"
-
-enum {
-	SHIP_W = 23,
-	SHIP_H = 23,
-	SHIP_ON_IMG_X = 0,
-	SHIP_ON_IMG_Y = 0,
-	SHIP_OFF_IMG_X = 0,
-	SHIP_OFF_IMG_Y = SHIP_H,
-	SHIP_ANIM_LEN = 24,
-};
-
-enum {
+enum error_codes {
 	EBADHDR = 1,
 	EBADSHDR,
 	EBADSIZE,
