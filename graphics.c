@@ -137,25 +137,25 @@ void animate_fan(struct fan *fan, double time)
 {
 	int phase = round(time * 1000 / FAN_ANIM_INTERVAL);
 	int cur_tex = fan_anim_order[phase % 3];
-	//fan->base->img_x = fan->img_x + cur_tex * fan->base->w;
+	fan->base->img_x = cur_tex * fan->base->w;
 }
 void animate_magnet(struct magnet *magnet, double time)
 {
 	int phase = round(time * 1000 / MAGNET_ANIM_INTERVAL);
 	int cur_tex = magnet_anim_order[phase % 4];
-	//magnet->magn->img_x = magnet->img_x + cur_tex * magnet->magn->w;
+	magnet->magn->img_x = cur_tex * magnet->magn->w;
 }
 void animate_airgen(struct airgen *airgen, double time)
 {
 	int phase = round(time * 1000 / AIRGEN_ANIM_INTERVAL);
 	int cur_tex = airgen_anim_order[phase % 8];
-	//airgen->base->img_x = airgen->img_x + cur_tex * airgen->base->w;
+	airgen->base->img_x = cur_tex * airgen->base->w;
 }
 void animate_bar(struct bar *bar, double time)
 {
 	int phase = round(time * 1000 / BAR_ANIM_INTERVAL);
 	int cur_tex = bar_anim_order[0][phase % 2];
-	bar->beg->img_x = bar->bimg_x + cur_tex * BAR_TEX_OFFSET;
+	bar->beg->img_x = cur_tex * BAR_TEX_OFFSET;
 	cur_tex = bar_anim_order[1][phase % 2];
-	bar->end->img_x = bar->eimg_x + cur_tex * BAR_TEX_OFFSET;
+	bar->end->img_x = cur_tex * BAR_TEX_OFFSET;
 }

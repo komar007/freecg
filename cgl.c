@@ -491,9 +491,9 @@ int cgl_read_one_vent(struct fan *fan, FILE *fp)
 	fan->power = (buf[0] >> 4) & 0x01;
 	fan->dir = buf[0] & 0x03;
 	parse_tile_simple(buf2 + 0x00, fan->base, 48, 48);
+	fan->base->tex_w *= 3; /* fan has 3 changing textures */
 	parse_tile(buf2 + 0x04, fan->pipes);
 	fan->pipes->collision_test = Bitmap;
-	//fan->tex_x = fan->base->tex_x;
 	parse_rect(buf2 + 0x0a, &fan->bbox);
 	parse_rect(buf2 + 0x0e, &fan->range);
 	return 0;
@@ -520,8 +520,8 @@ int cgl_read_one_magn(struct magnet *magnet, FILE *fp)
 	magnet->dir = buf[0] & 0x03;
 	parse_tile_simple(buf2 + 0x00, magnet->base, 32, 32);
 	parse_tile(buf2 + 0x04, magnet->magn);
+	magnet->magn->tex_w *= 3; /* magn has 3 changing textures */
 	magnet->magn->collision_test = Bitmap;
-	//magnet->tex_x = magnet->magn->tex_x;
 	parse_rect(buf2 + 0x0a, &magnet->bbox);
 	parse_rect(buf2 + 0x0e, &magnet->range);
 	return 0;
@@ -548,9 +548,9 @@ int cgl_read_one_dist(struct airgen *airgen, FILE *fp)
 	airgen->spin = (buf[0] >> 4) & 0x01;
 	airgen->dir = buf[0] & 0x03;
 	parse_tile_simple(buf2 + 0x00, airgen->base, 40, 40);
+	airgen->base->tex_w *= 8; /* airgen has 8 changing textures */
 	parse_tile(buf2 + 0x04, airgen->pipes);
 	airgen->pipes->collision_test = Bitmap;
-	//airgen->tex_x = airgen->base->tex_x;
 	parse_rect(buf2 + 0x0a, &airgen->bbox);
 	parse_rect(buf2 + 0x0e, &airgen->range);
 	return 0;
@@ -633,43 +633,49 @@ int cgl_read_one_pipe(struct bar *bar, FILE *fp)
 	case Vertical:
 		parse_tile_very_simple(buf2, bar->beg,
 				20, 24, 496, 56);
-		bar->bimg_x = 496;
-		bar->eimg_x = 496;
+		bar->beg->tex_w = bar->end->tex_w = 48;
 		bar->end->x = bar->beg->x;
 		bar->end->y = bar->beg->y + height - 24;
-		bar->end->w = bar->beg->w; bar->end->h = bar->beg->h;
-		bar->end->tex_y = 52;
+		bar->end->w = bar->beg->w;
+		bar->end->h = bar->end->tex_h = bar->beg->h;
+		bar->end->tex_y = 52, bar->end->tex_x = 496;
 		/* fbar and sbar must take the whole space available, so that
 		 * cgl_preprocess assigns them to all blocks where they may
 		 * appear */
 		bar->fbar->x = bar->beg->x + 4;
 		bar->fbar->y = bar->beg->y + 24;
 		bar->fbar->w = 12, bar->fbar->h = height - 2*24;
-		bar->fbar->tex_x = 552, bar->fbar->tex_y = 308 - bar->fbar->h;
+		bar->fbar->tex_x = 552, bar->fbar->tex_y = 0;
+		bar->fbar->tex_w = 12, bar->fbar->tex_h = 308;
+		bar->fbar->img_y = 308 - bar->fbar->h;
 		bar->sbar->x = bar->beg->x + 4;
 		bar->sbar->y = bar->beg->y + 24;
 		bar->sbar->w = 12, bar->sbar->h = height - 2*24;
 		bar->sbar->tex_x = 552, bar->sbar->tex_y = 0;
+		bar->sbar->tex_w = 12, bar->sbar->tex_h = 308;
 		bar->len = height - 2*24;
 		break;
 	case Horizontal:
 		parse_tile_very_simple(buf2, bar->beg,
 				24, 20, 496, 56);
-		bar->bimg_x = 496;
-		bar->eimg_x = 492;
+		bar->beg->tex_w = bar->end->tex_w = 52;
 		bar->end->x = bar->beg->x + width - 24;
 		bar->end->y = bar->beg->y;
-		bar->end->w = bar->beg->w; bar->end->h = bar->beg->h;
-		bar->end->tex_y = 56;
+		bar->end->w = bar->beg->w;
+		bar->end->h = bar->end->tex_h = bar->beg->h;
+		bar->end->tex_y = 56, bar->end->tex_x = 492;
 		/* Same as in case Vertical */
 		bar->fbar->x = bar->beg->x + 24;
 		bar->fbar->y = bar->beg->y + 4;
 		bar->fbar->w = width - 2*24, bar->fbar->h = 12;
-		bar->fbar->tex_x = 548 - bar->fbar->w, bar->fbar->tex_y = 80;
+		bar->fbar->tex_x = 240, bar->fbar->tex_y = 80;
+		bar->fbar->tex_w = 308, bar->fbar->tex_h = 12;
+		bar->fbar->img_x = 308 - bar->fbar->w;
 		bar->sbar->x = bar->beg->x + 24;
 		bar->sbar->y = bar->beg->y + 4;
 		bar->sbar->w = width - 2*24, bar->sbar->h = 12;
 		bar->sbar->tex_x = 240, bar->sbar->tex_y = 80;
+		bar->sbar->tex_w = 308, bar->sbar->tex_h = 12;
 		bar->len = width - 2*24;
 		break;
 	}

@@ -25,7 +25,7 @@ struct texture *tm_request_texture(struct tile *t)
 	long long rh = real_hash(t->tex_x, t->tex_y, t->tex_w, t->tex_h);
 	int hash = t->tex_x/4 + t->tex_y/4 * texmgr.img->w/4;
 	for (; lt[hash].refcount != 0 && lt[hash].real_hash != rh; ++hash);
-	if (texmgr.lookup_table[hash].refcount++ == 0) {
+	if (lt[hash].refcount++ == 0) {
 		int tex_w = 1 << (int)ceil(log2(t->tex_w)),
 		    tex_h = 1 << (int)ceil(log2(t->tex_h));
 		SDL_Surface *tile = SDL_CreateRGBSurface(0, tex_w, tex_h, 32,
@@ -44,11 +44,15 @@ struct texture *tm_request_texture(struct tile *t)
 		if (SDL_MUSTLOCK(tile))
 			SDL_UnlockSurface(tile);
 		lt[hash].real_hash = rh;
-		lt[hash].w_ratio = (double)t->w / tex_w;
-		lt[hash].h_ratio = (double)t->h / tex_h;
+		lt[hash].w_ratio = (double)t->tex_w / tex_w;
+		lt[hash].h_ratio = (double)t->tex_h / tex_h;
 		SDL_FreeSurface(tile);
 		printf("tex: %i\n", ++asd);
 	}
+	lt[hash].x = (double)t->img_x / t->tex_w * lt[hash].w_ratio;
+	lt[hash].y = (double)t->img_y / t->tex_h * lt[hash].h_ratio;
+	lt[hash].w = (double)t->w / t->tex_w * lt[hash].w_ratio;
+	lt[hash].h = (double)t->h / t->tex_h * lt[hash].h_ratio;
 	return &lt[hash];
 }
 

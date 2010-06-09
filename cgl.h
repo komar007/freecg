@@ -143,8 +143,6 @@ struct bar {
 	int gap;
 	int min_s, max_s;
 	int freq;
-	int bimg_x,
-	    eimg_x;
 	struct tile *beg,
 		    *end,
 		    *fbar,

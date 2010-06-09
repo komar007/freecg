@@ -14,6 +14,7 @@ struct texture {
 	/* How much of an opengl texture is used to hold actual graphics
 	 * (textures must have power-of-two dimensions) */
 	double w_ratio, h_ratio;
+	double x, y, w, h;
 	long long real_hash;
 	size_t refcount;
 };
@@ -28,19 +29,19 @@ struct texture *tm_request_texture(struct tile*);
 
 inline void tm_coord_tl(struct texture __attribute__((unused)) *tex)
 {
-	glTexCoord2f(0.0, 0.0);
+	glTexCoord2f(tex->x, tex->y);
 }
 inline void tm_coord_bl(struct texture *tex)
 {
-	glTexCoord2f(0.0, tex->h_ratio);
+	glTexCoord2f(tex->x, tex->y + tex->h);
 }
 inline void tm_coord_br(struct texture *tex)
 {
-	glTexCoord2f(tex->w_ratio, tex->h_ratio);
+	glTexCoord2f(tex->x + tex->w, tex->y + tex->h);
 }
 inline void tm_coord_tr(struct texture *tex)
 {
-	glTexCoord2f(tex->w_ratio, 0.0);
+	glTexCoord2f(tex->x + tex->w, tex->y);
 }
 
 extern struct texture_manager texmgr;
