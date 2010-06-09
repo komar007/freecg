@@ -4,8 +4,6 @@
 #include <math.h>
 #include <assert.h>
 
-static const double bar_speeds[] = {5.65, 7.43, 10.83, 21.67, 43.33, 69.33};
-
 void cg_init_ship(struct ship *s)
 {
 	s->engine = 0;
@@ -38,9 +36,9 @@ void cg_step_objects(struct cg *cg, double time, double dt)
 		cg_step_bar(&cg->level->bars[i], time, dt);
 }
 
-void cg_detect_collisions(struct cg *cg)
+void cg_handle_collisions(struct cg *cg)
 {
-	extern void cg_detect_collisions_block(struct cg*, struct tile**);
+	extern void cg_handle_collisions_block(struct cg*, block);
 	size_t x = max(0, cg->ship->x / BLOCK_SIZE),
 	       y = max(0, cg->ship->y / BLOCK_SIZE);
 	int end_x = min(cg->ship->x + SHIP_W,
@@ -49,30 +47,30 @@ void cg_detect_collisions(struct cg *cg)
 			cg->level->height * BLOCK_SIZE);
 	for (size_t j = y; (signed)j*BLOCK_SIZE < end_y; ++j)
 		for (size_t i = x; (signed)i*BLOCK_SIZE < end_x; ++i)
-			cg_detect_collisions_block(cg, cg->level->blocks[j][i]);
+			cg_handle_collisions_block(cg, cg->level->blocks[j][i]);
 }
 
-void cg_detect_collisions_block(struct cg *cg, struct tile **blocks)
+void cg_handle_collisions_block(struct cg *cg, block blk)
 {
-	extern int cg_collision_bitmap(struct cg*, struct rect*,
-			int, int, struct tile*),
-	           cg_collision_rect(struct cg*, struct rect*,
-			int, int, struct tile*);
+	extern int cg_collision_bitmap(const struct cg*, const struct rect*,
+			int, int, const struct tile*),
+	           cg_collision_rect(const struct cg*, const struct rect*,
+			int, int, const struct tile*);
 	struct rect r;
 	struct tile stile;
 	ship_to_tile(cg->ship, &stile);
-	for (size_t i = 0; blocks[i] != NULL; ++i) {
-		if (!tiles_intersect(&stile, blocks[i], &r))
+	for (size_t i = 0; blk[i] != NULL; ++i) {
+		if (!tiles_intersect(&stile, blk[i], &r))
 			continue;
 		int img_x = stile.tex_x+stile.img_x + (r.x - stile.x),
 		    img_y = stile.tex_y+stile.img_y + (r.y - stile.y);
 		int coll = 0;
-		switch (blocks[i]->collision_test) {
+		switch (blk[i]->collision_test) {
 		case Rect:
-			coll = cg_collision_rect(cg, &r, img_x, img_y, blocks[i]);
+			coll = cg_collision_rect(cg, &r, img_x, img_y, blk[i]);
 			break;
 		case Bitmap:
-			coll = cg_collision_bitmap(cg, &r, img_x, img_y, blocks[i]);
+			coll = cg_collision_bitmap(cg, &r, img_x, img_y, blk[i]);
 			break;
 		case Cannon:
 			/* FIXME */
@@ -91,13 +89,13 @@ void cg_step(struct cg *cg, double time)
 	double dt = time - cg->time;
 	cg_step_ship(cg->ship, time, dt);
 	cg_step_objects(cg, time, dt);
-	cg_detect_collisions(cg);
+	cg_handle_collisions(cg);
 	cg->time = time;
 }
 
 /* Collision detectors */
-int cg_collision_rect(struct cg *cg, struct rect *r,
-		int img_x, int img_y, __attribute__((unused)) struct tile *t)
+int cg_collision_rect(const struct cg *cg, const struct rect *r,
+		int img_x, int img_y, __attribute__((unused)) const struct tile *t)
 {
 	for (unsigned j = 0; j < r->h; ++j)
 		for (unsigned i = 0; i < r->w; ++i)
@@ -105,8 +103,8 @@ int cg_collision_rect(struct cg *cg, struct rect *r,
 				return 1;
 	return 0;
 }
-int cg_collision_bitmap(struct cg *cg, struct rect *r,
-	int img_x, int img_y, struct tile *t)
+int cg_collision_bitmap(const struct cg *cg, const struct rect *r,
+	int img_x, int img_y, const struct tile *t)
 {
 	int tile_img_x = t->tex_x+t->img_x + (r->x - t->x),
 	    tile_img_y = t->tex_y+t->img_y + (r->y - t->y);
@@ -140,20 +138,14 @@ void update_sliding_tile(enum dir dir, struct tile *t, int len)
 		break;
 	}
 }
-inline int rand_range(int min_n, int max_n)
-{
-	assert(min_n <= max_n);
-	return rand() % (max_n - min_n + 1) + min_n;
-}
-inline int rand_sign()
-{
-	return 2 * rand_range(0, 1) - 1;
-}
-static inline double rand_speed(struct bar *bar)
+
+static const double bar_speeds[] = {5.65, 7.43, 10.83, 21.67, 43.33, 69.33};
+
+static inline double bar_rand_speed(const struct bar *bar)
 {
 	return bar_speeds[rand_range(bar->min_s, bar->max_s)];
 }
-inline double next_change(double time)
+inline double bar_next_change(double time)
 {
 	return time + (rand()/(float)RAND_MAX + 0.5) *
 		BAR_SPEED_CHANGE_INTERVAL;
@@ -162,15 +154,15 @@ void cg_step_bar(struct bar *bar, double time, double dt)
 {
 	if (bar->flen + bar->slen > bar->len) {
 		bar->slen = bar->len - bar->flen;
-		bar->fspeed = -rand_speed(bar);
-		bar->sspeed = -rand_speed(bar);
+		bar->fspeed = -bar_rand_speed(bar);
+		bar->sspeed = -bar_rand_speed(bar);
 	} else if (bar->flen <= BAR_MIN_LEN) {
-		bar->fspeed = rand_speed(bar);
+		bar->fspeed = bar_rand_speed(bar);
 	} else if (bar->gap_type == Constant && bar->slen <= BAR_MIN_LEN) {
-		bar->fspeed = -rand_speed(bar);
+		bar->fspeed = -bar_rand_speed(bar);
 	} else if (bar->freq && bar->fnext_change <= time) {
-		bar->fspeed = rand_sign() * rand_speed(bar);
-		bar->fnext_change = next_change(time);
+		bar->fspeed = rand_sign() * bar_rand_speed(bar);
+		bar->fnext_change = bar_next_change(time);
 	}
 	bar->flen += bar->fspeed * dt;
 	bar->flen = fmin(bar->len, fmax(BAR_MIN_LEN, bar->flen));
@@ -180,10 +172,10 @@ void cg_step_bar(struct bar *bar, double time, double dt)
 		break;
 	case Variable:
 		if (bar->slen <= BAR_MIN_LEN) {
-			bar->sspeed = rand_speed(bar);
+			bar->sspeed = bar_rand_speed(bar);
 		} else if (bar->freq && bar->snext_change <= time) {
-			bar->sspeed = rand_sign() * rand_speed(bar);
-			bar->snext_change = next_change(time);
+			bar->sspeed = rand_sign() * bar_rand_speed(bar);
+			bar->snext_change = bar_next_change(time);
 		}
 		bar->slen += bar->sspeed * dt;
 		break;

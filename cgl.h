@@ -70,11 +70,6 @@ struct tile {
 	unsigned int lframe;
 	void *data;
 };
-/* 8x8 unit = 32x32 px square tile containter */
-struct block {
-	size_t size;
-	struct tile *tiles;
-};
 
 struct fan {
 	enum {
@@ -138,6 +133,7 @@ struct bar {
 		    *fbar,
 		    *sbar;
 };
+typedef struct tile **block;
 /* cgl level contents */
 struct cgl {
 	enum {
@@ -157,7 +153,7 @@ struct cgl {
 	struct cannon *cannons;
 	size_t nbars;
 	struct bar *bars;
-	struct tile ****blocks;
+	block **blocks;
 };
 
 struct cgl *read_cgl(const char *, uint8_t**);

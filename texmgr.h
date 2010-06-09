@@ -6,7 +6,7 @@
 #include <SDL/SDL_opengl.h>
 
 enum tm_config {
-	TEX_FILTER = GL_NEAREST,
+	TEX_FILTER = GL_LINEAR,
 	/* ... */
 };
 
