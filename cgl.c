@@ -1,3 +1,4 @@
+#include "cg.h"
 #include "cgl.h"
 #include "mathgeom.h"
 #include <SDL/SDL_error.h>
@@ -144,13 +145,13 @@ struct cgl *read_cgl(const char *path, uint8_t **out_soin)
 		return NULL;
 	}
 	cgl = calloc(1, sizeof(*cgl));
-	cgl->tiles = NULL;
-	cgl->fans = NULL;
+	cgl->tiles   = NULL;
+	cgl->fans    = NULL;
 	cgl->magnets = NULL;
 	cgl->airgens = NULL;
 	cgl->cannons = NULL;
-	cgl->bars = NULL;
-	cgl->blocks = NULL;
+	cgl->bars    = NULL;
+	cgl->blocks  = NULL;
 	if (cgl_read_section_header("CGL1", fp) != 0)
 		goto error;
 	if (cgl_read_size(cgl, fp) != 0)
@@ -225,7 +226,6 @@ struct cgl *read_cgl(const char *path, uint8_t **out_soin)
 	FIX_PTRS(cgl->bars, sbar, cgl->nbars, pipe_tiles)
 	cgl->ntiles += npipe_tiles;
 	free(pipe_tiles);
-
 	if (out_soin)
 		*out_soin = soin;
 	else
@@ -245,7 +245,6 @@ int read_short(int16_t arr[], size_t num, FILE *fp)
 	/* FIXME: Add big-endian support */
 	uint8_t buf[2];
 	int nread;
-
 	for(size_t i = 0; i < num; ++i) {
 		nread = fread(buf, sizeof(uint8_t), 2, fp);
 		if (nread < 2)
@@ -260,7 +259,6 @@ int read_integer(int32_t arr[], size_t num, FILE *fp)
 	/* FIXME: Add big-endian support */
 	int16_t buf[2];
 	int err;
-
 	for (size_t i = 0; i < num; ++i) {
 		err = read_short(buf, 2, fp);
 		if (err)
@@ -274,7 +272,6 @@ int cgl_read_section_header(const char *name, FILE *fp)
 {
 	size_t nread;
 	char hdr[4];
-
 	nread = fread(hdr, sizeof(char), CGL_SHDR_SIZE, fp);
 	if (nread < CGL_SHDR_SIZE) {
 		SDL_SetError("cgl %s header incomplete", name);
@@ -291,12 +288,10 @@ int cgl_read_section_header(const char *name, FILE *fp)
  * On error SDL_SetError(...) is called and non-zero error code is returned.
  * 0 is returned on success.
  */
-
 int cgl_read_size(struct cgl *cgl, FILE *fp)
 {
 	uint32_t dims[2];
 	int err;
-
 	err = cgl_read_section_header("SIZE", fp);
 	if (err)
 		return err;
@@ -314,7 +309,6 @@ int cgl_read_soin(struct cgl *cgl, uint8_t *nums, FILE *fp)
 {
 	size_t nread,
 	       nblocks = cgl->height * cgl->width;
-
 	int err = cgl_read_section_header("SOIN", fp);
 	if (err)
 		return err;
@@ -334,7 +328,6 @@ int cgl_read_magic(struct cgl *cgl, FILE *fp)
 {
 	size_t nread;
 	uint8_t mgc[4];
-
 	nread = fread(mgc, sizeof(uint8_t), CGL_MAGIC_SIZE, fp);
 	if (nread < CGL_MAGIC_SIZE) {
 		fseek(fp, -nread, SEEK_CUR);
@@ -355,7 +348,6 @@ int cgl_read_sobs(struct cgl *cgl, const uint8_t *soin, FILE *fp)
 {
 	extern int read_block(struct tile*, size_t, int, int, FILE*);
 	int err;
-
 	err = cgl_read_section_header("SOBS", fp);
 	if (err)
 		return err;
@@ -379,7 +371,6 @@ int read_block(struct tile *tiles, size_t num, int x, int y, FILE* fp)
 {
 	uint8_t buf[4];
 	int nread;
-
 	for (size_t k = 0; k < num; ++k) {
 		nread = fread(buf, sizeof(uint8_t), SOBS_TILE_SIZE, fp);
 		if (nread < SOBS_TILE_SIZE) {
@@ -399,42 +390,36 @@ int read_block(struct tile *tiles, size_t num, int x, int y, FILE* fp)
 
 /* Auxilliary functions to extract a single rectangle or tile description from
  * an array of int16_t */
-void parse_point(int16_t *data, vector *a, vector *b)
+inline void parse_point(int16_t *data, vector *a, vector *b)
 {
 	a->x = data[0], a->y = data[1];
 	b->x = data[2], b->y = data[3];
 }
-void parse_rect(int16_t *data, struct rect *rect)
+inline void parse_rect(int16_t *data, struct rect *rect)
 {
 	rect->x = data[0], rect->y = data[1];
 	rect->w = data[2], rect->h = data[3];
 }
-void parse_tile(int16_t *data, struct tile *tile)
+inline void parse_tile_normal(int16_t *data, struct tile *tile)
 {
 	tile->x = data[0], tile->y = data[1];
 	tile->w = tile->tex_w = data[2], tile->h = tile->tex_h = data[3];
 	tile->tex_x = data[4], tile->tex_y = data[5];
 }
-void parse_tile_simple(int16_t *data, struct tile *tile,
+inline void parse_tile_simple(int16_t *data, struct tile *tile,
 		unsigned width, unsigned height)
 {
 	tile->x = data[0], tile->y = data[1];
 	tile->tex_x = data[2], tile->tex_y = data[3];
 	tile->w = tile->tex_w = width, tile->h = tile->tex_h = height;
 }
-void parse_tile_very_simple(int16_t *data, struct tile *tile,
+inline void parse_tile_minimal(int16_t *data, struct tile *tile,
 		unsigned w, unsigned h, unsigned tex_x, unsigned tex_y)
 {
 	tile->x = data[0], tile->y = data[1];
 	tile->tex_x = tex_x, tile->tex_y = tex_y;
 	tile->w = tile->tex_w = w, tile->h = tile->tex_h = h;
 }
-
-/*
- * Each of these functions reads one section of dynamic objects from the cgl
- * file. They allocate space for tiles needed by these objects, place the
- * objects there and return a pointer through the pointer in the second argument.
- */
 
 /*
  * All following functions share the same scaffold:
@@ -470,6 +455,11 @@ error:                                                                      \
 	return -EBAD##hdr;                                                  \
 }
 
+/*
+ * Each of these functions reads one section of dynamic objects from the cgl
+ * file. They allocate space for tiles needed by these objects, place the
+ * objects there and return a pointer through the pointer in the second argument.
+ */
 BEGIN_CGL_READ_X(vent, VENT, fan, 2)
 	cgl->fans[i].base  = &tiles[2*i + 0];
 	cgl->fans[i].pipes = &tiles[2*i + 1];
@@ -491,8 +481,8 @@ int cgl_read_one_vent(struct fan *fan, FILE *fp)
 	fan->power = (buf[0] >> 4) & 0x01;
 	fan->dir = buf[0] & 0x03;
 	parse_tile_simple(buf2 + 0x00, fan->base, 48, 48);
-	fan->base->tex_w *= 3; /* fan has 3 changing textures */
-	parse_tile(buf2 + 0x04, fan->pipes);
+	fan->base->tex_w *= FAN_NUM_TEXTURES;
+	parse_tile_normal(buf2 + 0x04, fan->pipes);
 	fan->pipes->collision_test = Bitmap;
 	parse_rect(buf2 + 0x0a, &fan->bbox);
 	parse_rect(buf2 + 0x0e, &fan->range);
@@ -519,8 +509,8 @@ int cgl_read_one_magn(struct magnet *magnet, FILE *fp)
 		return -EBADMAGN;
 	magnet->dir = buf[0] & 0x03;
 	parse_tile_simple(buf2 + 0x00, magnet->base, 32, 32);
-	parse_tile(buf2 + 0x04, magnet->magn);
-	magnet->magn->tex_w *= 3; /* magn has 3 changing textures */
+	parse_tile_normal(buf2 + 0x04, magnet->magn);
+	magnet->magn->tex_w *= MAGNET_NUM_TEXTURES;
 	magnet->magn->collision_test = Bitmap;
 	parse_rect(buf2 + 0x0a, &magnet->bbox);
 	parse_rect(buf2 + 0x0e, &magnet->range);
@@ -548,8 +538,8 @@ int cgl_read_one_dist(struct airgen *airgen, FILE *fp)
 	airgen->spin = (buf[0] >> 4) & 0x01;
 	airgen->dir = buf[0] & 0x03;
 	parse_tile_simple(buf2 + 0x00, airgen->base, 40, 40);
-	airgen->base->tex_w *= 8; /* airgen has 8 changing textures */
-	parse_tile(buf2 + 0x04, airgen->pipes);
+	airgen->base->tex_w *= AIRGEN_NUM_TEXTURES;
+	parse_tile_normal(buf2 + 0x04, airgen->pipes);
 	airgen->pipes->collision_test = Bitmap;
 	parse_rect(buf2 + 0x0a, &airgen->bbox);
 	parse_rect(buf2 + 0x0e, &airgen->range);
@@ -587,14 +577,14 @@ int cgl_read_one_cano(struct cannon *cannon, FILE *fp)
 		return -EBADCANO;
 	cannon->dir = buf[0] & 0x03;
 	parse_point(buf2 + 0x00, &cannon->beg, &cannon->end);
-	parse_tile_very_simple(buf2 + 0x04, cannon->beg_base,
+	parse_tile_minimal(buf2 + 0x04, cannon->beg_base,
 			24, 24, 512, 188);
 	parse_tile_simple(buf2 + 0x06, cannon->beg_cano,
 			16, 16);
 	cannon->beg_cano->collision_test = Bitmap;
-	parse_tile_very_simple(buf2 + 0x0a, cannon->end_base,
+	parse_tile_minimal(buf2 + 0x0a, cannon->end_base,
 			16, 16, 472, 196);
-	parse_tile(buf2 + 0x0c, cannon->end_catch);
+	parse_tile_normal(buf2 + 0x0c, cannon->end_catch);
 	cannon->end_catch->collision_test = Bitmap;
 	parse_rect(buf2 + 0x12, &cannon->bbox);
 	return 0;
@@ -631,56 +621,64 @@ int cgl_read_one_pipe(struct bar *bar, FILE *fp)
 	    height = buf2[3];
 	switch (bar->orientation) {
 	case Vertical:
-		parse_tile_very_simple(buf2, bar->beg,
-				20, 24, 496, 56);
-		bar->beg->tex_w = bar->end->tex_w = 48;
+		parse_tile_minimal(buf2, bar->beg,
+				BAR_BASE_H, BAR_BASE_W, BAR_BEG_TEX_X, BAR_BEG_TEX_Y);
+		bar->beg->tex_w = bar->end->tex_w = VBAR_BASE_TEX_W;
 		bar->end->x = bar->beg->x;
-		bar->end->y = bar->beg->y + height - 24;
+		bar->end->y = bar->beg->y + height - BAR_BASE_W;
 		bar->end->w = bar->beg->w;
 		bar->end->h = bar->end->tex_h = bar->beg->h;
-		bar->end->tex_y = 52, bar->end->tex_x = 496;
+		bar->end->tex_x = VBAR_END_TEX_X, bar->end->tex_y = VBAR_END_TEX_Y;
 		/* fbar and sbar must take the whole space available, so that
 		 * cgl_preprocess assigns them to all blocks where they may
 		 * appear */
-		bar->fbar->x = bar->beg->x + 4;
-		bar->fbar->y = bar->beg->y + 24;
-		bar->fbar->w = 12, bar->fbar->h = height - 2*24;
-		bar->fbar->tex_x = 552, bar->fbar->tex_y = 0;
-		bar->fbar->tex_w = 12, bar->fbar->tex_h = 308;
-		bar->fbar->img_y = 308 - bar->fbar->h;
-		bar->sbar->x = bar->beg->x + 4;
-		bar->sbar->y = bar->beg->y + 24;
-		bar->sbar->w = 12, bar->sbar->h = height - 2*24;
-		bar->sbar->tex_x = 552, bar->sbar->tex_y = 0;
-		bar->sbar->tex_w = 12, bar->sbar->tex_h = 308;
-		bar->len = height - 2*24;
+		bar->fbar->x = bar->beg->x + (BAR_BASE_H - BAR_THICKNESS) / 2;
+		bar->fbar->y = bar->beg->y + BAR_BASE_W;
+		bar->fbar->w = BAR_THICKNESS;
+		bar->fbar->h = height - 2*BAR_BASE_W;
+		bar->fbar->tex_x = VBAR_TEX_X, bar->fbar->tex_y = VBAR_TEX_Y;
+		bar->fbar->tex_w = BAR_THICKNESS;
+		bar->fbar->tex_h = BAR_TEX_LEN;
+		bar->fbar->img_y = BAR_TEX_LEN - bar->fbar->h;
+		bar->sbar->x = bar->beg->x + (BAR_BASE_H - BAR_THICKNESS) / 2;
+		bar->sbar->y = bar->beg->y + BAR_BASE_W;
+		bar->sbar->w = BAR_THICKNESS;
+		bar->sbar->h = height - 2*BAR_BASE_W;
+		bar->sbar->tex_x = VBAR_TEX_X, bar->sbar->tex_y = VBAR_TEX_Y;
+		bar->sbar->tex_w = BAR_THICKNESS;
+		bar->sbar->tex_h = BAR_TEX_LEN;
+		bar->len = height - 2*BAR_BASE_W;
 		break;
 	case Horizontal:
-		parse_tile_very_simple(buf2, bar->beg,
-				24, 20, 496, 56);
-		bar->beg->tex_w = bar->end->tex_w = 52;
-		bar->end->x = bar->beg->x + width - 24;
+		parse_tile_minimal(buf2, bar->beg,
+				BAR_BASE_W, BAR_BASE_H, BAR_BEG_TEX_X, BAR_BEG_TEX_Y);
+		bar->beg->tex_w = bar->end->tex_w = HBAR_BASE_TEX_W;
+		bar->end->x = bar->beg->x + width - BAR_BASE_W;
 		bar->end->y = bar->beg->y;
 		bar->end->w = bar->beg->w;
 		bar->end->h = bar->end->tex_h = bar->beg->h;
-		bar->end->tex_y = 56, bar->end->tex_x = 492;
+		bar->end->tex_x = HBAR_END_TEX_X, bar->end->tex_y = HBAR_END_TEX_Y;
 		/* Same as in case Vertical */
-		bar->fbar->x = bar->beg->x + 24;
-		bar->fbar->y = bar->beg->y + 4;
-		bar->fbar->w = width - 2*24, bar->fbar->h = 12;
-		bar->fbar->tex_x = 240, bar->fbar->tex_y = 80;
-		bar->fbar->tex_w = 308, bar->fbar->tex_h = 12;
-		bar->fbar->img_x = 308 - bar->fbar->w;
-		bar->sbar->x = bar->beg->x + 24;
-		bar->sbar->y = bar->beg->y + 4;
-		bar->sbar->w = width - 2*24, bar->sbar->h = 12;
-		bar->sbar->tex_x = 240, bar->sbar->tex_y = 80;
-		bar->sbar->tex_w = 308, bar->sbar->tex_h = 12;
-		bar->len = width - 2*24;
+		bar->fbar->x = bar->beg->x + BAR_BASE_W;
+		bar->fbar->y = bar->beg->y + (BAR_BASE_H - BAR_THICKNESS) / 2;
+		bar->fbar->w = width - 2*BAR_BASE_W;
+		bar->fbar->h = BAR_THICKNESS;
+		bar->fbar->tex_x = HBAR_TEX_X, bar->fbar->tex_y = HBAR_TEX_Y;
+		bar->fbar->tex_w = BAR_TEX_LEN;
+		bar->fbar->tex_h = BAR_THICKNESS;
+		bar->fbar->img_x = BAR_TEX_LEN - bar->fbar->w;
+		bar->sbar->x = bar->beg->x + BAR_BASE_W;
+		bar->sbar->y = bar->beg->y + (BAR_BASE_H - BAR_THICKNESS) / 2;
+		bar->sbar->w = width - 2*BAR_BASE_W;
+		bar->sbar->h = BAR_THICKNESS;
+		bar->sbar->tex_x = HBAR_TEX_X, bar->sbar->tex_y = HBAR_TEX_Y;
+		bar->sbar->tex_w = BAR_TEX_LEN;
+		bar->sbar->tex_h = BAR_THICKNESS;
+		bar->len = width - 2*BAR_BASE_W;
 		break;
 	}
-	bar->slen = 2;
-	bar->flen = 2;
+	bar->slen = BAR_MIN_LEN;
+	bar->flen = BAR_MIN_LEN;
 	bar->beg->collision_test = bar->end->collision_test = Bitmap;
 	return 0;
 }
