@@ -19,7 +19,6 @@ inline long long real_hash(int x, int y, size_t w, size_t h)
 
 struct texture *tm_request_texture(struct tile *t)
 {
-	static int asd = 0;
 	extern GLuint tm_load_texture(SDL_Surface *);
 	struct texture *lt = texmgr.lookup_table;
 	long long rh = real_hash(t->tex_x, t->tex_y, t->tex_w, t->tex_h);
@@ -47,8 +46,8 @@ struct texture *tm_request_texture(struct tile *t)
 		lt[hash].w_ratio = (double)t->tex_w / tex_w;
 		lt[hash].h_ratio = (double)t->tex_h / tex_h;
 		SDL_FreeSurface(tile);
-		printf("tex: %i\n", ++asd);
 	}
+	/* prepare floating-point coordinates to fit a particular tile */
 	lt[hash].x = (double)t->img_x / t->tex_w * lt[hash].w_ratio;
 	lt[hash].y = (double)t->img_y / t->tex_h * lt[hash].h_ratio;
 	lt[hash].w = (double)t->w / t->tex_w * lt[hash].w_ratio;

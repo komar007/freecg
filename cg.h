@@ -16,6 +16,7 @@ struct ship {
 	double ax, ay;
 	int rot;
 	int engine;
+	/*temporary*/ double switchoff;
 };
 struct cg {
 	struct cgl *level;

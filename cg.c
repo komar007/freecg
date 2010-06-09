@@ -6,7 +6,7 @@
 
 void cg_init_ship(struct ship *s)
 {
-	s->engine = 1;
+	s->engine = 0;
 	s->rot = 0;
 }
 struct cg *cg_init(struct cgl *level)
@@ -19,12 +19,14 @@ struct cg *cg_init(struct cgl *level)
 	return cg;
 }
 
-void cg_step_ship(struct ship* s, double dt)
+void cg_step_ship(struct ship* s, double time, double dt)
 {
 	s->vx += s->ax * dt;
 	s->vy += s->ay * dt;
 	s->x += s->vx * dt;
 	s->y += s->vy * dt;
+	if (s->switchoff <= time)
+		s->engine = 0;
 }
 
 void cg_step_objects(struct cg *cg, double time, double dt)
@@ -75,18 +77,17 @@ void cg_detect_collisions_block(struct cg *cg, struct tile **blocks)
 			coll = 1;
 			break;
 		}
-		if (coll)
-			printf("Collision %i %i %i %i, %i %i %i %i\n",
-				stile.x, stile.y, stile.w, stile.h,
-				blocks[i]->x, blocks[i]->y,
-				blocks[i]->w, blocks[i]->h);
+		if (coll) {
+			cg->ship->engine = 1;
+			cg->ship->switchoff = cg->time + 1;
+		}
 	}
 }
 
 void cg_step(struct cg *cg, double time)
 {
 	double dt = time - cg->time;
-	cg_step_ship(cg->ship, dt);
+	cg_step_ship(cg->ship, time, dt);
 	cg_step_objects(cg, time, dt);
 	cg_detect_collisions(cg);
 	cg->time = time;
