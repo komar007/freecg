@@ -390,30 +390,30 @@ int read_block(struct tile *tiles, size_t num, int x, int y, FILE* fp)
 
 /* Auxilliary functions to extract a single rectangle or tile description from
  * an array of int16_t */
-inline void parse_point(int16_t *data, vector *a, vector *b)
+inline void parse_point(const int16_t *data, vector *a, vector *b)
 {
 	a->x = data[0], a->y = data[1];
 	b->x = data[2], b->y = data[3];
 }
-inline void parse_rect(int16_t *data, struct rect *rect)
+inline void parse_rect(const int16_t *data, struct rect *rect)
 {
 	rect->x = data[0], rect->y = data[1];
 	rect->w = data[2], rect->h = data[3];
 }
-inline void parse_tile_normal(int16_t *data, struct tile *tile)
+inline void parse_tile_normal(const int16_t *data, struct tile *tile)
 {
 	tile->x = data[0], tile->y = data[1];
 	tile->w = tile->tex_w = data[2], tile->h = tile->tex_h = data[3];
 	tile->tex_x = data[4], tile->tex_y = data[5];
 }
-inline void parse_tile_simple(int16_t *data, struct tile *tile,
+inline void parse_tile_simple(const int16_t *data, struct tile *tile,
 		unsigned width, unsigned height)
 {
 	tile->x = data[0], tile->y = data[1];
 	tile->tex_x = data[2], tile->tex_y = data[3];
 	tile->w = tile->tex_w = width, tile->h = tile->tex_h = height;
 }
-inline void parse_tile_minimal(int16_t *data, struct tile *tile,
+inline void parse_tile_minimal(const int16_t *data, struct tile *tile,
 		unsigned w, unsigned h, unsigned tex_x, unsigned tex_y)
 {
 	tile->x = data[0], tile->y = data[1];
