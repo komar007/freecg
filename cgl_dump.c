@@ -203,7 +203,6 @@ void print_one_vent(struct fan *fan, int num)
 			fan->dir == Left ? "Left" : "Right");
 	printf("\t\tbase:\t"), print_tile(fan->base);
 	printf("\t\tpipes:\t"), print_tile(fan->pipes);
-	printf("\t\tbbox\t= "), print_rect(&fan->bbox);
 	printf("\t\trange\t= "), print_rect(&fan->range);
 }
 
@@ -222,7 +221,6 @@ void print_one_magn(struct magnet *magnet, int num)
 			magnet->dir == Left ? "Left" : "Right");
 	printf("\t\tbase:\t"), print_tile(magnet->base);
 	printf("\t\tmagn:\t"), print_tile(magnet->magn);
-	printf("\t\tbbox\t= "), print_rect(&magnet->bbox);
 	printf("\t\trange\t= "), print_rect(&magnet->range);
 }
 
@@ -242,7 +240,6 @@ void print_one_dist(struct airgen *airgen, int num)
 			airgen->dir == Left ? "Left" : "Right");
 	printf("\t\tbase:\t"), print_tile(airgen->base);
 	printf("\t\tpipes:\t"), print_tile(airgen->pipes);
-	printf("\t\tbbox\t= "), print_rect(&airgen->bbox);
 }
 
 void print_pipe(const struct cgl *cgl)

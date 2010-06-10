@@ -91,16 +91,14 @@ struct fan {
 	enum dir dir;
 	struct tile *base,
 		    *pipes; /* unused */
-	struct rect bbox, /* unused */
-		    range; /* unused */
+	struct rect range; /* unused */
 	int tex_x;
 };
 struct magnet {
 	enum dir dir;
 	struct tile *base, /* unused */
 		    *magn;
-	struct rect bbox, /* unused */
-		    range; /* unused */
+	struct rect range; /* unused */
 	int tex_x;
 };
 struct airgen {
@@ -112,7 +110,6 @@ struct airgen {
 	struct tile *base,
 		    *pipes, /* unused */
 		    *act;
-	struct rect bbox; /* unused */
 	int tex_x;
 	int active;
 };
@@ -124,7 +121,6 @@ struct cannon {
 		    *beg_cano,
 		    *end_base,
 		    *end_catch;
-	struct rect bbox;
 	vector beg,
 	       end;
 };

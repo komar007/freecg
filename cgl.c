@@ -502,7 +502,6 @@ int cgl_read_one_vent(struct fan *fan, FILE *fp)
 	fan->tex_x = fan->base->tex_x;
 	parse_tile_normal(buf2 + 0x04, fan->pipes);
 	fan->pipes->collision_test = Bitmap;
-	parse_rect(buf2 + 0x0a, &fan->bbox);
 	parse_rect(buf2 + 0x0e, &fan->range);
 	return 0;
 }
@@ -530,7 +529,6 @@ int cgl_read_one_magn(struct magnet *magnet, FILE *fp)
 	parse_tile_normal(buf2 + 0x04, magnet->magn);
 	magnet->tex_x = magnet->magn->tex_x;
 	magnet->magn->collision_test = Bitmap;
-	parse_rect(buf2 + 0x0a, &magnet->bbox);
 	parse_rect(buf2 + 0x0e, &magnet->range);
 	return 0;
 }
@@ -560,7 +558,6 @@ int cgl_read_one_dist(struct airgen *airgen, FILE *fp)
 	airgen->tex_x = airgen->base->tex_x;
 	parse_tile_normal(buf2 + 0x04, airgen->pipes);
 	airgen->pipes->collision_test = Bitmap;
-	parse_rect(buf2 + 0x0a, &airgen->bbox);
 	struct rect r;
 	parse_rect(buf2 + 0x0e, &r);
 	airgen->act->x = r.x, airgen->act->y = r.y;
@@ -611,7 +608,6 @@ int cgl_read_one_cano(struct cannon *cannon, FILE *fp)
 			16, 16, 472, 196);
 	parse_tile_normal(buf2 + 0x0c, cannon->end_catch);
 	cannon->end_catch->collision_test = Bitmap;
-	parse_rect(buf2 + 0x12, &cannon->bbox);
 	return 0;
 }
 
