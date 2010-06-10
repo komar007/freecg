@@ -200,47 +200,47 @@ struct cgl *read_cgl(const char *path, uint8_t **out_soin)
 	cgl->tiles = realloc(cgl->tiles, num_tiles * sizeof(*cgl->tiles));
 	memcpy(cgl->tiles + cgl->ntiles, vent_tiles,
 			nvent_tiles * sizeof(*cgl->tiles));
-	FIX_PTRS(cgl->fans, base, cgl->nfans, vent_tiles)
-	FIX_PTRS(cgl->fans, pipes, cgl->nfans, vent_tiles)
+	FIX_PTRS(cgl->fans,    base,      cgl->nfans,    vent_tiles)
+	FIX_PTRS(cgl->fans,    pipes,     cgl->nfans,    vent_tiles)
 	cgl->ntiles += nvent_tiles;
 	free(vent_tiles);
 	memcpy(cgl->tiles + cgl->ntiles, magn_tiles,
 			nmagn_tiles * sizeof(*cgl->tiles));
-	FIX_PTRS(cgl->magnets, base, cgl->nmagnets, magn_tiles)
-	FIX_PTRS(cgl->magnets, magn, cgl->nmagnets, magn_tiles)
+	FIX_PTRS(cgl->magnets, base,      cgl->nmagnets, magn_tiles)
+	FIX_PTRS(cgl->magnets, magn,      cgl->nmagnets, magn_tiles)
 	cgl->ntiles += nmagn_tiles;
 	free(magn_tiles);
 	memcpy(cgl->tiles + cgl->ntiles, dist_tiles,
 			ndist_tiles * sizeof(*cgl->tiles));
-	FIX_PTRS(cgl->airgens, base, cgl->nairgens, dist_tiles)
-	FIX_PTRS(cgl->airgens, pipes, cgl->nairgens, dist_tiles)
+	FIX_PTRS(cgl->airgens, base,      cgl->nairgens, dist_tiles)
+	FIX_PTRS(cgl->airgens, pipes,     cgl->nairgens, dist_tiles)
 	cgl->ntiles += ndist_tiles;
 	free(dist_tiles);
 	memcpy(cgl->tiles + cgl->ntiles, cano_tiles,
 			ncano_tiles * sizeof(*cgl->tiles));
-	FIX_PTRS(cgl->cannons, beg_base, cgl->ncannons, cano_tiles)
-	FIX_PTRS(cgl->cannons, beg_cano, cgl->ncannons, cano_tiles)
-	FIX_PTRS(cgl->cannons, end_base, cgl->ncannons, cano_tiles)
+	FIX_PTRS(cgl->cannons, beg_base,  cgl->ncannons, cano_tiles)
+	FIX_PTRS(cgl->cannons, beg_cano,  cgl->ncannons, cano_tiles)
+	FIX_PTRS(cgl->cannons, end_base,  cgl->ncannons, cano_tiles)
 	FIX_PTRS(cgl->cannons, end_catch, cgl->ncannons, cano_tiles)
 	cgl->ntiles += ncano_tiles;
 	free(cano_tiles);
 	memcpy(cgl->tiles + cgl->ntiles, pipe_tiles,
 			npipe_tiles * sizeof(*cgl->tiles));
-	FIX_PTRS(cgl->bars, beg, cgl->nbars, pipe_tiles)
-	FIX_PTRS(cgl->bars, end, cgl->nbars, pipe_tiles)
-	FIX_PTRS(cgl->bars, fbar, cgl->nbars, pipe_tiles)
-	FIX_PTRS(cgl->bars, sbar, cgl->nbars, pipe_tiles)
+	FIX_PTRS(cgl->bars,    beg,       cgl->nbars,    pipe_tiles)
+	FIX_PTRS(cgl->bars,    end,       cgl->nbars,    pipe_tiles)
+	FIX_PTRS(cgl->bars,    fbar,      cgl->nbars,    pipe_tiles)
+	FIX_PTRS(cgl->bars,    sbar,      cgl->nbars,    pipe_tiles)
 	cgl->ntiles += npipe_tiles;
 	free(pipe_tiles);
 	memcpy(cgl->tiles + cgl->ntiles, onew_tiles,
 			nonew_tiles * sizeof(*cgl->tiles));
-	FIX_PTRS(cgl->gates, base[0], cgl->ngates, onew_tiles)
-	FIX_PTRS(cgl->gates, base[1], cgl->ngates, onew_tiles)
-	FIX_PTRS(cgl->gates, base[2], cgl->ngates, onew_tiles)
-	FIX_PTRS(cgl->gates, base[3], cgl->ngates, onew_tiles)
-	FIX_PTRS(cgl->gates, base[4], cgl->ngates, onew_tiles)
-	FIX_PTRS(cgl->gates, bar, cgl->ngates, onew_tiles)
-	FIX_PTRS(cgl->gates, arrow, cgl->ngates, onew_tiles)
+	FIX_PTRS(cgl->gates,   base[0],  cgl->ngates,    onew_tiles)
+	FIX_PTRS(cgl->gates,   base[1],  cgl->ngates,    onew_tiles)
+	FIX_PTRS(cgl->gates,   base[2],  cgl->ngates,    onew_tiles)
+	FIX_PTRS(cgl->gates,   base[3],  cgl->ngates,    onew_tiles)
+	FIX_PTRS(cgl->gates,   base[4],  cgl->ngates,    onew_tiles)
+	FIX_PTRS(cgl->gates,   bar,      cgl->ngates,    onew_tiles)
+	FIX_PTRS(cgl->gates,   arrow,    cgl->ngates,    onew_tiles)
 	cgl->ntiles += nonew_tiles;
 	free(onew_tiles);
 	if (out_soin)
@@ -375,7 +375,6 @@ int cgl_read_sobs(struct cgl *cgl, const uint8_t *soin, FILE *fp)
 		for (size_t i = 0; i < cgl->width; ++i, ++cur_block) {
 			err = read_block(tile_ptr, (size_t)soin[cur_block],
 					i * CGL_BLOCK_SIZE, j * CGL_BLOCK_SIZE, fp);
-
 			if (err)
 				return err;
 			tile_ptr += soin[cur_block];
@@ -495,8 +494,8 @@ int cgl_read_one_vent(struct fan *fan, FILE *fp)
 	err = read_short((int16_t*)buf2, VENT_NUM_SHORTS, fp);
 	if (err)
 		return -EBADVENT;
+	fan->dir   = (buf[0] >> 0) & 0x03;
 	fan->power = (buf[0] >> 4) & 0x01;
-	fan->dir = buf[0] & 0x03;
 	parse_tile_simple(buf2 + 0x00, fan->base, 48, 48);
 	fan->tex_x = fan->base->tex_x;
 	parse_tile_normal(buf2 + 0x04, fan->pipes);
@@ -552,8 +551,8 @@ int cgl_read_one_dist(struct airgen *airgen, FILE *fp)
 	err = read_short((int16_t*)buf2, DIST_NUM_SHORTS, fp);
 	if (err)
 		return -EBADDIST;
+	airgen->dir  = (buf[0] >> 0) & 0x03;
 	airgen->spin = (buf[0] >> 4) & 0x01;
-	airgen->dir = buf[0] & 0x03;
 	parse_tile_simple(buf2 + 0x00, airgen->base, 40, 40);
 	airgen->tex_x = airgen->base->tex_x;
 	parse_tile_normal(buf2 + 0x04, airgen->pipes);
@@ -627,23 +626,21 @@ int cgl_read_one_pipe(struct bar *bar, FILE *fp)
 	err = read_short((int16_t*)buf2, PIPE_NUM_SHORTS, fp);
 	if (err)
 		return -EBADPIPE;
-	bar->gap_type = (buf[0] >> 4) & 0x01;
-	bar->orientation = buf[0] & 0x01;
-	bar->gap = buf[2];
-	bar->min_s = buf[6] - 1;
-	bar->max_s = buf[7] - 1;
-	bar->fspeed = bar->sspeed = 1; /* anything, not 0 */
-	bar->freq = buf[10] & 0x01;
-	int width = buf2[2],
-	    height = buf2[3];
+	bar->orientation = (buf[0] >> 0) & 0x01;
+	bar->gap_type    = (buf[0] >> 4) & 0x01;
+	bar->gap    = buf[2];
+	bar->min_s  = buf[6] - 1;
+	bar->max_s  = buf[7] - 1;
+	bar->freq   = buf[10] & 0x01;
+	int width   = buf2[2],
+	    height  = buf2[3];
+	/* prepare beg, end, fbar and sbar tiles */
 	switch (bar->orientation) {
 	case Vertical:
 		parse_tile_minimal(buf2, bar->beg,
 				BAR_BASE_H, BAR_BASE_W, BAR_BEG_TEX_X, BAR_BEG_TEX_Y);
 		bar->end->x = bar->beg->x;
 		bar->end->y = bar->beg->y + height - BAR_BASE_W;
-		bar->end->w = bar->beg->w;
-		bar->end->h = bar->end->tex_h = bar->beg->h;
 		bar->end->tex_x = VBAR_END_TEX_X, bar->end->tex_y = VBAR_END_TEX_Y;
 		/* fbar and sbar must take the whole space available, so that
 		 * cgl_preprocess assigns them to all blocks where they may
@@ -670,8 +667,6 @@ int cgl_read_one_pipe(struct bar *bar, FILE *fp)
 				BAR_BASE_W, BAR_BASE_H, BAR_BEG_TEX_X, BAR_BEG_TEX_Y);
 		bar->end->x = bar->beg->x + width - BAR_BASE_W;
 		bar->end->y = bar->beg->y;
-		bar->end->w = bar->beg->w;
-		bar->end->h = bar->end->tex_h = bar->beg->h;
 		bar->end->tex_x = HBAR_END_TEX_X, bar->end->tex_y = HBAR_END_TEX_Y;
 		/* Same as in case Vertical */
 		bar->fbar->x = bar->beg->x + BAR_BASE_W;
@@ -692,6 +687,8 @@ int cgl_read_one_pipe(struct bar *bar, FILE *fp)
 		bar->len = width - 2*BAR_BASE_W;
 		break;
 	}
+	bar->end->w = bar->beg->w;
+	bar->end->h = bar->end->tex_h = bar->beg->h;
 	bar->end->tex_w = bar->beg->tex_w;
 	bar->btex_x = bar->beg->tex_x;
 	bar->etex_x = bar->end->tex_x;
@@ -745,6 +742,7 @@ int cgl_read_one_onew(struct gate *gate, FILE *fp)
 	err = read_short((int16_t*)buf2, ONEW_NUM_SHORTS, fp);
 	if (err)
 		return -EBADONEW;
+	/* fill with header information */
 	gate->type    = (buf[0] >> 0) & 0x03;
 	gate->dir     = (buf[0] >> 2) & 0x01;
 	gate->has_end = (buf[0] >> 3) & 0x01;
@@ -752,6 +750,7 @@ int cgl_read_one_onew(struct gate *gate, FILE *fp)
 	assert(buf2[0] == buf2[1]);
 	gate->len = buf2[0];
 	parse_packed_tiles(buf2 + 0x02, 5, gate->base, base_dims[gate->orient]);
+	/* prepare gate's bar */
 	switch (gate->orient) {
 	case Vertical:
 		parse_tile_minimal(buf2 + 0x16, gate->bar,
