@@ -42,8 +42,6 @@ enum gfx_consts {
 	VBAR_END_TEX_Y = 52,
 	HBAR_END_TEX_X = 492,
 	HBAR_END_TEX_Y = 56,
-	VBAR_BASE_TEX_W = 2 * BAR_BASE_W,
-	HBAR_BASE_TEX_W = VBAR_BASE_TEX_W + 4,
 };
 typedef uint8_t collision_map[TILESET_H][TILESET_W];
 

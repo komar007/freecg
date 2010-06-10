@@ -481,7 +481,7 @@ int cgl_read_one_vent(struct fan *fan, FILE *fp)
 	fan->power = (buf[0] >> 4) & 0x01;
 	fan->dir = buf[0] & 0x03;
 	parse_tile_simple(buf2 + 0x00, fan->base, 48, 48);
-	fan->base->tex_w *= FAN_NUM_TEXTURES;
+	fan->tex_x = fan->base->tex_x;
 	parse_tile_normal(buf2 + 0x04, fan->pipes);
 	fan->pipes->collision_test = Bitmap;
 	parse_rect(buf2 + 0x0a, &fan->bbox);
@@ -510,7 +510,7 @@ int cgl_read_one_magn(struct magnet *magnet, FILE *fp)
 	magnet->dir = buf[0] & 0x03;
 	parse_tile_simple(buf2 + 0x00, magnet->base, 32, 32);
 	parse_tile_normal(buf2 + 0x04, magnet->magn);
-	magnet->magn->tex_w *= MAGNET_NUM_TEXTURES;
+	magnet->tex_x = magnet->magn->tex_x;
 	magnet->magn->collision_test = Bitmap;
 	parse_rect(buf2 + 0x0a, &magnet->bbox);
 	parse_rect(buf2 + 0x0e, &magnet->range);
@@ -538,7 +538,7 @@ int cgl_read_one_dist(struct airgen *airgen, FILE *fp)
 	airgen->spin = (buf[0] >> 4) & 0x01;
 	airgen->dir = buf[0] & 0x03;
 	parse_tile_simple(buf2 + 0x00, airgen->base, 40, 40);
-	airgen->base->tex_w *= AIRGEN_NUM_TEXTURES;
+	airgen->tex_x = airgen->base->tex_x;
 	parse_tile_normal(buf2 + 0x04, airgen->pipes);
 	airgen->pipes->collision_test = Bitmap;
 	parse_rect(buf2 + 0x0a, &airgen->bbox);
@@ -623,7 +623,6 @@ int cgl_read_one_pipe(struct bar *bar, FILE *fp)
 	case Vertical:
 		parse_tile_minimal(buf2, bar->beg,
 				BAR_BASE_H, BAR_BASE_W, BAR_BEG_TEX_X, BAR_BEG_TEX_Y);
-		bar->beg->tex_w = bar->end->tex_w = VBAR_BASE_TEX_W;
 		bar->end->x = bar->beg->x;
 		bar->end->y = bar->beg->y + height - BAR_BASE_W;
 		bar->end->w = bar->beg->w;
@@ -652,7 +651,6 @@ int cgl_read_one_pipe(struct bar *bar, FILE *fp)
 	case Horizontal:
 		parse_tile_minimal(buf2, bar->beg,
 				BAR_BASE_W, BAR_BASE_H, BAR_BEG_TEX_X, BAR_BEG_TEX_Y);
-		bar->beg->tex_w = bar->end->tex_w = HBAR_BASE_TEX_W;
 		bar->end->x = bar->beg->x + width - BAR_BASE_W;
 		bar->end->y = bar->beg->y;
 		bar->end->w = bar->beg->w;
@@ -677,6 +675,9 @@ int cgl_read_one_pipe(struct bar *bar, FILE *fp)
 		bar->len = width - 2*BAR_BASE_W;
 		break;
 	}
+	bar->end->tex_w = bar->beg->tex_w;
+	bar->btex_x = bar->beg->tex_x;
+	bar->etex_x = bar->end->tex_x;
 	bar->slen = BAR_MIN_LEN;
 	bar->flen = BAR_MIN_LEN;
 	bar->beg->collision_test = bar->end->collision_test = Bitmap;

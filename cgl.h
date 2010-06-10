@@ -81,6 +81,7 @@ struct fan {
 		    *pipes; /* unused */
 	struct rect bbox, /* unused */
 		    range; /* unused */
+	int tex_x;
 };
 struct magnet {
 	enum dir dir;
@@ -88,6 +89,7 @@ struct magnet {
 		    *magn;
 	struct rect bbox, /* unused */
 		    range; /* unused */
+	int tex_x;
 };
 struct airgen {
 	enum {
@@ -99,6 +101,7 @@ struct airgen {
 		    *pipes; /* unused */
 	struct rect bbox, /* unused */
 		    range; /* unused */
+	int tex_x;
 };
 struct cannon {
 	enum dir dir;
@@ -132,6 +135,7 @@ struct bar {
 		    *end,
 		    *fbar,
 		    *sbar;
+	int btex_x, etex_x;
 };
 typedef struct tile **block;
 /* cgl level contents */
