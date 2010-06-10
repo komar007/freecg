@@ -62,6 +62,9 @@ struct tile {
 		/* The whole rectangular area defined by points (x, y) and
 		 * (x + w, y + h) is used to detect collisions */
 		Rect = 0,
+		/* As above, but check whether the center of ship intersects,
+		 * not the whole ship */
+		RectPoint,
 		/* A rectangular part of collision map defined by points
 		 * (img_x, img_y), (img_x + w, img_y + h) is used to detect
 		 * collisions in a rectabgular tile */

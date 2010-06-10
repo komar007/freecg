@@ -43,6 +43,15 @@ void cg_step_objects(struct cg *cg, double time, double dt)
 }
 
 /* Collision detectors */
+int cg_collision_rect_point(const struct tile *ship, const struct tile *tile)
+{
+	double x = ship->x + ship->w / 2,
+	       y = ship->y + ship->h / 2;
+	if (tile->x <= x && x <= tile->x + tile->w &&
+	    tile->y <= y && y <= tile->y + tile->h)
+		return 1;
+	return 0;
+}
 int cg_collision_rect(const struct cg *cg, const struct rect *r,
 		int img_x, int img_y, __attribute__((unused)) const struct tile *t)
 {
@@ -81,10 +90,6 @@ void cg_handle_collisions(struct cg *cg)
 
 void cg_handle_collisions_block(struct cg *cg, block blk)
 {
-	extern int cg_collision_bitmap(const struct cg*, const struct rect*,
-			int, int, const struct tile*),
-	           cg_collision_rect(const struct cg*, const struct rect*,
-			int, int, const struct tile*);
 	extern void cg_call_collision_handler(struct cg*, struct tile*);
 	struct rect r;
 	struct tile stile;
@@ -96,6 +101,9 @@ void cg_handle_collisions_block(struct cg *cg, block blk)
 		    img_y = stile.tex_y+stile.img_y + (r.y - stile.y);
 		int coll = 0;
 		switch (blk[i]->collision_test) {
+		case RectPoint:
+			coll = cg_collision_rect_point(&stile, blk[i]);
+			break;
 		case Rect:
 			coll = cg_collision_rect(cg, &r, img_x, img_y, blk[i]);
 			break;

@@ -781,6 +781,7 @@ int cgl_read_one_onew(struct gate *gate, FILE *fp)
 	gate->act->x = r.x, gate->act->y = r.y;
 	gate->act->w = r.w, gate->act->h = r.h;
 	gate->act->type = Transparent;
+	gate->act->collision_test = RectPoint;
 	gate->act->collision_type = GateAction;
 	gate->act->data = gate;
 	if (!gate->has_end)
