@@ -42,6 +42,15 @@ enum gfx_consts {
 	VBAR_END_TEX_Y = 52,
 	HBAR_END_TEX_X = 492,
 	HBAR_END_TEX_Y = 56,
+	GATE_BAR_THICKNESS = 32,
+	GATE_BAR_LEN = 160,
+	VGATE_TEX_X = 488,
+	VGATE_TEX_Y = 228,
+	HGATE_TEX_X = 232,
+	HGATE_TEX_Y = 296,
+	ARROW_TEX_Y = 384,
+	ARROW_SIDE = 16,
+	ARROW_OFFSET = 8
 };
 typedef uint8_t collision_map[TILESET_H][TILESET_W];
 

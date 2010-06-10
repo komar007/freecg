@@ -135,7 +135,8 @@ struct cgl *read_cgl(const char *path, uint8_t **out_soin)
 		   cgl_read_magn(struct cgl*, struct tile**, size_t*, FILE*),
 		   cgl_read_dist(struct cgl*, struct tile**, size_t*, FILE*),
 		   cgl_read_cano(struct cgl*, struct tile**, size_t*, FILE*),
-		   cgl_read_pipe(struct cgl*, struct tile**, size_t*, FILE*);
+		   cgl_read_pipe(struct cgl*, struct tile**, size_t*, FILE*),
+		   cgl_read_onew(struct cgl*, struct tile**, size_t*, FILE*);
 	struct cgl *cgl;
 	FILE *fp;
 	uint8_t *soin = NULL;
@@ -151,6 +152,7 @@ struct cgl *read_cgl(const char *path, uint8_t **out_soin)
 	cgl->airgens = NULL;
 	cgl->cannons = NULL;
 	cgl->bars    = NULL;
+	cgl->gates   = NULL;
 	cgl->blocks  = NULL;
 	if (cgl_read_section_header("CGL1", fp) != 0)
 		goto error;
@@ -164,9 +166,9 @@ struct cgl *read_cgl(const char *path, uint8_t **out_soin)
 	if (cgl_read_sobs(cgl, soin, fp) != 0)
 		goto error;
 	struct tile *vent_tiles, *magn_tiles, *dist_tiles, *cano_tiles,
-		    *pipe_tiles;
+		    *pipe_tiles, *onew_tiles;
 	size_t nvent_tiles, nmagn_tiles, ndist_tiles, ncano_tiles,
-	       npipe_tiles;
+	       npipe_tiles, nonew_tiles;
 	if (cgl_read_magic(cgl, fp) != 0)
 		goto error;
 	if (cgl_read_vent(cgl, &vent_tiles, &nvent_tiles, fp) != 0)
@@ -187,10 +189,14 @@ struct cgl *read_cgl(const char *path, uint8_t **out_soin)
 		goto error;
 	if (cgl_read_pipe(cgl, &pipe_tiles, &npipe_tiles, fp) != 0)
 		goto error;
+	if (cgl_read_magic(cgl, fp) != 0)
+		goto error;
+	if (cgl_read_onew(cgl, &onew_tiles, &nonew_tiles, fp) != 0)
+		goto error;
 	/* join extra tiles from the other sections with those from SOBS,
 	 * fix pointers to point to the new memory */
 	size_t num_tiles = cgl->ntiles + (nvent_tiles + nmagn_tiles +
-			ndist_tiles + ncano_tiles + npipe_tiles/* + ... */);
+			ndist_tiles + ncano_tiles + npipe_tiles + nonew_tiles/* + ... */);
 	cgl->tiles = realloc(cgl->tiles, num_tiles * sizeof(*cgl->tiles));
 	memcpy(cgl->tiles + cgl->ntiles, vent_tiles,
 			nvent_tiles * sizeof(*cgl->tiles));
@@ -226,6 +232,17 @@ struct cgl *read_cgl(const char *path, uint8_t **out_soin)
 	FIX_PTRS(cgl->bars, sbar, cgl->nbars, pipe_tiles)
 	cgl->ntiles += npipe_tiles;
 	free(pipe_tiles);
+	memcpy(cgl->tiles + cgl->ntiles, onew_tiles,
+			nonew_tiles * sizeof(*cgl->tiles));
+	FIX_PTRS(cgl->gates, base[0], cgl->ngates, onew_tiles)
+	FIX_PTRS(cgl->gates, base[1], cgl->ngates, onew_tiles)
+	FIX_PTRS(cgl->gates, base[2], cgl->ngates, onew_tiles)
+	FIX_PTRS(cgl->gates, base[3], cgl->ngates, onew_tiles)
+	FIX_PTRS(cgl->gates, base[4], cgl->ngates, onew_tiles)
+	FIX_PTRS(cgl->gates, bar, cgl->ngates, onew_tiles)
+	FIX_PTRS(cgl->gates, arrow, cgl->ngates, onew_tiles)
+	cgl->ntiles += nonew_tiles;
+	free(onew_tiles);
 	if (out_soin)
 		*out_soin = soin;
 	else
@@ -681,6 +698,101 @@ int cgl_read_one_pipe(struct bar *bar, FILE *fp)
 	bar->slen = BAR_MIN_LEN;
 	bar->flen = BAR_MIN_LEN;
 	bar->beg->collision_test = bar->end->collision_test = Bitmap;
+	return 0;
+}
+
+BEGIN_CGL_READ_X(onew, ONEW, gate, 7)
+	cgl->gates[i].base[0]  = &tiles[7*i + 0];
+	cgl->gates[i].base[1]  = &tiles[7*i + 1];
+	cgl->gates[i].base[2]  = &tiles[7*i + 2];
+	cgl->gates[i].base[3]  = &tiles[7*i + 3];
+	cgl->gates[i].base[4]  = &tiles[7*i + 4];
+	cgl->gates[i].bar      = &tiles[7*i + 5];
+	cgl->gates[i].arrow    = &tiles[7*i + 6];
+END_CGL_READ_X(onew, ONEW, gate, 7)
+
+inline void parse_packed_tiles(const int16_t *data, size_t num, struct tile *tiles[],
+		const vector *dims)
+{
+	for (size_t i = 0; i < num; ++i)
+		tiles[i]->x = data[0*num + i];
+	for (size_t i = 0; i < num; ++i)
+		tiles[i]->y = data[1*num + i];
+	for (size_t i = 0; i < num; ++i)
+		tiles[i]->tex_x = data[2*num + i];
+	for (size_t i = 0; i < num; ++i)
+		tiles[i]->tex_y = data[3*num + i];
+	for (size_t i = 0; i < num; ++i) {
+		tiles[i]->w = tiles[i]->tex_w = dims[i].x;
+		tiles[i]->h = tiles[i]->tex_h = dims[i].y;
+	}
+}
+
+static const vector base_dims[][5] = {
+	{{32, 32}, {32, 16}, {32, 32}, {40, 4}, {32, 20}},
+	{{32, 32}, {16, 32}, {32, 32}, {4, 40}, {20, 32}}
+};
+int cgl_read_one_onew(struct gate *gate, FILE *fp)
+{
+	int err;
+	uint8_t buf[ONEW_HDR_SIZE];
+	int16_t buf2[ONEW_NUM_SHORTS];
+	size_t nread;
+
+	nread = fread(buf, sizeof(uint8_t), ONEW_HDR_SIZE, fp);
+	if (nread < ONEW_HDR_SIZE)
+		return -EBADONEW;
+	err = read_short((int16_t*)buf2, ONEW_NUM_SHORTS, fp);
+	if (err)
+		return -EBADONEW;
+	gate->type    = (buf[0] >> 0) & 0x03;
+	gate->dir     = (buf[0] >> 2) & 0x01;
+	gate->has_end = (buf[0] >> 3) & 0x01;
+	gate->orient  = (buf[0] >> 4) & 0x01;
+	assert(buf2[0] == buf2[1]);
+	gate->len = buf2[0];
+	parse_packed_tiles(buf2 + 0x02, 5, gate->base, base_dims[gate->orient]);
+	switch (gate->orient) {
+	case Vertical:
+		parse_tile_minimal(buf2 + 0x16, gate->bar,
+				GATE_BAR_THICKNESS, gate->len,
+				VGATE_TEX_X, VGATE_TEX_Y);
+		gate->bar->tex_h = GATE_BAR_LEN;
+		break;
+	case Horizontal:
+		parse_tile_minimal(buf2 + 0x16, gate->bar,
+				gate->len, GATE_BAR_THICKNESS,
+				HGATE_TEX_X, HGATE_TEX_Y);
+		gate->bar->tex_w = GATE_BAR_LEN;
+		break;
+	}
+	gate->bar->collision_test = Bitmap;
+	parse_rect(buf2 + 0x1c, &gate->act);
+	if (!gate->has_end)
+		gate->base[4]->w = gate->base[4]->h = 0;
+	if (gate->type == GateLeft)
+		gate->bar->img_x = GATE_BAR_LEN - gate->len;
+	if (gate->type == GateTop)
+		gate->bar->img_y = GATE_BAR_LEN - gate->len;
+	/* add blue arrow */
+	gate->arrow->w = gate->arrow->tex_w = 16;
+	gate->arrow->h = gate->arrow->tex_h = 16;
+	switch (gate->dir) {
+	case 0:
+		gate->arrow->x = gate->base[0]->x + ARROW_OFFSET;
+		gate->arrow->y = gate->base[0]->y + ARROW_OFFSET;
+		break;
+	case 1:
+		gate->arrow->x = gate->base[2]->x + ARROW_OFFSET;
+		gate->arrow->y = gate->base[2]->y + ARROW_OFFSET;
+		break;
+	}
+	int arrow_dir = gate->type - 1;
+	if (gate->dir == 1)
+		arrow_dir += 2;
+	arrow_dir = (arrow_dir + 4) % 4;
+	gate->arrow->tex_y = ARROW_TEX_Y;
+	gate->arrow->tex_x = ARROW_SIDE * arrow_dir;
 	return 0;
 }
 

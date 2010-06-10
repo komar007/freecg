@@ -25,7 +25,9 @@ enum cgl_sizes {
 	CANO_NUM_SHORTS = 22,
 	CANO_HDR_SIZE = 3,
 	PIPE_NUM_SHORTS = 4,
-	PIPE_HDR_SIZE = 16
+	PIPE_HDR_SIZE = 16,
+	ONEW_HDR_SIZE = 1,
+	ONEW_NUM_SHORTS = 32
 };
 enum error_codes {
 	EBADHDR = 1,
@@ -38,6 +40,7 @@ enum error_codes {
 	EBADDIST,
 	EBADCANO,
 	EBADPIPE,
+	EBADONEW,
 	/* ... */
 
 	EBADSHORT,
@@ -115,15 +118,16 @@ struct cannon {
 	vector beg,
 	       end;
 };
+enum orientation {
+	Vertical = 0,
+	Horizontal
+};
 struct bar {
 	enum {
 		Constant = 0,
 		Variable
 	} gap_type;
-	enum {
-		Vertical = 0,
-		Horizontal
-	} orientation;
+	enum orientation orientation;
 	double flen, slen;
 	double fspeed, sspeed;
 	double fnext_change, snext_change;
@@ -136,6 +140,23 @@ struct bar {
 		    *fbar,
 		    *sbar;
 	int btex_x, etex_x;
+};
+enum gate_type{
+	GateLeft = 0,
+	GateTop,
+	GateRight,
+	GateBottom
+};
+struct gate {
+	struct tile *base[5],
+		    *bar,
+		    *arrow;
+	enum gate_type type;
+	enum orientation orient;
+	struct rect act;
+	int dir;
+	int has_end;
+	int len;
 };
 typedef struct tile **block;
 /* cgl level contents */
@@ -157,6 +178,8 @@ struct cgl {
 	struct cannon *cannons;
 	size_t nbars;
 	struct bar *bars;
+	size_t ngates;
+	struct gate *gates;
 	block **blocks;
 };
 

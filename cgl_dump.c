@@ -15,7 +15,8 @@ enum sections {
 	MAGN,
 	DIST,
 	CANO,
-	PIPE
+	PIPE,
+	ONEW
 	/* to be continued */
 };
 
@@ -36,10 +37,12 @@ struct option opts[] = {
 	{"no-dist", no_argument, NULL, -DIST},
 	{"pipe", no_argument, NULL, PIPE},
 	{"no-pipe", no_argument, NULL, -PIPE},
+	{"onew", no_argument, NULL, ONEW},
+	{"no-onew", no_argument, NULL, -ONEW},
 	{NULL, 0, NULL, 0}
 };
-char *optstr = "ha1234567";
-int which[] = {-1, -1, -1, -1, -1, -1, -1, -1};
+char *optstr = "ha12345678";
+int which[] = {-1, -1, -1, -1, -1, -1, -1, -1, -1};
 
 void print_help(const char *name)
 {
@@ -65,7 +68,8 @@ int main(int argc, char *argv[])
 		    print_vent(const struct cgl*),
 		    print_magn(const struct cgl*),
 		    print_dist(const struct cgl*),
-		    print_pipe(const struct cgl*);
+		    print_pipe(const struct cgl*),
+		    print_onew(const struct cgl*);
 	int ret;
 
 	while ((ret = getopt_long(argc, argv, optstr, opts, NULL)) != -1) {
@@ -115,6 +119,8 @@ int main(int argc, char *argv[])
 		print_dist(cgl);
 	if (which[PIPE - '1'])
 		print_pipe(cgl);
+	if (which[ONEW - '1'])
+		print_onew(cgl);
 	return 0;
 }
 
@@ -256,4 +262,25 @@ void print_one_pipe(struct bar *bar, int num)
 	printf("\t\tlength = %d, gap = %d\n", bar->len, bar->gap);
 	printf("\t\tbeg:\t"), print_tile(bar->beg);
 	printf("\t\tend:\t"), print_tile(bar->end);
+}
+
+void print_onew(const struct cgl *cgl)
+{
+	extern void print_one_onew(struct gate *gate, int);
+
+	printf("section ONEW\n");
+	for (size_t i = 0; i < cgl->ngates; ++i)
+		print_one_onew(&cgl->gates[i], i);
+}
+void print_one_onew(struct gate *gate, int num)
+{
+	printf("\tgate %d: dir = %d, type = %s\n", num,
+			gate->dir, gate->type == GateBottom ? "Bottom" :
+			gate->type == GateRight ? "Right" : gate->type ==
+			GateTop ? "Top" : "Left");
+	printf("\t\tbase[0]:\t"), print_tile(gate->base[0]);
+	printf("\t\tbase[1]:\t"), print_tile(gate->base[1]);
+	printf("\t\tbase[2]:\t"), print_tile(gate->base[2]);
+	printf("\t\tbase[3]:\t"), print_tile(gate->base[3]);
+	printf("\t\tbase[4]:\t"), print_tile(gate->base[4]);
 }
