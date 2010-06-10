@@ -243,7 +243,6 @@ void print_one_dist(struct airgen *airgen, int num)
 	printf("\t\tbase:\t"), print_tile(airgen->base);
 	printf("\t\tpipes:\t"), print_tile(airgen->pipes);
 	printf("\t\tbbox\t= "), print_rect(&airgen->bbox);
-	printf("\t\trange\t= "), print_rect(&airgen->range);
 }
 
 void print_pipe(const struct cgl *cgl)

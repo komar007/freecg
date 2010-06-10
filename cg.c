@@ -31,12 +31,38 @@ void cg_step_ship(struct ship* s, double time, double dt)
 
 void cg_step_objects(struct cg *cg, double time, double dt)
 {
-	extern void cg_step_bar(struct bar*, double, double),
+	extern void cg_step_airgen(struct airgen*, struct cg*, double, double),
+	            cg_step_bar(struct bar*, double, double),
 	            cg_step_gate(struct gate*, double, double);
+	for (size_t i = 0; i < cg->level->nairgens; ++i)
+		cg_step_airgen(&cg->level->airgens[i], cg, time, dt);
 	for (size_t i = 0; i < cg->level->nbars; ++i)
 		cg_step_bar(&cg->level->bars[i], time, dt);
 	for (size_t i = 0; i < cg->level->ngates; ++i)
 		cg_step_gate(&cg->level->gates[i], time, dt);
+}
+
+/* Collision detectors */
+int cg_collision_rect(const struct cg *cg, const struct rect *r,
+		int img_x, int img_y, __attribute__((unused)) const struct tile *t)
+{
+	for (unsigned j = 0; j < r->h; ++j)
+		for (unsigned i = 0; i < r->w; ++i)
+			if (cg->cmap[img_y + j][img_x + i])
+				return 1;
+	return 0;
+}
+int cg_collision_bitmap(const struct cg *cg, const struct rect *r,
+	int img_x, int img_y, const struct tile *t)
+{
+	int tile_img_x = t->tex_x+t->img_x + (r->x - t->x),
+	    tile_img_y = t->tex_y+t->img_y + (r->y - t->y);
+	for (unsigned j = 0; j < r->h; ++j)
+		for (unsigned i = 0; i < r->w; ++i)
+			if (cg->cmap[img_y + j][img_x + i] &&
+			    cg->cmap[tile_img_y + j][tile_img_x + i])
+				return 1;
+	return 0;
 }
 
 void cg_handle_collisions(struct cg *cg)
@@ -88,10 +114,14 @@ void cg_handle_collisions_block(struct cg *cg, block blk)
 
 void cg_call_collision_handler(struct cg *cg, struct tile *tile)
 {
-	void cg_handle_collision_gate(struct gate*);
+	extern void cg_handle_collision_gate(struct gate*),
+	            cg_handle_collision_airgen(struct airgen*);
 	switch (tile->collision_type) {
 	case GateAction:
 		cg_handle_collision_gate((struct gate*)tile->data);
+		break;
+	case AirgenAction:
+		cg_handle_collision_airgen((struct airgen*)tile->data);
 		break;
 	case Kaboom:
 		cg->ship->engine = 1;
@@ -104,38 +134,20 @@ void cg_step(struct cg *cg, double time)
 {
 	double dt = time - cg->time;
 	cg_step_ship(cg->ship, time, dt);
-	cg_step_objects(cg, time, dt);
 	cg_handle_collisions(cg);
+	cg_step_objects(cg, time, dt);
 	cg->time = time;
-}
-
-/* Collision detectors */
-int cg_collision_rect(const struct cg *cg, const struct rect *r,
-		int img_x, int img_y, __attribute__((unused)) const struct tile *t)
-{
-	for (unsigned j = 0; j < r->h; ++j)
-		for (unsigned i = 0; i < r->w; ++i)
-			if (cg->cmap[img_y + j][img_x + i])
-				return 1;
-	return 0;
-}
-int cg_collision_bitmap(const struct cg *cg, const struct rect *r,
-	int img_x, int img_y, const struct tile *t)
-{
-	int tile_img_x = t->tex_x+t->img_x + (r->x - t->x),
-	    tile_img_y = t->tex_y+t->img_y + (r->y - t->y);
-	for (unsigned j = 0; j < r->h; ++j)
-		for (unsigned i = 0; i < r->w; ++i)
-			if (cg->cmap[img_y + j][img_x + i] &&
-			    cg->cmap[tile_img_y + j][tile_img_x + i])
-				return 1;
-	return 0;
 }
 
 /* Collision handlers */
 void cg_handle_collision_gate(struct gate *gate)
 {
 	gate->active = 1;
+}
+
+void cg_handle_collision_airgen(struct airgen *airgen)
+{
+	airgen->active = 1;
 }
 
 /* Object steppers */
@@ -238,4 +250,24 @@ void cg_step_gate(struct gate *gate, __attribute__((unused)) double time, double
 		break;
 	}
 	gate->active = 0;
+}
+
+void cg_step_airgen(struct airgen *airgen, struct cg *cg,
+		__attribute__((unused)) double time, double dt)
+{
+	if (!airgen->active)
+		return;
+	switch (airgen->spin) {
+	case CW:
+		cg->ship->rot += AIRGEN_ROT_SPEED * dt;
+		break;
+	case CCW:
+		cg->ship->rot -= AIRGEN_ROT_SPEED * dt;
+		break;
+	}
+	if (cg->ship->rot > 24)
+		cg->ship->rot -= 24;
+	if (cg->ship->rot < 0)
+		cg->ship->rot += 24;
+	airgen->active = 0;
 }

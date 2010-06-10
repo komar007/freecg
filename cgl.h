@@ -71,6 +71,7 @@ struct tile {
 	} collision_test;
 	enum {
 		Kaboom = 0,
+		AirgenAction,
 		GateAction
 	} collision_type;
 	/* necessary for renderer, the number of the most recent frame in
@@ -106,10 +107,11 @@ struct airgen {
 	} spin;
 	enum dir dir;
 	struct tile *base,
-		    *pipes; /* unused */
-	struct rect bbox, /* unused */
-		    range; /* unused */
+		    *pipes, /* unused */
+		    *act;
+	struct rect bbox; /* unused */
 	int tex_x;
+	int active;
 };
 struct cannon {
 	enum dir dir;

@@ -6,6 +6,7 @@
 #include <stdint.h>
 
 enum {
+	AIRGEN_ROT_SPEED = 19,
 	BAR_SPEED_CHANGE_INTERVAL = 4,
 	BAR_MIN_LEN = 2,
 	GATE_BAR_MIN_LEN = 2,
@@ -16,7 +17,7 @@ struct ship {
 	double x, y;
 	double vx, vy;
 	double ax, ay;
-	int rot;
+	double rot;
 	int engine;
 	/*temporary*/ double switchoff;
 };

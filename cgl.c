@@ -214,6 +214,7 @@ struct cgl *read_cgl(const char *path, uint8_t **out_soin)
 			ndist_tiles * sizeof(*cgl->tiles));
 	FIX_PTRS(cgl->airgens, base,      cgl->nairgens, dist_tiles)
 	FIX_PTRS(cgl->airgens, pipes,     cgl->nairgens, dist_tiles)
+	FIX_PTRS(cgl->airgens, act,       cgl->nairgens, dist_tiles)
 	cgl->ntiles += ndist_tiles;
 	free(dist_tiles);
 	memcpy(cgl->tiles + cgl->ntiles, cano_tiles,
@@ -534,10 +535,11 @@ int cgl_read_one_magn(struct magnet *magnet, FILE *fp)
 	return 0;
 }
 
-BEGIN_CGL_READ_X(dist, DIST, airgen, 2)
-	cgl->airgens[i].base  = &tiles[2*i + 0];
-	cgl->airgens[i].pipes = &tiles[2*i + 1];
-END_CGL_READ_X(dist, DIST, airgen, 2)
+BEGIN_CGL_READ_X(dist, DIST, airgen, 3)
+	cgl->airgens[i].base  = &tiles[3*i + 0];
+	cgl->airgens[i].pipes = &tiles[3*i + 1];
+	cgl->airgens[i].act   = &tiles[3*i + 2];
+END_CGL_READ_X(dist, DIST, airgen, 3)
 
 int cgl_read_one_dist(struct airgen *airgen, FILE *fp)
 {
@@ -559,7 +561,13 @@ int cgl_read_one_dist(struct airgen *airgen, FILE *fp)
 	parse_tile_normal(buf2 + 0x04, airgen->pipes);
 	airgen->pipes->collision_test = Bitmap;
 	parse_rect(buf2 + 0x0a, &airgen->bbox);
-	parse_rect(buf2 + 0x0e, &airgen->range);
+	struct rect r;
+	parse_rect(buf2 + 0x0e, &r);
+	airgen->act->x = r.x, airgen->act->y = r.y;
+	airgen->act->w = r.w, airgen->act->h = r.h;
+	airgen->act->data = airgen;
+	airgen->act->type = Transparent;
+	airgen->act->collision_type = AirgenAction;
 	return 0;
 }
 
