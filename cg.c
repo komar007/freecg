@@ -31,9 +31,12 @@ void cg_step_ship(struct ship* s, double time, double dt)
 
 void cg_step_objects(struct cg *cg, double time, double dt)
 {
-	extern void cg_step_bar(struct bar*, double, double);
+	extern void cg_step_bar(struct bar*, double, double),
+	            cg_step_gate(struct gate*, double, double);
 	for (size_t i = 0; i < cg->level->nbars; ++i)
 		cg_step_bar(&cg->level->bars[i], time, dt);
+	for (size_t i = 0; i < cg->level->ngates; ++i)
+		cg_step_gate(&cg->level->gates[i], time, dt);
 }
 
 void cg_handle_collisions(struct cg *cg)
@@ -56,6 +59,7 @@ void cg_handle_collisions_block(struct cg *cg, block blk)
 			int, int, const struct tile*),
 	           cg_collision_rect(const struct cg*, const struct rect*,
 			int, int, const struct tile*);
+	extern void cg_call_collision_handler(struct cg*, struct tile*);
 	struct rect r;
 	struct tile stile;
 	ship_to_tile(cg->ship, &stile);
@@ -77,10 +81,22 @@ void cg_handle_collisions_block(struct cg *cg, block blk)
 			coll = 1;
 			break;
 		}
-		if (coll) {
-			cg->ship->engine = 1;
-			cg->ship->switchoff = cg->time + 1;
-		}
+		if (coll)
+			cg_call_collision_handler(cg, blk[i]);
+	}
+}
+
+void cg_call_collision_handler(struct cg *cg, struct tile *tile)
+{
+	void cg_handle_collision_gate(struct gate*);
+	switch (tile->collision_type) {
+	case GateAction:
+		cg_handle_collision_gate((struct gate*)tile->data);
+		break;
+	case Kaboom:
+		cg->ship->engine = 1;
+		cg->ship->switchoff = cg->time + 1;
+		break;
 	}
 }
 
@@ -114,6 +130,12 @@ int cg_collision_bitmap(const struct cg *cg, const struct rect *r,
 			    cg->cmap[tile_img_y + j][tile_img_x + i])
 				return 1;
 	return 0;
+}
+
+/* Collision handlers */
+void cg_handle_collision_gate(struct gate *gate)
+{
+	gate->active = 1;
 }
 
 /* Object steppers */
@@ -191,4 +213,29 @@ void cg_step_bar(struct bar *bar, double time, double dt)
 		update_sliding_tile(Left, bar->sbar, (int)bar->slen);
 		break;
 	}
+}
+
+void cg_step_gate(struct gate *gate, __attribute__((unused)) double time, double dt)
+{
+	if (!gate->active && gate->len < gate->max_len)
+		gate->len = fmin(gate->max_len,
+				gate->len + GATE_BAR_SPEED * dt);
+	if (gate->active && gate->len > 0)
+		gate->len = fmax(GATE_BAR_MIN_LEN,
+				gate->len - GATE_BAR_SPEED * dt);
+	switch (gate->type) {
+	case GateTop:
+		update_sliding_tile(Down,  gate->bar, (int)gate->len);
+		break;
+	case GateBottom:
+		update_sliding_tile(Up,    gate->bar, (int)gate->len);
+		break;
+	case GateLeft:
+		update_sliding_tile(Right, gate->bar, (int)gate->len);
+		break;
+	case GateRight:
+		update_sliding_tile(Left,  gate->bar, (int)gate->len);
+		break;
+	}
+	gate->active = 0;
 }

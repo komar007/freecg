@@ -7,7 +7,9 @@
 
 enum {
 	BAR_SPEED_CHANGE_INTERVAL = 4,
-	BAR_MIN_LEN = 2
+	BAR_MIN_LEN = 2,
+	GATE_BAR_MIN_LEN = 2,
+	GATE_BAR_SPEED = 23
 };
 
 struct ship {

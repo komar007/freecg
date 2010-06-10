@@ -127,6 +127,8 @@ void gl_dispatch_drawing(const struct tile *tile)
 {
 	struct texture *tex;
 	switch (tile->type) {
+	case Transparent:
+		break;
 	case Simple:
 		tex = tm_request_texture(tile);
 		gl_draw_simple_tile(tile, tex);

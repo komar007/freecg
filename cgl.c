@@ -241,6 +241,7 @@ struct cgl *read_cgl(const char *path, uint8_t **out_soin)
 	FIX_PTRS(cgl->gates,   base[4],  cgl->ngates,    onew_tiles)
 	FIX_PTRS(cgl->gates,   bar,      cgl->ngates,    onew_tiles)
 	FIX_PTRS(cgl->gates,   arrow,    cgl->ngates,    onew_tiles)
+	FIX_PTRS(cgl->gates,   act,      cgl->ngates,    onew_tiles)
 	cgl->ntiles += nonew_tiles;
 	free(onew_tiles);
 	if (out_soin)
@@ -698,15 +699,16 @@ int cgl_read_one_pipe(struct bar *bar, FILE *fp)
 	return 0;
 }
 
-BEGIN_CGL_READ_X(onew, ONEW, gate, 7)
-	cgl->gates[i].base[0]  = &tiles[7*i + 0];
-	cgl->gates[i].base[1]  = &tiles[7*i + 1];
-	cgl->gates[i].base[2]  = &tiles[7*i + 2];
-	cgl->gates[i].base[3]  = &tiles[7*i + 3];
-	cgl->gates[i].base[4]  = &tiles[7*i + 4];
-	cgl->gates[i].bar      = &tiles[7*i + 5];
-	cgl->gates[i].arrow    = &tiles[7*i + 6];
-END_CGL_READ_X(onew, ONEW, gate, 7)
+BEGIN_CGL_READ_X(onew, ONEW, gate, 8)
+	cgl->gates[i].base[0]  = &tiles[8*i + 0];
+	cgl->gates[i].base[1]  = &tiles[8*i + 1];
+	cgl->gates[i].base[2]  = &tiles[8*i + 2];
+	cgl->gates[i].base[3]  = &tiles[8*i + 3];
+	cgl->gates[i].base[4]  = &tiles[8*i + 4];
+	cgl->gates[i].bar      = &tiles[8*i + 5];
+	cgl->gates[i].arrow    = &tiles[8*i + 6];
+	cgl->gates[i].act      = &tiles[8*i + 7];
+END_CGL_READ_X(onew, ONEW, gate, 8)
 
 inline void parse_packed_tiles(const int16_t *data, size_t num, struct tile *tiles[],
 		const vector *dims)
@@ -748,7 +750,7 @@ int cgl_read_one_onew(struct gate *gate, FILE *fp)
 	gate->has_end = (buf[0] >> 3) & 0x01;
 	gate->orient  = (buf[0] >> 4) & 0x01;
 	assert(buf2[0] == buf2[1]);
-	gate->len = buf2[0];
+	gate->len = gate->max_len = buf2[0];
 	parse_packed_tiles(buf2 + 0x02, 5, gate->base, base_dims[gate->orient]);
 	/* prepare gate's bar */
 	switch (gate->orient) {
@@ -766,7 +768,13 @@ int cgl_read_one_onew(struct gate *gate, FILE *fp)
 		break;
 	}
 	gate->bar->collision_test = Bitmap;
-	parse_rect(buf2 + 0x1c, &gate->act);
+	struct rect r;
+	parse_rect(buf2 + 0x1c, &r);
+	gate->act->x = r.x, gate->act->y = r.y;
+	gate->act->w = r.w, gate->act->h = r.h;
+	gate->act->type = Transparent;
+	gate->act->collision_type = GateAction;
+	gate->act->data = gate;
 	if (!gate->has_end)
 		gate->base[4]->w = gate->base[4]->h = 0;
 	if (gate->type == GateLeft)

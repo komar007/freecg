@@ -274,10 +274,10 @@ void print_onew(const struct cgl *cgl)
 }
 void print_one_onew(struct gate *gate, int num)
 {
-	printf("\tgate %d: dir = %d, type = %s\n", num,
+	printf("\tgate %d: dir = %d, type = %s, len = %d\n", num,
 			gate->dir, gate->type == GateBottom ? "Bottom" :
 			gate->type == GateRight ? "Right" : gate->type ==
-			GateTop ? "Top" : "Left");
+			GateTop ? "Top" : "Left", (int)gate->max_len);
 	printf("\t\tbase[0]:\t"), print_tile(gate->base[0]);
 	printf("\t\tbase[1]:\t"), print_tile(gate->base[1]);
 	printf("\t\tbase[2]:\t"), print_tile(gate->base[2]);

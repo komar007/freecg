@@ -55,6 +55,7 @@ struct tile {
 	unsigned short img_x, img_y; /* relative position of image in texture */
 	enum {
 		Simple = 0,
+		Transparent
 	} type;
 	/* This is the type of collision test to be performed on a tile */
 	enum {
@@ -68,6 +69,10 @@ struct tile {
 		/* Collisions are detected using a special function */
 		Cannon
 	} collision_test;
+	enum {
+		Kaboom = 0,
+		GateAction
+	} collision_type;
 	/* necessary for renderer, the number of the most recent frame in
 	 * which the tile was rendered */
 	unsigned int lframe;
@@ -150,13 +155,14 @@ enum gate_type{
 struct gate {
 	struct tile *base[5],
 		    *bar,
-		    *arrow;
+		    *arrow,
+		    *act;
 	enum gate_type type;
 	enum orientation orient;
-	struct rect act;
 	int dir;
 	int has_end;
-	int len;
+	double max_len, len;
+	int active;
 };
 typedef struct tile **block;
 /* cgl level contents */
