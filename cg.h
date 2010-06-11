@@ -5,8 +5,8 @@
 #include "cgl.h"
 #include <stdint.h>
 
+#define AIRGEN_ROT_SPEED 4.97
 enum {
-	AIRGEN_ROT_SPEED = 19,
 	BAR_SPEED_CHANGE_INTERVAL = 4,
 	BAR_MIN_LEN = 2,
 	GATE_BAR_MIN_LEN = 2,

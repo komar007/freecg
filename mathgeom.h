@@ -28,6 +28,7 @@ inline int rand_sign()
 	return 2 * rand_range(0, 1) - 1;
 }
 
+int normalize_angle(double*);
 void ship_to_tile(const struct ship*, struct tile*);
 int tiles_intersect(const struct tile*, const struct tile*, struct rect*);
 

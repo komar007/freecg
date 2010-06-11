@@ -1,6 +1,17 @@
 #include "mathgeom.h"
 #include <math.h>
 
+int normalize_angle(double *a)
+{
+	if (*a < 0)
+		*a += 2*M_PI;
+	if (*a >= 2*M_PI)
+		*a -= 2*M_PI;
+	assert(*a < 2*M_PI);
+	assert(*a >= 0);
+	return 0;
+}
+
 void ship_to_tile(const struct ship *s, struct tile *t)
 {
 	t->w = SHIP_W, t->h = SHIP_H;
@@ -15,7 +26,10 @@ void ship_to_tile(const struct ship *s, struct tile *t)
 		t->img_x = SHIP_OFF_IMG_X;
 		t->img_y = SHIP_OFF_IMG_Y;
 	}
-	t->img_x += ((int)s->rot % 24) * SHIP_W;
+	double drot = s->rot + M_PI/2;
+	normalize_angle(&drot);
+	int rot = drot / (2*M_PI) * 24;
+	t->img_x = rot * SHIP_W;
 }
 
 int tiles_intersect(const struct tile *t1, const struct tile *t2,

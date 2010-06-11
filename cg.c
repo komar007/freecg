@@ -7,7 +7,7 @@
 void cg_init_ship(struct ship *s)
 {
 	s->engine = 0;
-	s->rot = 0;
+	s->rot = 3/2.0 * M_PI;
 }
 struct cg *cg_init(struct cgl *level)
 {
@@ -27,6 +27,12 @@ void cg_step_ship(struct ship* s, double time, double dt)
 	s->y += s->vy * dt;
 	if (s->switchoff <= time)
 		s->engine = 0;
+}
+
+void cg_ship_rotate(struct ship *s, double delta)
+{
+	s->rot += delta;
+	normalize_angle(&s->rot);
 }
 
 void cg_step_objects(struct cg *cg, double time, double dt)
@@ -267,15 +273,11 @@ void cg_step_airgen(struct airgen *airgen, struct cg *cg,
 		return;
 	switch (airgen->spin) {
 	case CW:
-		cg->ship->rot += AIRGEN_ROT_SPEED * dt;
+		cg_ship_rotate(cg->ship, AIRGEN_ROT_SPEED * dt);
 		break;
 	case CCW:
-		cg->ship->rot -= AIRGEN_ROT_SPEED * dt;
+		cg_ship_rotate(cg->ship, -AIRGEN_ROT_SPEED * dt);
 		break;
 	}
-	if (cg->ship->rot > 24)
-		cg->ship->rot -= 24;
-	if (cg->ship->rot < 0)
-		cg->ship->rot += 24;
 	airgen->active = 0;
 }
