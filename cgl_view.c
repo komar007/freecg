@@ -70,6 +70,27 @@ void process_event(SDL_Event *e)
 			break;
 		}
 		break;
+	case SDL_KEYDOWN:
+		switch (e->key.keysym.sym) {
+		case SDLK_ESCAPE:
+			running = 0;
+			break;
+		case SDLK_1:
+			gl.cg->ship->keys[0] = !gl.cg->ship->keys[0];
+			break;
+		case SDLK_2:
+			gl.cg->ship->keys[1] = !gl.cg->ship->keys[1];
+			break;
+		case SDLK_3:
+			gl.cg->ship->keys[2] = !gl.cg->ship->keys[2];
+			break;
+		case SDLK_4:
+			gl.cg->ship->keys[3] = !gl.cg->ship->keys[3];
+			break;
+		default:
+			break;
+		}
+		break;
 	}
 }
 

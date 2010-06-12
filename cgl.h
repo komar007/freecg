@@ -176,9 +176,11 @@ struct lgate {
 		    *act;
 	enum gate_type type;
 	enum orientation orient;
+	int keys[4];
 	int has_end;
 	double max_len, len;
 	int active;
+	int open;
 };
 typedef struct tile **block;
 /* cgl level contents */

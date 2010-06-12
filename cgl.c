@@ -853,7 +853,7 @@ void set_light_tile(struct tile *light, int num, int x, int y)
 	light->w = light->h = light->tex_w = light->tex_h = 8;
 	light->tex_x = LIGHTS_TEX_X + num * 8;
 	light->tex_y = LIGHTS_TEX_Y;
-	light->type = Blink;
+	light->type = Transparent;
 }
 int cgl_read_one_barr(struct lgate *lgate, FILE *fp)
 {
@@ -875,6 +875,10 @@ int cgl_read_one_barr(struct lgate *lgate, FILE *fp)
 	/* fill with header information */
 	lgate->type    = (buf[0] >> 0) & 0x03;
 	lgate->has_end = (buf[0] >> 2) & 0x01;
+	lgate->keys[0] = (buf[0] >> 7) & 0x01;
+	lgate->keys[1] = (buf[0] >> 6) & 0x01;
+	lgate->keys[2] = (buf[0] >> 5) & 0x01;
+	lgate->keys[3] = (buf[0] >> 4) & 0x01;
 	if (lgate->type == GateTop || lgate->type == GateBottom)
 		lgate->orient = Vertical;
 	else

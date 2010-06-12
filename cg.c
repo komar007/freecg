@@ -41,7 +41,7 @@ void cg_step_objects(struct cg *cg, double time, double dt)
 	extern void cg_step_airgen(struct airgen*, struct cg*, double, double),
 	            cg_step_bar(struct bar*, double, double),
 	            cg_step_gate(struct gate*, double, double),
-	            cg_step_lgate(struct lgate*, double, double);
+	            cg_step_lgate(struct ship*, struct lgate*, double, double);
 	for (size_t i = 0; i < cg->level->nairgens; ++i)
 		cg_step_airgen(&cg->level->airgens[i], cg, time, dt);
 	for (size_t i = 0; i < cg->level->nbars; ++i)
@@ -49,7 +49,7 @@ void cg_step_objects(struct cg *cg, double time, double dt)
 	for (size_t i = 0; i < cg->level->ngates; ++i)
 		cg_step_gate(&cg->level->gates[i], time, dt);
 	for (size_t i = 0; i < cg->level->nlgates; ++i)
-		cg_step_lgate(&cg->level->lgates[i], time, dt);
+		cg_step_lgate(cg->ship, &cg->level->lgates[i], time, dt);
 }
 
 /* ==================== Collision detectors ==================== */
@@ -139,14 +139,14 @@ void cg_handle_collisions_block(struct cg *cg, block blk)
 void cg_call_collision_handler(struct cg *cg, struct tile *tile)
 {
 	extern void cg_handle_collision_gate(struct gate*),
-	            cg_handle_collision_lgate(struct lgate*),
+	            cg_handle_collision_lgate(struct ship*, struct lgate*),
 	            cg_handle_collision_airgen(struct airgen*);
 	switch (tile->collision_type) {
 	case GateAction:
 		cg_handle_collision_gate((struct gate*)tile->data);
 		break;
 	case LGateAction:
-		cg_handle_collision_lgate((struct lgate*)tile->data);
+		cg_handle_collision_lgate(cg->ship, (struct lgate*)tile->data);
 		break;
 	case AirgenAction:
 		cg_handle_collision_airgen((struct airgen*)tile->data);
@@ -173,9 +173,13 @@ void cg_handle_collision_gate(struct gate *gate)
 {
 	gate->active = 1;
 }
-void cg_handle_collision_lgate(struct lgate *lgate)
+void cg_handle_collision_lgate(struct ship *ship, struct lgate *lgate)
 {
 	lgate->active = 1;
+	lgate->open = 1;
+	for (size_t i = 0; i < 4; ++i)
+		if (lgate->keys[i] && !ship->keys[i])
+			lgate->open = 0;
 }
 void cg_handle_collision_airgen(struct airgen *airgen)
 {
@@ -290,15 +294,29 @@ void cg_step_gate(struct gate *gate, __attribute__((unused)) double time, double
 	gate->active = 0;
 }
 
-void cg_step_lgate(struct lgate *lgate, __attribute__((unused)) double time, double dt)
+void cg_step_lgate(struct ship *ship, struct lgate *lgate,
+		__attribute__((unused)) double time, double dt)
 {
-	if (!lgate->active && lgate->len < lgate->max_len)
+	for (size_t i = 0; i < 4; ++i) {
+		if (!lgate->active) {
+			lgate->light[i]->type = Transparent;
+		} else {
+			if (lgate->keys[i] && !ship->keys[i])
+				lgate->light[i]->type = Blink;
+			else if (lgate->keys[i])
+				lgate->light[i]->type = Simple;
+			else
+				lgate->light[i]->type = Transparent;
+		}
+	}
+	if (!lgate->open && lgate->len < lgate->max_len)
 		lgate->len = fmin(lgate->max_len,
 				lgate->len + GATE_BAR_SPEED * dt);
-	if (lgate->active && lgate->len > 0)
+	if (lgate->open && lgate->len > 0)
 		lgate->len = fmax(GATE_BAR_MIN_LEN,
 				lgate->len - GATE_BAR_SPEED * dt);
 	update_gate_bar(lgate->type, lgate->bar, (int)lgate->len);
+	lgate->open = 0;
 	lgate->active = 0;
 }
 

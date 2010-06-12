@@ -19,6 +19,7 @@ struct ship {
 	double ax, ay;
 	double rot;
 	int engine;
+	int keys[4];
 	/*temporary*/ double switchoff;
 };
 struct cg {
