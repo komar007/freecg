@@ -28,8 +28,9 @@ struct cg {
 	collision_map cmap;
 };
 
-struct cg *cg_init(struct cgl *level);
-void cg_step(struct cg *cg, double dt);
+struct cg *cg_init(struct cgl*);
+void cg_step(struct cg*, double);
+void cg_ship_rotate(struct ship*, double);
 
 
 #endif

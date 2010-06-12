@@ -35,6 +35,7 @@ void cg_ship_rotate(struct ship *s, double delta)
 	normalize_angle(&s->rot);
 }
 
+/* perform logic simulation of all objects */
 void cg_step_objects(struct cg *cg, double time, double dt)
 {
 	extern void cg_step_airgen(struct airgen*, struct cg*, double, double),
@@ -48,7 +49,8 @@ void cg_step_objects(struct cg *cg, double time, double dt)
 		cg_step_gate(&cg->level->gates[i], time, dt);
 }
 
-/* Collision detectors */
+/* ==================== Collision detectors ==================== */
+/* check if ship's center is inside the tile */
 int cg_collision_rect_point(const struct tile *ship, const struct tile *tile)
 {
 	double x = ship->x + ship->w / 2,
@@ -58,6 +60,8 @@ int cg_collision_rect_point(const struct tile *ship, const struct tile *tile)
 		return 1;
 	return 0;
 }
+/* check if tile t's bounding box collides with the ship within rectangle r,
+ * knowing that r's origin in collision map is (img_x, img_y) */
 int cg_collision_rect(const struct cg *cg, const struct rect *r,
 		int img_x, int img_y, __attribute__((unused)) const struct tile *t)
 {
@@ -67,6 +71,8 @@ int cg_collision_rect(const struct cg *cg, const struct rect *r,
 				return 1;
 	return 0;
 }
+/* check if tile t collides with the ship within the rectangle r, knowing
+ * that r's origin in collision map is (img_x, img_y) */
 int cg_collision_bitmap(const struct cg *cg, const struct rect *r,
 	int img_x, int img_y, const struct tile *t)
 {
@@ -79,6 +85,7 @@ int cg_collision_bitmap(const struct cg *cg, const struct rect *r,
 				return 1;
 	return 0;
 }
+/* ==================== /Collision detectors ==================== */
 
 void cg_handle_collisions(struct cg *cg)
 {
@@ -93,7 +100,6 @@ void cg_handle_collisions(struct cg *cg)
 		for (size_t i = x; (signed)i*BLOCK_SIZE < end_x; ++i)
 			cg_handle_collisions_block(cg, cg->level->blocks[j][i]);
 }
-
 void cg_handle_collisions_block(struct cg *cg, block blk)
 {
 	extern void cg_call_collision_handler(struct cg*, struct tile*);
@@ -125,7 +131,6 @@ void cg_handle_collisions_block(struct cg *cg, block blk)
 			cg_call_collision_handler(cg, blk[i]);
 	}
 }
-
 void cg_call_collision_handler(struct cg *cg, struct tile *tile)
 {
 	extern void cg_handle_collision_gate(struct gate*),
@@ -138,6 +143,7 @@ void cg_call_collision_handler(struct cg *cg, struct tile *tile)
 		cg_handle_collision_airgen((struct airgen*)tile->data);
 		break;
 	case Kaboom:
+		/* temporary */
 		cg->ship->engine = 1;
 		cg->ship->switchoff = cg->time + 1;
 		break;
@@ -153,7 +159,7 @@ void cg_step(struct cg *cg, double time)
 	cg->time = time;
 }
 
-/* Collision handlers */
+/* ==================== Collision handlers ==================== */
 void cg_handle_collision_gate(struct gate *gate)
 {
 	gate->active = 1;
@@ -163,8 +169,10 @@ void cg_handle_collision_airgen(struct airgen *airgen)
 {
 	airgen->active = 1;
 }
+/* ==================== /Collision handlers ==================== */
 
-/* Object steppers */
+/* ==================== Object simulators ==================== */
+/* auxilliary function used by all sliding tiles */
 void update_sliding_tile(enum dir dir, struct tile *t, int len)
 {
 	switch (dir) {
@@ -188,7 +196,6 @@ void update_sliding_tile(enum dir dir, struct tile *t, int len)
 }
 
 static const double bar_speeds[] = {5.65, 7.43, 10.83, 21.67, 43.33, 69.33};
-
 static inline double bar_rand_speed(const struct bar *bar)
 {
 	return bar_speeds[rand_range(bar->min_s, bar->max_s)];
@@ -281,3 +288,4 @@ void cg_step_airgen(struct airgen *airgen, struct cg *cg,
 	}
 	airgen->active = 0;
 }
+/* ==================== /Object simulators ==================== */
