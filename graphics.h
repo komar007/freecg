@@ -22,7 +22,8 @@ enum graphics_config {
 	AIRGEN_ANIM_SPEED = 20,
 	MAGNET_ANIM_SPEED = 15,
 	BAR_ANIM_SPEED = 1,
-	BAR_TEX_OFFSET = 28
+	BAR_TEX_OFFSET = 28,
+	BLINK_SPEED = 1
 };
 
 #endif

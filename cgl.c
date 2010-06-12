@@ -136,7 +136,8 @@ struct cgl *read_cgl(const char *path, uint8_t **out_soin)
 		   cgl_read_dist(struct cgl*, struct tile**, size_t*, FILE*),
 		   cgl_read_cano(struct cgl*, struct tile**, size_t*, FILE*),
 		   cgl_read_pipe(struct cgl*, struct tile**, size_t*, FILE*),
-		   cgl_read_onew(struct cgl*, struct tile**, size_t*, FILE*);
+		   cgl_read_onew(struct cgl*, struct tile**, size_t*, FILE*),
+		   cgl_read_barr(struct cgl*, struct tile**, size_t*, FILE*);
 	struct cgl *cgl;
 	FILE *fp;
 	uint8_t *soin = NULL;
@@ -166,9 +167,9 @@ struct cgl *read_cgl(const char *path, uint8_t **out_soin)
 	if (cgl_read_sobs(cgl, soin, fp) != 0)
 		goto error;
 	struct tile *vent_tiles, *magn_tiles, *dist_tiles, *cano_tiles,
-		    *pipe_tiles, *onew_tiles;
+		    *pipe_tiles, *onew_tiles, *barr_tiles;
 	size_t nvent_tiles, nmagn_tiles, ndist_tiles, ncano_tiles,
-	       npipe_tiles, nonew_tiles;
+	       npipe_tiles, nonew_tiles, nbarr_tiles;
 	if (cgl_read_magic(cgl, fp) != 0)
 		goto error;
 	if (cgl_read_vent(cgl, &vent_tiles, &nvent_tiles, fp) != 0)
@@ -193,10 +194,15 @@ struct cgl *read_cgl(const char *path, uint8_t **out_soin)
 		goto error;
 	if (cgl_read_onew(cgl, &onew_tiles, &nonew_tiles, fp) != 0)
 		goto error;
+	if (cgl_read_magic(cgl, fp) != 0)
+		goto error;
+	if (cgl_read_barr(cgl, &barr_tiles, &nbarr_tiles, fp) != 0)
+		goto error;
 	/* join extra tiles from the other sections with those from SOBS,
 	 * fix pointers to point to the new memory */
 	size_t num_tiles = cgl->ntiles + (nvent_tiles + nmagn_tiles +
-			ndist_tiles + ncano_tiles + npipe_tiles + nonew_tiles/* + ... */);
+			ndist_tiles + ncano_tiles + npipe_tiles +
+			nonew_tiles + nbarr_tiles/* + ... */);
 	cgl->tiles = realloc(cgl->tiles, num_tiles * sizeof(*cgl->tiles));
 	memcpy(cgl->tiles + cgl->ntiles, vent_tiles,
 			nvent_tiles * sizeof(*cgl->tiles));
@@ -245,6 +251,22 @@ struct cgl *read_cgl(const char *path, uint8_t **out_soin)
 	FIX_PTRS(cgl->gates,   act,      cgl->ngates,    onew_tiles)
 	cgl->ntiles += nonew_tiles;
 	free(onew_tiles);
+
+	memcpy(cgl->tiles + cgl->ntiles, barr_tiles,
+			nbarr_tiles * sizeof(*cgl->tiles));
+	FIX_PTRS(cgl->lgates,  base[0],  cgl->nlgates,   barr_tiles)
+	FIX_PTRS(cgl->lgates,  base[1],  cgl->nlgates,   barr_tiles)
+	FIX_PTRS(cgl->lgates,  base[2],  cgl->nlgates,   barr_tiles)
+	FIX_PTRS(cgl->lgates,  base[3],  cgl->nlgates,   barr_tiles)
+	FIX_PTRS(cgl->lgates,  base[4],  cgl->nlgates,   barr_tiles)
+	FIX_PTRS(cgl->lgates,  bar,      cgl->nlgates,   barr_tiles)
+	FIX_PTRS(cgl->lgates,  light[0], cgl->nlgates,   barr_tiles)
+	FIX_PTRS(cgl->lgates,  light[1], cgl->nlgates,   barr_tiles)
+	FIX_PTRS(cgl->lgates,  light[2], cgl->nlgates,   barr_tiles)
+	FIX_PTRS(cgl->lgates,  light[3], cgl->nlgates,   barr_tiles)
+	FIX_PTRS(cgl->lgates,  act,      cgl->nlgates,   barr_tiles)
+	cgl->ntiles += nbarr_tiles;
+	free(barr_tiles);
 	if (out_soin)
 		*out_soin = soin;
 	else
@@ -731,12 +753,12 @@ inline void parse_packed_tiles(const int16_t *data, size_t num, struct tile *til
 	}
 }
 
-static const vector base_dims[][5] = {
-	{{32, 32}, {32, 16}, {32, 32}, {40, 4}, {32, 20}},
-	{{32, 32}, {16, 32}, {32, 32}, {4, 40}, {20, 32}}
-};
 int cgl_read_one_onew(struct gate *gate, FILE *fp)
 {
+	static const vector base_dims[][5] = {
+		{{32, 32}, {32, 16}, {32, 32}, {40, 4}, {32, 20}},
+		{{32, 32}, {16, 32}, {32, 32}, {4, 40}, {20, 32}}
+	};
 	int err;
 	uint8_t buf[ONEW_HDR_SIZE];
 	int16_t buf2[ONEW_NUM_SHORTS];
@@ -780,8 +802,10 @@ int cgl_read_one_onew(struct gate *gate, FILE *fp)
 	gate->act->collision_test = RectPoint;
 	gate->act->collision_type = GateAction;
 	gate->act->data = gate;
-	if (!gate->has_end)
-		gate->base[4]->w = gate->base[4]->h = 0;
+	if (!gate->has_end) {
+		gate->base[4]->type = Transparent;
+		gate->base[4]->collision_test = NoCollision;
+	}
 	if (gate->type == GateLeft)
 		gate->bar->img_x = GATE_BAR_LEN - gate->len;
 	if (gate->type == GateTop)
@@ -805,6 +829,99 @@ int cgl_read_one_onew(struct gate *gate, FILE *fp)
 	arrow_dir = (arrow_dir + 4) % 4;
 	gate->arrow->tex_y = ARROW_TEX_Y;
 	gate->arrow->tex_x = ARROW_SIDE * arrow_dir;
+	return 0;
+}
+
+BEGIN_CGL_READ_X(barr, BARR, lgate, 11)
+	cgl->lgates[i].base[0]  = &tiles[11*i + 0];
+	cgl->lgates[i].base[1]  = &tiles[11*i + 1];
+	cgl->lgates[i].base[2]  = &tiles[11*i + 2];
+	cgl->lgates[i].base[3]  = &tiles[11*i + 3];
+	cgl->lgates[i].base[4]  = &tiles[11*i + 4];
+	cgl->lgates[i].bar      = &tiles[11*i + 5];
+	cgl->lgates[i].light[0] = &tiles[11*i + 6];
+	cgl->lgates[i].light[1] = &tiles[11*i + 7];
+	cgl->lgates[i].light[2] = &tiles[11*i + 8];
+	cgl->lgates[i].light[3] = &tiles[11*i + 9];
+	cgl->lgates[i].act      = &tiles[11*i + 10];
+END_CGL_READ_X(barr, BARR, lgate, 11)
+
+void set_light_tile(struct tile *light, int num, int x, int y)
+{
+	light->x = x;
+	light->y = y;
+	light->w = light->h = light->tex_w = light->tex_h = 8;
+	light->tex_x = LIGHTS_TEX_X + num * 8;
+	light->tex_y = LIGHTS_TEX_Y;
+	light->type = Blink;
+}
+int cgl_read_one_barr(struct lgate *lgate, FILE *fp)
+{
+	static const vector base_dims[][5] = {
+		{{32, 32}, {24, 16}, {0, 0}, {40, 4}, {32, 20}},
+		{{32, 32}, {16, 24}, {0, 0}, {4, 40}, {20, 32}}
+	};
+	int err;
+	uint8_t buf[ONEW_HDR_SIZE];
+	int16_t buf2[ONEW_NUM_SHORTS];
+	size_t nread;
+
+	nread = fread(buf, sizeof(uint8_t), ONEW_HDR_SIZE, fp);
+	if (nread < ONEW_HDR_SIZE)
+		return -EBADONEW;
+	err = read_short((int16_t*)buf2, ONEW_NUM_SHORTS, fp);
+	if (err)
+		return -EBADONEW;
+	/* fill with header information */
+	lgate->type    = (buf[0] >> 0) & 0x03;
+	lgate->has_end = (buf[0] >> 2) & 0x01;
+	if (lgate->type == GateTop || lgate->type == GateBottom)
+		lgate->orient = Vertical;
+	else
+		lgate->orient = Horizontal;
+	assert(buf2[0] == buf2[1]);
+	lgate->len = lgate->max_len = buf2[0];
+	parse_packed_tiles(buf2 + 0x02, 5, lgate->base, base_dims[lgate->orient]);
+	/* prepare lgate's bar */
+	switch (lgate->orient) {
+	case Vertical:
+		parse_tile_minimal(buf2 + 0x16, lgate->bar,
+				GATE_BAR_THICKNESS, lgate->len,
+				LVGATE_TEX_X, LVGATE_TEX_Y);
+		lgate->bar->tex_h = GATE_BAR_LEN;
+		break;
+	case Horizontal:
+		parse_tile_minimal(buf2 + 0x16, lgate->bar,
+				lgate->len, GATE_BAR_THICKNESS,
+				LHGATE_TEX_X, LHGATE_TEX_Y);
+		lgate->bar->tex_w = GATE_BAR_LEN;
+		break;
+	}
+	lgate->bar->collision_test = Bitmap;
+	struct rect r;
+	parse_rect(buf2 + 0x1c, &r);
+	lgate->act->x = r.x, lgate->act->y = r.y;
+	lgate->act->w = r.w, lgate->act->h = r.h;
+	lgate->act->type = Transparent;
+	lgate->act->collision_test = RectPoint;
+	lgate->act->collision_type = LGateAction;
+	lgate->act->data = lgate;
+	if (!lgate->has_end) {
+		lgate->base[4]->type = Transparent;
+		lgate->base[4]->collision_test = NoCollision;
+	}
+	if (lgate->type == GateLeft)
+		lgate->bar->img_x = GATE_BAR_LEN - lgate->len;
+	if (lgate->type == GateTop)
+		lgate->bar->img_y = GATE_BAR_LEN - lgate->len;
+	set_light_tile(lgate->light[0], 0,
+			lgate->base[0]->x + 6,  lgate->base[0]->y + 6);
+	set_light_tile(lgate->light[1], 1,
+			lgate->base[0]->x + 18, lgate->base[0]->y + 6);
+	set_light_tile(lgate->light[2], 2,
+			lgate->base[0]->x + 6,  lgate->base[0]->y + 18);
+	set_light_tile(lgate->light[3], 3,
+			lgate->base[0]->x + 18, lgate->base[0]->y + 18);
 	return 0;
 }
 

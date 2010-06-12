@@ -41,6 +41,7 @@ enum error_codes {
 	EBADCANO,
 	EBADPIPE,
 	EBADONEW,
+	EBADBARR,
 	/* ... */
 
 	EBADSHORT,
@@ -55,7 +56,8 @@ struct tile {
 	unsigned short img_x, img_y; /* relative position of image in texture */
 	enum {
 		Simple = 0,
-		Transparent
+		Transparent,
+		Blink
 	} type;
 	/* This is the type of collision test to be performed on a tile */
 	enum {
@@ -69,13 +71,15 @@ struct tile {
 		 * (img_x, img_y), (img_x + w, img_y + h) is used to detect
 		 * collisions in a rectabgular tile */
 		Bitmap,
+		NoCollision,
 		/* Collisions are detected using a special function */
 		Cannon
 	} collision_test;
 	enum {
 		Kaboom = 0,
 		AirgenAction,
-		GateAction
+		GateAction,
+		LGateAction
 	} collision_type;
 	/* necessary for renderer, the number of the most recent frame in
 	 * which the tile was rendered */
@@ -165,6 +169,17 @@ struct gate {
 	double max_len, len;
 	int active;
 };
+struct lgate {
+	struct tile *base[5],
+		    *bar,
+		    *light[4],
+		    *act;
+	enum gate_type type;
+	enum orientation orient;
+	int has_end;
+	double max_len, len;
+	int active;
+};
 typedef struct tile **block;
 /* cgl level contents */
 struct cgl {
@@ -187,6 +202,8 @@ struct cgl {
 	struct bar *bars;
 	size_t ngates;
 	struct gate *gates;
+	size_t nlgates;
+	struct lgate *lgates;
 	block **blocks;
 };
 

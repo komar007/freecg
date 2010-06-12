@@ -40,13 +40,16 @@ void cg_step_objects(struct cg *cg, double time, double dt)
 {
 	extern void cg_step_airgen(struct airgen*, struct cg*, double, double),
 	            cg_step_bar(struct bar*, double, double),
-	            cg_step_gate(struct gate*, double, double);
+	            cg_step_gate(struct gate*, double, double),
+	            cg_step_lgate(struct lgate*, double, double);
 	for (size_t i = 0; i < cg->level->nairgens; ++i)
 		cg_step_airgen(&cg->level->airgens[i], cg, time, dt);
 	for (size_t i = 0; i < cg->level->nbars; ++i)
 		cg_step_bar(&cg->level->bars[i], time, dt);
 	for (size_t i = 0; i < cg->level->ngates; ++i)
 		cg_step_gate(&cg->level->gates[i], time, dt);
+	for (size_t i = 0; i < cg->level->nlgates; ++i)
+		cg_step_lgate(&cg->level->lgates[i], time, dt);
 }
 
 /* ==================== Collision detectors ==================== */
@@ -126,6 +129,8 @@ void cg_handle_collisions_block(struct cg *cg, block blk)
 			/* FIXME */
 			coll = 1;
 			break;
+		case NoCollision:
+			break;
 		}
 		if (coll)
 			cg_call_collision_handler(cg, blk[i]);
@@ -134,10 +139,14 @@ void cg_handle_collisions_block(struct cg *cg, block blk)
 void cg_call_collision_handler(struct cg *cg, struct tile *tile)
 {
 	extern void cg_handle_collision_gate(struct gate*),
+	            cg_handle_collision_lgate(struct lgate*),
 	            cg_handle_collision_airgen(struct airgen*);
 	switch (tile->collision_type) {
 	case GateAction:
 		cg_handle_collision_gate((struct gate*)tile->data);
+		break;
+	case LGateAction:
+		cg_handle_collision_lgate((struct lgate*)tile->data);
 		break;
 	case AirgenAction:
 		cg_handle_collision_airgen((struct airgen*)tile->data);
@@ -164,7 +173,10 @@ void cg_handle_collision_gate(struct gate *gate)
 {
 	gate->active = 1;
 }
-
+void cg_handle_collision_lgate(struct lgate *lgate)
+{
+	lgate->active = 1;
+}
 void cg_handle_collision_airgen(struct airgen *airgen)
 {
 	airgen->active = 1;
@@ -248,6 +260,24 @@ void cg_step_bar(struct bar *bar, double time, double dt)
 	}
 }
 
+void update_gate_bar(enum gate_type type, struct tile *bar, int len)
+{
+	switch (type) {
+	case GateTop:
+		update_sliding_tile(Down,  bar, len);
+		break;
+	case GateBottom:
+		update_sliding_tile(Up,    bar, len);
+		break;
+	case GateLeft:
+		update_sliding_tile(Right, bar, len);
+		break;
+	case GateRight:
+		update_sliding_tile(Left,  bar, len);
+		break;
+	}
+}
+
 void cg_step_gate(struct gate *gate, __attribute__((unused)) double time, double dt)
 {
 	if (!gate->active && gate->len < gate->max_len)
@@ -256,21 +286,20 @@ void cg_step_gate(struct gate *gate, __attribute__((unused)) double time, double
 	if (gate->active && gate->len > 0)
 		gate->len = fmax(GATE_BAR_MIN_LEN,
 				gate->len - GATE_BAR_SPEED * dt);
-	switch (gate->type) {
-	case GateTop:
-		update_sliding_tile(Down,  gate->bar, (int)gate->len);
-		break;
-	case GateBottom:
-		update_sliding_tile(Up,    gate->bar, (int)gate->len);
-		break;
-	case GateLeft:
-		update_sliding_tile(Right, gate->bar, (int)gate->len);
-		break;
-	case GateRight:
-		update_sliding_tile(Left,  gate->bar, (int)gate->len);
-		break;
-	}
+	update_gate_bar(gate->type, gate->bar, (int)gate->len);
 	gate->active = 0;
+}
+
+void cg_step_lgate(struct lgate *lgate, __attribute__((unused)) double time, double dt)
+{
+	if (!lgate->active && lgate->len < lgate->max_len)
+		lgate->len = fmin(lgate->max_len,
+				lgate->len + GATE_BAR_SPEED * dt);
+	if (lgate->active && lgate->len > 0)
+		lgate->len = fmax(GATE_BAR_MIN_LEN,
+				lgate->len - GATE_BAR_SPEED * dt);
+	update_gate_bar(lgate->type, lgate->bar, (int)lgate->len);
+	lgate->active = 0;
 }
 
 void cg_step_airgen(struct airgen *airgen, struct cg *cg,

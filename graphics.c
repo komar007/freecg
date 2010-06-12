@@ -122,6 +122,13 @@ inline void gl_draw_simple_tile(const struct tile *tile,
 {
 	gl_draw_sprite(tile->x, tile->y, tile, tex);
 }
+inline void gl_draw_blinking_tile(const struct tile *tile,
+		const struct texture *tex)
+{
+	int phase = round(gl.cg->time * BLINK_SPEED);
+	if (phase % 2 == 0)
+		gl_draw_sprite(tile->x, tile->y, tile, tex);
+}
 
 void gl_dispatch_drawing(const struct tile *tile)
 {
@@ -133,6 +140,9 @@ void gl_dispatch_drawing(const struct tile *tile)
 		tex = tm_request_texture(tile);
 		gl_draw_simple_tile(tile, tex);
 		break;
+	case Blink:
+		tex = tm_request_texture(tile);
+		gl_draw_blinking_tile(tile, tex);
 	}
 }
 
