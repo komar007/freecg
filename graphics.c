@@ -107,13 +107,13 @@ void gl_draw_sprite(double x, double y, const struct tile *tile,
 	glBindTexture(GL_TEXTURE_2D, tex->no);
 	glBegin(GL_QUADS);
 	tm_coord_tl(tex);
-	glVertex2f(x, y);
+	glVertex2d(x, y);
 	tm_coord_bl(tex);
-	glVertex2f(x, y + tile->h);
+	glVertex2d(x, y + tile->h);
 	tm_coord_br(tex);
-	glVertex2f(x + tile->w, y + tile->h);
+	glVertex2d(x + tile->w, y + tile->h);
 	tm_coord_tr(tex);
-	glVertex2f(x + tile->w, y);
+	glVertex2d(x + tile->w, y);
 	glEnd();
 }
 

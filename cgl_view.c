@@ -87,6 +87,12 @@ void process_event(SDL_Event *e)
 		case SDLK_4:
 			gl.cg->ship->keys[3] = !gl.cg->ship->keys[3];
 			break;
+		case SDLK_LEFT:
+			cg_ship_rotate(gl.cg->ship, -0.2);
+			break;
+		case SDLK_RIGHT:
+			cg_ship_rotate(gl.cg->ship, 0.2);
+			break;
 		default:
 			break;
 		}
