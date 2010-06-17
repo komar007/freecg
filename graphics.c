@@ -5,7 +5,7 @@
 #include <math.h>
 
 struct glengine gl;
-void gl_draw_sprite(double, double, const struct tile*, const struct texture*);
+void gl_draw_sprite(double, double, const struct tile*);
 
 void gl_init(struct cg* cg)
 {
@@ -62,10 +62,12 @@ void gl_draw_scene()
 	struct cgl *l = gl.cg->level;
 	glLoadIdentity();
 	glClear(GL_COLOR_BUFFER_BIT);
+	glBegin(GL_QUADS);
 	for (size_t j = y1/BLOCK_SIZE; j*BLOCK_SIZE < y2; ++j)
 		for (size_t i = x1/BLOCK_SIZE; i*BLOCK_SIZE < x2; ++i)
 			gl_draw_block(l->blocks[j][i]);
 	gl_draw_ship();
+	glEnd();
 	SDL_GL_SwapBuffers();
 	gl.frame++;
 }
@@ -95,54 +97,44 @@ void gl_draw_ship(void)
 {
 	struct tile tile;
 	ship_to_tile(gl.cg->ship, &tile); /* to get tex coordinates */
-	struct texture *tex = tm_request_texture(&tile);
-	gl_draw_sprite(gl.cg->ship->x, gl.cg->ship->y, &tile, tex);
+	gl_draw_sprite(gl.cg->ship->x, gl.cg->ship->y, &tile);
 }
 
 /* this function uses x and y as coordinates instead of tile's x and y, to
  * support subpixel rendering */
-void gl_draw_sprite(double x, double y, const struct tile *tile,
-		const struct texture *tex)
+void gl_draw_sprite(double x, double y, const struct tile *tile)
 {
-	glBindTexture(GL_TEXTURE_2D, tex->no);
-	glBegin(GL_QUADS);
-	tm_coord_tl(tex);
+	tm_coord_tl(tile);
 	glVertex2d(x, y);
-	tm_coord_bl(tex);
+	tm_coord_bl(tile);
 	glVertex2d(x, y + tile->h);
-	tm_coord_br(tex);
+	tm_coord_br(tile);
 	glVertex2d(x + tile->w, y + tile->h);
-	tm_coord_tr(tex);
+	tm_coord_tr(tile);
 	glVertex2d(x + tile->w, y);
-	glEnd();
 }
 
-inline void gl_draw_simple_tile(const struct tile *tile,
-		const struct texture *tex)
+inline void gl_draw_simple_tile(const struct tile *tile)
 {
-	gl_draw_sprite(tile->x, tile->y, tile, tex);
+	gl_draw_sprite(tile->x, tile->y, tile);
 }
-inline void gl_draw_blinking_tile(const struct tile *tile,
-		const struct texture *tex)
+inline void gl_draw_blinking_tile(const struct tile *tile)
 {
 	int phase = round(gl.cg->time * BLINK_SPEED);
 	if (phase % 2 == 0)
-		gl_draw_sprite(tile->x, tile->y, tile, tex);
+		gl_draw_sprite(tile->x, tile->y, tile);
 }
 
 void gl_dispatch_drawing(const struct tile *tile)
 {
-	struct texture *tex;
 	switch (tile->type) {
 	case Transparent:
 		break;
 	case Simple:
-		tex = tm_request_texture(tile);
-		gl_draw_simple_tile(tile, tex);
+		gl_draw_simple_tile(tile);
 		break;
 	case Blink:
-		tex = tm_request_texture(tile);
-		gl_draw_blinking_tile(tile, tex);
+		gl_draw_blinking_tile(tile);
 	}
 }
 

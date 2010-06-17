@@ -52,8 +52,6 @@ struct tile {
 	short x, y;	/* tile's origin */
 	unsigned short w, h;
 	short tex_x, tex_y;
-	unsigned short tex_w, tex_h;
-	unsigned short img_x, img_y; /* relative position of image in texture */
 	enum {
 		Simple = 0,
 		Transparent,

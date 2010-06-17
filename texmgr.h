@@ -5,44 +5,33 @@
 #include <SDL/SDL.h>
 #include <SDL/SDL_opengl.h>
 
-enum tm_config {
-	TEX_FILTER = GL_LINEAR,
-	/* ... */
+struct texmgr {
+	int w, h;
+	GLuint texno;
 };
+struct texmgr texm;
 
-struct texture {
-	GLuint no;	/* opengl texture number */
-	/* How much of an opengl texture is used to hold actual graphics
-	 * (textures must have power-of-two dimensions) */
-	double w_ratio, h_ratio;
-	double x, y, w, h;
-	long long real_hash;
-	size_t refcount;
-};
-struct texture_manager {
-	const SDL_Surface *img;
-	struct texture *lookup_table;
-};
-extern struct texture_manager texmgr;
+inline void tm_coord_tl(const struct tile *tile)
+{
+	glTexCoord2f((double)tile->tex_x / texm.w,
+			(double)tile->tex_y / texm.h);
+}
+inline void tm_coord_bl(const struct tile *tile)
+{
+	glTexCoord2f((double)tile->tex_x / texm.w,
+			(double)(tile->tex_y + tile->h) / texm.h);
+}
+inline void tm_coord_br(const struct tile *tile)
+{
+	glTexCoord2f((double)(tile->tex_x + tile->w) / texm.w,
+			(double)(tile->tex_y + tile->h) / texm.h);
+}
+inline void tm_coord_tr(const struct tile *tile)
+{
+	glTexCoord2f((double)(tile->tex_x + tile->w) / texm.w,
+			(double)tile->tex_y / texm.h);
+}
 
-void tm_init(const SDL_Surface *);
-struct texture *tm_request_texture(const struct tile*);
-
-inline void tm_coord_tl(const struct texture *tex)
-{
-	glTexCoord2f(tex->x, tex->y);
-}
-inline void tm_coord_bl(const struct texture *tex)
-{
-	glTexCoord2f(tex->x, tex->y + tex->h);
-}
-inline void tm_coord_br(const struct texture *tex)
-{
-	glTexCoord2f(tex->x + tex->w, tex->y + tex->h);
-}
-inline void tm_coord_tr(const struct texture *tex)
-{
-	glTexCoord2f(tex->x + tex->w, tex->y);
-}
+void tm_request_texture(const SDL_Surface*);
 
 #endif

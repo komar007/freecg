@@ -16,20 +16,18 @@ void ship_to_tile(const struct ship *s, struct tile *t)
 {
 	t->w = SHIP_W, t->h = SHIP_H;
 	t->x = (int)round(s->x), t->y = (int)round(s->y);
-	t->tex_w = SHIP_W * SHIP_NUM_ANGLES;
-	t->tex_h = SHIP_H * 2;
 	t->tex_x = 0, t->tex_y = 92;
 	if (s->engine) {
-		t->img_x = SHIP_ON_IMG_X;
-		t->img_y = SHIP_ON_IMG_Y;
+		t->tex_x += SHIP_ON_IMG_X;
+		t->tex_y += SHIP_ON_IMG_Y;
 	} else {
-		t->img_x = SHIP_OFF_IMG_X;
-		t->img_y = SHIP_OFF_IMG_Y;
+		t->tex_x += SHIP_OFF_IMG_X;
+		t->tex_y += SHIP_OFF_IMG_Y;
 	}
 	double drot = s->rot + M_PI/2;
 	normalize_angle(&drot);
 	int rot = drot / (2*M_PI) * 24;
-	t->img_x = rot * SHIP_W;
+	t->tex_x += rot * SHIP_W;
 }
 
 int tiles_intersect(const struct tile *t1, const struct tile *t2,

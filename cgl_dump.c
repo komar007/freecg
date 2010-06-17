@@ -167,7 +167,7 @@ void print_sobs_block(const struct tile *tiles, size_t num, int x, int y)
 				"\t\t\timg_pos\t= (%d, %d)\n", k,
 				tiles[k].w, tiles[k].h,
 				tiles[k].x, tiles[k].y,
-				tiles[k].img_x, tiles[k].img_y);
+				tiles[k].tex_x, tiles[k].tex_y);
 	}
 }
 
@@ -178,7 +178,7 @@ void print_tile(struct tile *tile)
 			"\t\t\timg_pos\t= (%d, %d)\n",
 			tile->w, tile->h,
 			tile->x, tile->y,
-			tile->img_x, tile->img_y);
+			tile->tex_x, tile->tex_y);
 }
 void print_rect(struct rect *rect)
 {

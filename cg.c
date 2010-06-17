@@ -79,8 +79,8 @@ int cg_collision_rect(const struct cg *cg, const struct rect *r,
 int cg_collision_bitmap(const struct cg *cg, const struct rect *r,
 	int img_x, int img_y, const struct tile *t)
 {
-	int tile_img_x = t->tex_x+t->img_x + (r->x - t->x),
-	    tile_img_y = t->tex_y+t->img_y + (r->y - t->y);
+	int tile_img_x = t->tex_x + (r->x - t->x),
+	    tile_img_y = t->tex_y + (r->y - t->y);
 	for (unsigned j = 0; j < r->h; ++j)
 		for (unsigned i = 0; i < r->w; ++i)
 			if (cg->cmap[img_y + j][img_x + i] &&
@@ -112,8 +112,8 @@ void cg_handle_collisions_block(struct cg *cg, block blk)
 	for (size_t i = 0; blk[i] != NULL; ++i) {
 		if (!tiles_intersect(&stile, blk[i], &r))
 			continue;
-		int img_x = stile.tex_x+stile.img_x + (r.x - stile.x),
-		    img_y = stile.tex_y+stile.img_y + (r.y - stile.y);
+		int img_x = stile.tex_x + (r.x - stile.x),
+		    img_y = stile.tex_y + (r.y - stile.y);
 		int coll = 0;
 		switch (blk[i]->collision_test) {
 		case RectPoint:
@@ -193,7 +193,7 @@ void update_sliding_tile(enum dir dir, struct tile *t, int len)
 {
 	switch (dir) {
 	case Right:
-		t->img_x = t->tex_w - len;
+		t->tex_x -= len - t->w;
 		t->w = len;
 		break;
 	case Left:
@@ -201,7 +201,7 @@ void update_sliding_tile(enum dir dir, struct tile *t, int len)
 		t->w = len;
 		break;
 	case Down:
-		t->img_y = t->tex_h - len;
+		t->tex_y -= len - t->h;
 		t->h = len;
 		break;
 	case Up:

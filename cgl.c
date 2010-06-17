@@ -420,8 +420,8 @@ int read_block(struct tile *tiles, size_t num, int x, int y, FILE* fp)
 		}
 		tiles[k].x = x + UNIT * (buf[0] >> 4);
 		tiles[k].y = y + UNIT * (buf[0] & 0x0f);
-		tiles[k].w = tiles[k].tex_w = UNIT * (buf[1] >> 4);
-		tiles[k].h = tiles[k].tex_h = UNIT * (buf[1] & 0x0f);
+		tiles[k].w = UNIT * (buf[1] >> 4);
+		tiles[k].h = UNIT * (buf[1] & 0x0f);
 		tiles[k].tex_y = UNIT * buf[2];
 		tiles[k].tex_x = UNIT * buf[3];
 	}
@@ -443,7 +443,7 @@ inline void parse_rect(const int16_t *data, struct rect *rect)
 inline void parse_tile_normal(const int16_t *data, struct tile *tile)
 {
 	tile->x = data[0], tile->y = data[1];
-	tile->w = tile->tex_w = data[2], tile->h = tile->tex_h = data[3];
+	tile->w = data[2], tile->h = data[3];
 	tile->tex_x = data[4], tile->tex_y = data[5];
 }
 inline void parse_tile_simple(const int16_t *data, struct tile *tile,
@@ -451,14 +451,14 @@ inline void parse_tile_simple(const int16_t *data, struct tile *tile,
 {
 	tile->x = data[0], tile->y = data[1];
 	tile->tex_x = data[2], tile->tex_y = data[3];
-	tile->w = tile->tex_w = width, tile->h = tile->tex_h = height;
+	tile->w = width, tile->h = height;
 }
 inline void parse_tile_minimal(const int16_t *data, struct tile *tile,
 		unsigned w, unsigned h, unsigned tex_x, unsigned tex_y)
 {
 	tile->x = data[0], tile->y = data[1];
 	tile->tex_x = tex_x, tile->tex_y = tex_y;
-	tile->w = tile->tex_w = w, tile->h = tile->tex_h = h;
+	tile->w = w, tile->h = h;
 }
 
 /*
@@ -676,17 +676,13 @@ int cgl_read_one_pipe(struct bar *bar, FILE *fp)
 		bar->fbar->y = bar->beg->y + BAR_BASE_W;
 		bar->fbar->w = BAR_THICKNESS;
 		bar->fbar->h = height - 2*BAR_BASE_W;
-		bar->fbar->tex_x = VBAR_TEX_X, bar->fbar->tex_y = VBAR_TEX_Y;
-		bar->fbar->tex_w = BAR_THICKNESS;
-		bar->fbar->tex_h = BAR_TEX_LEN;
-		bar->fbar->img_y = BAR_TEX_LEN - bar->fbar->h;
+		bar->fbar->tex_x = VBAR_TEX_X;
+		bar->fbar->tex_y = VBAR_TEX_Y + BAR_TEX_LEN - bar->fbar->h;
 		bar->sbar->x = bar->beg->x + (BAR_BASE_H - BAR_THICKNESS) / 2;
 		bar->sbar->y = bar->beg->y + BAR_BASE_W;
 		bar->sbar->w = BAR_THICKNESS;
 		bar->sbar->h = height - 2*BAR_BASE_W;
 		bar->sbar->tex_x = VBAR_TEX_X, bar->sbar->tex_y = VBAR_TEX_Y;
-		bar->sbar->tex_w = BAR_THICKNESS;
-		bar->sbar->tex_h = BAR_TEX_LEN;
 		bar->len = height - 2*BAR_BASE_W;
 		break;
 	case Horizontal:
@@ -700,23 +696,18 @@ int cgl_read_one_pipe(struct bar *bar, FILE *fp)
 		bar->fbar->y = bar->beg->y + (BAR_BASE_H - BAR_THICKNESS) / 2;
 		bar->fbar->w = width - 2*BAR_BASE_W;
 		bar->fbar->h = BAR_THICKNESS;
-		bar->fbar->tex_x = HBAR_TEX_X, bar->fbar->tex_y = HBAR_TEX_Y;
-		bar->fbar->tex_w = BAR_TEX_LEN;
-		bar->fbar->tex_h = BAR_THICKNESS;
-		bar->fbar->img_x = BAR_TEX_LEN - bar->fbar->w;
+		bar->fbar->tex_x = HBAR_TEX_X + BAR_TEX_LEN - bar->fbar->w;;
+		bar->fbar->tex_y = HBAR_TEX_Y;
 		bar->sbar->x = bar->beg->x + BAR_BASE_W;
 		bar->sbar->y = bar->beg->y + (BAR_BASE_H - BAR_THICKNESS) / 2;
 		bar->sbar->w = width - 2*BAR_BASE_W;
 		bar->sbar->h = BAR_THICKNESS;
 		bar->sbar->tex_x = HBAR_TEX_X, bar->sbar->tex_y = HBAR_TEX_Y;
-		bar->sbar->tex_w = BAR_TEX_LEN;
-		bar->sbar->tex_h = BAR_THICKNESS;
 		bar->len = width - 2*BAR_BASE_W;
 		break;
 	}
 	bar->end->w = bar->beg->w;
-	bar->end->h = bar->end->tex_h = bar->beg->h;
-	bar->end->tex_w = bar->beg->tex_w;
+	bar->end->h = bar->beg->h;
 	bar->btex_x = bar->beg->tex_x;
 	bar->etex_x = bar->end->tex_x;
 	bar->slen = BAR_MIN_LEN;
@@ -748,8 +739,8 @@ inline void parse_packed_tiles(const int16_t *data, size_t num, struct tile *til
 	for (size_t i = 0; i < num; ++i)
 		tiles[i]->tex_y = data[3*num + i];
 	for (size_t i = 0; i < num; ++i) {
-		tiles[i]->w = tiles[i]->tex_w = dims[i].x;
-		tiles[i]->h = tiles[i]->tex_h = dims[i].y;
+		tiles[i]->w = dims[i].x;
+		tiles[i]->h = dims[i].y;
 	}
 }
 
@@ -784,13 +775,11 @@ int cgl_read_one_onew(struct gate *gate, FILE *fp)
 		parse_tile_minimal(buf2 + 0x16, gate->bar,
 				GATE_BAR_THICKNESS, gate->len,
 				VGATE_TEX_X, VGATE_TEX_Y);
-		gate->bar->tex_h = GATE_BAR_LEN;
 		break;
 	case Horizontal:
 		parse_tile_minimal(buf2 + 0x16, gate->bar,
 				gate->len, GATE_BAR_THICKNESS,
 				HGATE_TEX_X, HGATE_TEX_Y);
-		gate->bar->tex_w = GATE_BAR_LEN;
 		break;
 	}
 	gate->bar->collision_test = Bitmap;
@@ -807,12 +796,12 @@ int cgl_read_one_onew(struct gate *gate, FILE *fp)
 		gate->base[4]->collision_test = NoCollision;
 	}
 	if (gate->type == GateLeft)
-		gate->bar->img_x = GATE_BAR_LEN - gate->len;
+		gate->bar->tex_x += GATE_BAR_LEN - gate->len;
 	if (gate->type == GateTop)
-		gate->bar->img_y = GATE_BAR_LEN - gate->len;
+		gate->bar->tex_y += GATE_BAR_LEN - gate->len;
 	/* add blue arrow */
-	gate->arrow->w = gate->arrow->tex_w = 16;
-	gate->arrow->h = gate->arrow->tex_h = 16;
+	gate->arrow->w = 16;
+	gate->arrow->h = 16;
 	switch (gate->dir) {
 	case 0:
 		gate->arrow->x = gate->base[0]->x + ARROW_OFFSET;
@@ -850,7 +839,7 @@ void set_light_tile(struct tile *light, int num, int x, int y)
 {
 	light->x = x;
 	light->y = y;
-	light->w = light->h = light->tex_w = light->tex_h = 8;
+	light->w = light->h = 8;
 	light->tex_x = LIGHTS_TEX_X + num * 8;
 	light->tex_y = LIGHTS_TEX_Y;
 	light->type = Transparent;
@@ -892,13 +881,11 @@ int cgl_read_one_barr(struct lgate *lgate, FILE *fp)
 		parse_tile_minimal(buf2 + 0x16, lgate->bar,
 				GATE_BAR_THICKNESS, lgate->len,
 				LVGATE_TEX_X, LVGATE_TEX_Y);
-		lgate->bar->tex_h = GATE_BAR_LEN;
 		break;
 	case Horizontal:
 		parse_tile_minimal(buf2 + 0x16, lgate->bar,
 				lgate->len, GATE_BAR_THICKNESS,
 				LHGATE_TEX_X, LHGATE_TEX_Y);
-		lgate->bar->tex_w = GATE_BAR_LEN;
 		break;
 	}
 	lgate->bar->collision_test = Bitmap;
@@ -915,9 +902,9 @@ int cgl_read_one_barr(struct lgate *lgate, FILE *fp)
 		lgate->base[4]->collision_test = NoCollision;
 	}
 	if (lgate->type == GateLeft)
-		lgate->bar->img_x = GATE_BAR_LEN - lgate->len;
+		lgate->bar->tex_x += GATE_BAR_LEN - lgate->len;
 	if (lgate->type == GateTop)
-		lgate->bar->img_y = GATE_BAR_LEN - lgate->len;
+		lgate->bar->tex_y += GATE_BAR_LEN - lgate->len;
 	set_light_tile(lgate->light[0], 0,
 			lgate->base[0]->x + 6,  lgate->base[0]->y + 6);
 	set_light_tile(lgate->light[1], 1,

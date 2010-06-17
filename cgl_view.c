@@ -126,7 +126,7 @@ int main(int argc, char *argv[])
 	}
 	screen = SDL_SetVideoMode(SCREEN_W, SCREEN_H, 0, MODE);
 	gl_change_viewport(0, 0, screen->w/scale, screen->h/scale);
-	tm_init(gfx);
+	tm_request_texture(gfx);
 	gl_init(cg);
 	int t = SDL_GetTicks(),
 	    nt = t,
