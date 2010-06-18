@@ -57,6 +57,11 @@ enum gfx_consts {
 	LHGATE_TEX_Y = 328,
 	LIGHTS_TEX_X = 64,
 	LIGHTS_TEX_Y = 384,
+	STUFF_SIZE = 16,
+	STUFF_TEX_X = 64,
+	STUFF_TEX_Y = 392,
+	KEY_TEX_X = 256,
+	KEY_TEX_Y = 360
 };
 typedef uint8_t collision_map[TILESET_H][TILESET_W];
 

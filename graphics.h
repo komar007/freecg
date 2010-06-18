@@ -23,6 +23,7 @@ enum graphics_config {
 	MAGNET_ANIM_SPEED = 15,
 	BAR_ANIM_SPEED = 1,
 	BAR_TEX_OFFSET = 28,
+	KEY_ANIM_SPEED = 20
 };
 #define BLINK_SPEED 1.8
 

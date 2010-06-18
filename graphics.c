@@ -34,7 +34,8 @@ void animate_tiles()
 	extern void animate_fan(struct fan*, double),
 	            animate_magnet(struct magnet*, double),
 	            animate_airgen(struct airgen*, double),
-	            animate_bar(struct bar*, double);
+	            animate_bar(struct bar*, double),
+	            animate_key(struct airport*, double);
 	for (size_t i = 0; i < gl.cg->level->nmagnets; ++i)
 		animate_magnet(&gl.cg->level->magnets[i], gl.cg->time);
 	for (size_t i = 0; i < gl.cg->level->nfans; ++i)
@@ -43,6 +44,8 @@ void animate_tiles()
 		animate_airgen(&gl.cg->level->airgens[i], gl.cg->time);
 	for (size_t i = 0; i < gl.cg->level->nbars; ++i)
 		animate_bar(&gl.cg->level->bars[i], gl.cg->time);
+	for (size_t i = 0; i < gl.cg->level->nairports; ++i)
+		animate_key(&gl.cg->level->airports[i], gl.cg->time);
 }
 
 void gl_draw_scene()
@@ -143,7 +146,7 @@ static const int magnet_anim_order[] = {0, 1, 2, 1};
 static const int fan_anim_order[] = {0, 1, 2};
 static const int airgen_anim_order[] = {0, 1, 2, 3, 4, 5, 6, 7};
 static const int bar_anim_order[][2] = {{0, 1}, {1, 0}};
-
+static const int key_anim_order[] = {0, 1, 2, 3, 4, 5, 6, 7};
 void animate_fan(struct fan *fan, double time)
 {
 	int phase = round(time * FAN_ANIM_SPEED);
@@ -169,4 +172,12 @@ void animate_bar(struct bar *bar, double time)
 	bar->beg->tex_x = bar->btex_x + cur_tex * BAR_TEX_OFFSET;
 	cur_tex = bar_anim_order[1][phase % 2];
 	bar->end->tex_x = bar->etex_x + cur_tex * BAR_TEX_OFFSET;
+}
+void animate_key(struct airport *airport, double time)
+{
+	if (airport->type != Key)
+		return;
+	int phase = round(time * KEY_ANIM_SPEED);
+	int cur_tex = key_anim_order[phase % 8];
+	airport->stuff[0]->tex_x = KEY_TEX_X + cur_tex * airport->stuff[0]->w;
 }

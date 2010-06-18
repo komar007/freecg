@@ -950,6 +950,7 @@ int cgl_read_one_lpts(struct airport *airport, FILE *fp)
 	if (nread < LPTS_HDR_SIZE)
 		return -EBADLPTS;
 	airport->type = buf[0] & 0x0f;
+	airport->key = buf[0] >> 4;
 	err = read_short((int16_t*)buf2, LPTS_NUM_SHORTS, fp);
 	if (err)
 		return -EBADLPTS;
@@ -961,11 +962,21 @@ int cgl_read_one_lpts(struct airport *airport, FILE *fp)
 	nread = fread(buf, sizeof(uint8_t), 1, fp);
 	if (nread < 1)
 		return -EBADLPTS;
-	/* parse num */
+	airport->num_stuff = buf[0];
 	nread = fread(buf, sizeof(uint8_t), LPTS_NUM_STUFF*3, fp);
 	if (nread < LPTS_NUM_STUFF*3)
 		return -EBADLPTS;
-	/* parse stuff */
+	for (size_t i = 0; i < airport->num_stuff; ++i) {
+		airport->stuff[i]->x = airport->base[0]->x + buf[i];
+		airport->stuff[i]->y = airport->base[0]->y - 32 + buf[10+i];
+		airport->stuff[i]->w = airport->stuff[i]->h = STUFF_SIZE;
+		airport->stuff[i]->tex_x = STUFF_TEX_X + buf[20+i]*16;
+		airport->stuff[i]->tex_y = STUFF_TEX_Y;
+	}
+	if (airport->type == Key) {
+		airport->stuff[0]->tex_x = KEY_TEX_X;
+		airport->stuff[0]->tex_y = KEY_TEX_Y + airport->key*STUFF_SIZE;
+	}
 	err = read_short((int16_t*)buf2, 4, fp);
 	if (err)
 		return -EBADLPTS;

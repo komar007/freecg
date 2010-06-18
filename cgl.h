@@ -197,7 +197,9 @@ struct airport {
 		Freigh,
 		Extras,
 	} type;
+	size_t num_stuff;
 	int has_ship;
+	int key;
 };
 typedef struct tile **block;
 /* cgl level contents */
