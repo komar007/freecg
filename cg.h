@@ -16,11 +16,9 @@ enum {
 struct ship {
 	double x, y;
 	double vx, vy;
-	double ax, ay;
-	double rot;
+	double rot, rots;
 	int engine;
 	int keys[4];
-	/*temporary*/ double switchoff;
 };
 struct cg {
 	struct cgl *level;

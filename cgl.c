@@ -137,7 +137,8 @@ struct cgl *read_cgl(const char *path, uint8_t **out_soin)
 		   cgl_read_cano(struct cgl*, struct tile**, size_t*, FILE*),
 		   cgl_read_pipe(struct cgl*, struct tile**, size_t*, FILE*),
 		   cgl_read_onew(struct cgl*, struct tile**, size_t*, FILE*),
-		   cgl_read_barr(struct cgl*, struct tile**, size_t*, FILE*);
+		   cgl_read_barr(struct cgl*, struct tile**, size_t*, FILE*),
+		   cgl_read_lpts(struct cgl*, struct tile**, size_t*, FILE*);
 	struct cgl *cgl;
 	FILE *fp;
 	uint8_t *soin = NULL;
@@ -167,9 +168,9 @@ struct cgl *read_cgl(const char *path, uint8_t **out_soin)
 	if (cgl_read_sobs(cgl, soin, fp) != 0)
 		goto error;
 	struct tile *vent_tiles, *magn_tiles, *dist_tiles, *cano_tiles,
-		    *pipe_tiles, *onew_tiles, *barr_tiles;
+		    *pipe_tiles, *onew_tiles, *barr_tiles, *lpts_tiles;
 	size_t nvent_tiles, nmagn_tiles, ndist_tiles, ncano_tiles,
-	       npipe_tiles, nonew_tiles, nbarr_tiles;
+	       npipe_tiles, nonew_tiles, nbarr_tiles, nlpts_tiles;
 	if (cgl_read_magic(cgl, fp) != 0)
 		goto error;
 	if (cgl_read_vent(cgl, &vent_tiles, &nvent_tiles, fp) != 0)
@@ -198,11 +199,15 @@ struct cgl *read_cgl(const char *path, uint8_t **out_soin)
 		goto error;
 	if (cgl_read_barr(cgl, &barr_tiles, &nbarr_tiles, fp) != 0)
 		goto error;
+	if (cgl_read_magic(cgl, fp) != 0)
+		goto error;
+	if (cgl_read_lpts(cgl, &lpts_tiles, &nlpts_tiles, fp) != 0)
+		goto error;
 	/* join extra tiles from the other sections with those from SOBS,
 	 * fix pointers to point to the new memory */
 	size_t num_tiles = cgl->ntiles + (nvent_tiles + nmagn_tiles +
 			ndist_tiles + ncano_tiles + npipe_tiles +
-			nonew_tiles + nbarr_tiles/* + ... */);
+			nonew_tiles + nbarr_tiles + nlpts_tiles);
 	cgl->tiles = realloc(cgl->tiles, num_tiles * sizeof(*cgl->tiles));
 	memcpy(cgl->tiles + cgl->ntiles, vent_tiles,
 			nvent_tiles * sizeof(*cgl->tiles));
@@ -251,7 +256,6 @@ struct cgl *read_cgl(const char *path, uint8_t **out_soin)
 	FIX_PTRS(cgl->gates,   act,      cgl->ngates,    onew_tiles)
 	cgl->ntiles += nonew_tiles;
 	free(onew_tiles);
-
 	memcpy(cgl->tiles + cgl->ntiles, barr_tiles,
 			nbarr_tiles * sizeof(*cgl->tiles));
 	FIX_PTRS(cgl->lgates,  base[0],  cgl->nlgates,   barr_tiles)
@@ -267,6 +271,16 @@ struct cgl *read_cgl(const char *path, uint8_t **out_soin)
 	FIX_PTRS(cgl->lgates,  act,      cgl->nlgates,   barr_tiles)
 	cgl->ntiles += nbarr_tiles;
 	free(barr_tiles);
+	memcpy(cgl->tiles + cgl->ntiles, lpts_tiles,
+			nlpts_tiles * sizeof(*cgl->tiles));
+	FIX_PTRS(cgl->airports,  base[0],  cgl->nairports,   lpts_tiles)
+	FIX_PTRS(cgl->airports,  base[1],  cgl->nairports,   lpts_tiles)
+	FIX_PTRS(cgl->airports,  arrow[0], cgl->nairports,   lpts_tiles)
+	FIX_PTRS(cgl->airports,  arrow[1], cgl->nairports,   lpts_tiles)
+	for (size_t k = 0; k < 10; ++k)
+		FIX_PTRS(cgl->airports, stuff[k], cgl->nairports, lpts_tiles);
+	cgl->ntiles += nlpts_tiles;
+	free(lpts_tiles);
 	if (out_soin)
 		*out_soin = soin;
 	else
@@ -857,10 +871,10 @@ int cgl_read_one_barr(struct lgate *lgate, FILE *fp)
 
 	nread = fread(buf, sizeof(uint8_t), ONEW_HDR_SIZE, fp);
 	if (nread < ONEW_HDR_SIZE)
-		return -EBADONEW;
+		return -EBADBARR;
 	err = read_short((int16_t*)buf2, ONEW_NUM_SHORTS, fp);
 	if (err)
-		return -EBADONEW;
+		return -EBADBARR;
 	/* fill with header information */
 	lgate->type    = (buf[0] >> 0) & 0x03;
 	lgate->has_end = (buf[0] >> 2) & 0x01;
@@ -913,6 +927,47 @@ int cgl_read_one_barr(struct lgate *lgate, FILE *fp)
 			lgate->base[0]->x + 6,  lgate->base[0]->y + 18);
 	set_light_tile(lgate->light[3], 3,
 			lgate->base[0]->x + 18, lgate->base[0]->y + 18);
+	return 0;
+}
+
+BEGIN_CGL_READ_X(lpts, LPTS, airport, 14)
+	cgl->airports[i].base[0]  = &tiles[14*i + 0];
+	cgl->airports[i].base[1]  = &tiles[14*i + 1];
+	cgl->airports[i].arrow[0] = &tiles[14*i + 2];
+	cgl->airports[i].arrow[1] = &tiles[14*i + 3];
+	for (size_t k = 0; k < 10; ++k)
+		cgl->airports[i].stuff[k] = &tiles[14*i + 4+k];
+END_CGL_READ_X(lpts, LPTS, airport, 14)
+
+int cgl_read_one_lpts(struct airport *airport, FILE *fp)
+{
+	int err;
+	uint8_t buf[LPTS_NUM_STUFF*3];
+	int16_t buf2[LPTS_NUM_SHORTS];
+	size_t nread;
+
+	nread = fread(buf, sizeof(uint8_t), LPTS_HDR_SIZE, fp);
+	if (nread < LPTS_HDR_SIZE)
+		return -EBADLPTS;
+	/* parse header */
+	err = read_short((int16_t*)buf2, LPTS_NUM_SHORTS, fp);
+	if (err)
+		return -EBADLPTS;
+	parse_tile_minimal(buf2, airport->base[0],
+			buf2[2]*32, 20, buf2[3], buf2[4]);
+	airport->base[0]->y += 32;
+	nread = fread(buf, sizeof(uint8_t), 1, fp);
+	if (nread < 1)
+		return -EBADLPTS;
+	/* parse num */
+	nread = fread(buf, sizeof(uint8_t), LPTS_NUM_STUFF*3, fp);
+	if (nread < LPTS_NUM_STUFF*3)
+		return -EBADLPTS;
+	/* parse stuff */
+	err = read_short((int16_t*)buf2, 4, fp);
+	if (err)
+		return -EBADLPTS;
+	parse_rect(buf2, &airport->lbbox);
 	return 0;
 }
 

@@ -21,12 +21,20 @@ struct cg *cg_init(struct cgl *level)
 
 void cg_step_ship(struct ship* s, double time, double dt)
 {
-	s->vx += s->ax * dt;
-	s->vy += s->ay * dt;
+	double ax = 0, ay = 0;
+	cg_ship_rotate(s, s->rots*dt);
+	double rot = ((int)(s->rot / (2*M_PI) * 360) / 15) * 15 / 360.0 * 2*M_PI;
+	if (s->engine) {
+		ax = cos(rot)*100;
+		ay = sin(rot)*100;
+	}
+	ax += -s->vx*0.2;
+	ay += -s->vy*0.2;
+	ay += 20;
+	s->vx += ax * dt;
+	s->vy += ay * dt;
 	s->x += s->vx * dt;
 	s->y += s->vy * dt;
-	if (s->switchoff <= time)
-		s->engine = 0;
 }
 
 void cg_ship_rotate(struct ship *s, double delta)
@@ -152,9 +160,6 @@ void cg_call_collision_handler(struct cg *cg, struct tile *tile)
 		cg_handle_collision_airgen((struct airgen*)tile->data);
 		break;
 	case Kaboom:
-		/* temporary */
-		cg->ship->engine = 1;
-		cg->ship->switchoff = cg->time + 1;
 		break;
 	}
 }

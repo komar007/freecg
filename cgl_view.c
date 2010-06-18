@@ -42,8 +42,8 @@ void process_event(SDL_Event *e)
 				gl.viewport.y - e->motion.yrel/scale,
 				gl.viewport.w, gl.viewport.h);
 		} else {
-			gl.cg->ship->x += e->motion.xrel/scale;
-			gl.cg->ship->y += e->motion.yrel/scale;
+			//gl.cg->ship->x += e->motion.xrel/scale;
+			//gl.cg->ship->y += e->motion.yrel/scale;
 		}
 		break;
 	case SDL_MOUSEBUTTONUP:
@@ -88,10 +88,29 @@ void process_event(SDL_Event *e)
 			gl.cg->ship->keys[3] = !gl.cg->ship->keys[3];
 			break;
 		case SDLK_LEFT:
-			cg_ship_rotate(gl.cg->ship, -0.2);
+			gl.cg->ship->rots = -5.5;
 			break;
 		case SDLK_RIGHT:
-			cg_ship_rotate(gl.cg->ship, 0.2);
+			gl.cg->ship->rots = 5.5;
+			break;
+		case SDLK_UP:
+			gl.cg->ship->engine = 1;
+			break;
+		default:
+			break;
+		}
+		break;
+	case SDL_KEYUP:
+		switch(e->key.keysym.sym) {
+		case SDLK_UP:
+			gl.cg->ship->engine = 0;
+		case SDLK_LEFT:
+			if (gl.cg->ship->rots == -5.5)
+				gl.cg->ship->rots = 0;
+			break;
+		case SDLK_RIGHT:
+			if (gl.cg->ship->rots == 5.5)
+				gl.cg->ship->rots = 0;
 			break;
 		default:
 			break;

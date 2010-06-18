@@ -27,7 +27,10 @@ enum cgl_sizes {
 	PIPE_NUM_SHORTS = 4,
 	PIPE_HDR_SIZE = 16,
 	ONEW_HDR_SIZE = 1,
-	ONEW_NUM_SHORTS = 32
+	ONEW_NUM_SHORTS = 32,
+	LPTS_HDR_SIZE = 1,
+	LPTS_NUM_SHORTS = 6,
+	LPTS_NUM_STUFF = 10
 };
 enum error_codes {
 	EBADHDR = 1,
@@ -42,6 +45,7 @@ enum error_codes {
 	EBADPIPE,
 	EBADONEW,
 	EBADBARR,
+	EBADLPTS,
 	/* ... */
 
 	EBADSHORT,
@@ -180,6 +184,19 @@ struct lgate {
 	int active;
 	int open;
 };
+struct airport {
+	struct tile *base[2],
+		    *arrow[2],
+		    *stuff[10];
+	struct rect lbbox;
+	enum {
+		Homebase,
+		Fuel,
+		Extras,
+		Key,
+		Freigh
+	} type;
+};
 typedef struct tile **block;
 /* cgl level contents */
 struct cgl {
@@ -204,11 +221,13 @@ struct cgl {
 	struct gate *gates;
 	size_t nlgates;
 	struct lgate *lgates;
+	size_t nairports;
+	struct airport *airports;
 	block **blocks;
 };
 
-struct cgl *read_cgl(const char *, uint8_t**);
-void cgl_preprocess(struct cgl *);
-void free_cgl(struct cgl *);
+struct cgl *read_cgl(const char*, uint8_t**);
+void cgl_preprocess(struct cgl*);
+void free_cgl(struct cgl*);
 
 #endif
