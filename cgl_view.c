@@ -171,6 +171,7 @@ int main(int argc, char *argv[])
 		time = SDL_GetTicks();
 		nt = time - t;
 		cg_step(cg, time / 1000.0);
+		gl_change_viewport(cg->ship->x - 512, cg->ship->y - 384, screen->w/scale, screen->h/scale);
 		if (nt > 1000) {
 			printf("%d frames in %d ms - %.1f fps\n",
 					gl.frame - fr, nt, (float)(gl.frame - fr) / nt * 1000);

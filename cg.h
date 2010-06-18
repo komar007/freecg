@@ -6,6 +6,7 @@
 #include <stdint.h>
 
 #define AIRGEN_ROT_SPEED 4.97
+#define ROT_UP 18
 enum {
 	BAR_SPEED_CHANGE_INTERVAL = 4,
 	BAR_MIN_LEN = 2,
@@ -19,6 +20,7 @@ struct ship {
 	double rot, rots;
 	int engine;
 	int keys[4];
+	int dead;
 };
 struct cg {
 	struct cgl *level;

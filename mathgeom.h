@@ -31,5 +31,7 @@ inline int rand_sign()
 int normalize_angle(double*);
 void ship_to_tile(const struct ship*, struct tile*);
 int tiles_intersect(const struct tile*, const struct tile*, struct rect*);
+int discrete_rot(double);
+void rect_to_tile(const struct rect*, struct tile*);
 
 #endif

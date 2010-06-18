@@ -81,7 +81,8 @@ struct tile {
 		Kaboom = 0,
 		AirgenAction,
 		GateAction,
-		LGateAction
+		LGateAction,
+		AirportAction
 	} collision_type;
 	/* necessary for renderer, the number of the most recent frame in
 	 * which the tile was rendered */
@@ -190,12 +191,13 @@ struct airport {
 		    *stuff[10];
 	struct rect lbbox;
 	enum {
-		Homebase,
-		Fuel,
-		Extras,
+		Homebase = 1,
 		Key,
-		Freigh
+		Fuel,
+		Freigh,
+		Extras,
 	} type;
+	int has_ship;
 };
 typedef struct tile **block;
 /* cgl level contents */
@@ -223,6 +225,7 @@ struct cgl {
 	struct lgate *lgates;
 	size_t nairports;
 	struct airport *airports;
+	struct airport *hb;
 	block **blocks;
 };
 

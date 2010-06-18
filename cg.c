@@ -4,18 +4,21 @@
 #include <math.h>
 #include <assert.h>
 
-void cg_init_ship(struct ship *s)
+void cg_init_ship(struct ship *s, int x, int y)
 {
 	s->engine = 0;
 	s->rot = 3/2.0 * M_PI;
+	s->x = x, s->y = y;
 }
-struct cg *cg_init(struct cgl *level)
+struct cg *cg_init(struct cgl *l)
 {
 	struct cg *cg = calloc(1, sizeof(*cg));
-	cg->level = level;
+	cg->level = l;
 	cg->time = 0.0;
 	cg->ship = calloc(1, sizeof(*cg->ship));
-	cg_init_ship(cg->ship);
+	int x = l->hb->base[0]->x + (l->hb->base[0]->w - SHIP_W) / 2,
+	    y = l->hb->base[0]->y - 20;
+	cg_init_ship(cg->ship, x, y);
 	return cg;
 }
 
@@ -23,7 +26,7 @@ void cg_step_ship(struct ship* s, double time, double dt)
 {
 	double ax = 0, ay = 0;
 	cg_ship_rotate(s, s->rots*dt);
-	double rot = ((int)(s->rot / (2*M_PI) * 360) / 15) * 15 / 360.0 * 2*M_PI;
+	double rot = discrete_rot(s->rot)/24.0 * 2*M_PI;
 	if (s->engine) {
 		ax = cos(rot)*100;
 		ay = sin(rot)*100;
@@ -46,18 +49,21 @@ void cg_ship_rotate(struct ship *s, double delta)
 /* perform logic simulation of all objects */
 void cg_step_objects(struct cg *cg, double time, double dt)
 {
-	extern void cg_step_airgen(struct airgen*, struct cg*, double, double),
+	extern void cg_step_airgen(struct airgen*, struct ship*, double),
 	            cg_step_bar(struct bar*, double, double),
-	            cg_step_gate(struct gate*, double, double),
-	            cg_step_lgate(struct ship*, struct lgate*, double, double);
+	            cg_step_gate(struct gate*, double),
+	            cg_step_lgate(struct lgate*, struct ship*, double),
+		    cg_step_airport(struct airport*, struct ship*, double);
 	for (size_t i = 0; i < cg->level->nairgens; ++i)
-		cg_step_airgen(&cg->level->airgens[i], cg, time, dt);
+		cg_step_airgen(&cg->level->airgens[i], cg->ship, dt);
 	for (size_t i = 0; i < cg->level->nbars; ++i)
 		cg_step_bar(&cg->level->bars[i], time, dt);
 	for (size_t i = 0; i < cg->level->ngates; ++i)
-		cg_step_gate(&cg->level->gates[i], time, dt);
+		cg_step_gate(&cg->level->gates[i], dt);
 	for (size_t i = 0; i < cg->level->nlgates; ++i)
-		cg_step_lgate(cg->ship, &cg->level->lgates[i], time, dt);
+		cg_step_lgate(&cg->level->lgates[i], cg->ship, dt);
+	for (size_t i = 0; i < cg->level->nairports; ++i)
+		cg_step_airport(&cg->level->airports[i], cg->ship, dt);
 }
 
 /* ==================== Collision detectors ==================== */
@@ -148,7 +154,8 @@ void cg_call_collision_handler(struct cg *cg, struct tile *tile)
 {
 	extern void cg_handle_collision_gate(struct gate*),
 	            cg_handle_collision_lgate(struct ship*, struct lgate*),
-	            cg_handle_collision_airgen(struct airgen*);
+	            cg_handle_collision_airgen(struct airgen*),
+		    cg_handle_collision_airport(struct ship*, struct airport*);
 	switch (tile->collision_type) {
 	case GateAction:
 		cg_handle_collision_gate((struct gate*)tile->data);
@@ -159,7 +166,11 @@ void cg_call_collision_handler(struct cg *cg, struct tile *tile)
 	case AirgenAction:
 		cg_handle_collision_airgen((struct airgen*)tile->data);
 		break;
+	case AirportAction:
+		cg_handle_collision_airport(cg->ship, (struct airport*)tile->data);
+		break;
 	case Kaboom:
+		cg->ship->dead = 1;
 		break;
 	}
 }
@@ -167,7 +178,8 @@ void cg_call_collision_handler(struct cg *cg, struct tile *tile)
 void cg_step(struct cg *cg, double time)
 {
 	double dt = time - cg->time;
-	cg_step_ship(cg->ship, time, dt);
+	if (!cg->ship->dead)
+		cg_step_ship(cg->ship, time, dt);
 	cg_handle_collisions(cg);
 	cg_step_objects(cg, time, dt);
 	cg->time = time;
@@ -189,6 +201,17 @@ void cg_handle_collision_lgate(struct ship *ship, struct lgate *lgate)
 void cg_handle_collision_airgen(struct airgen *airgen)
 {
 	airgen->active = 1;
+}
+void cg_handle_collision_airport(struct ship *ship, struct airport *airport)
+{
+	struct tile allowed, stile;
+	rect_to_tile(&airport->lbbox, &allowed);
+	ship_to_tile(ship, &stile);
+	if (discrete_rot(ship->rot) == ROT_UP &&
+			cg_collision_rect_point(&stile, &allowed))
+		airport->has_ship = 1;
+	else
+		ship->dead = 1;
 }
 /* ==================== /Collision handlers ==================== */
 
@@ -287,7 +310,7 @@ void update_gate_bar(enum gate_type type, struct tile *bar, int len)
 	}
 }
 
-void cg_step_gate(struct gate *gate, __attribute__((unused)) double time, double dt)
+void cg_step_gate(struct gate *gate, double dt)
 {
 	if (!gate->active && gate->len < gate->max_len)
 		gate->len = fmin(gate->max_len,
@@ -299,8 +322,7 @@ void cg_step_gate(struct gate *gate, __attribute__((unused)) double time, double
 	gate->active = 0;
 }
 
-void cg_step_lgate(struct ship *ship, struct lgate *lgate,
-		__attribute__((unused)) double time, double dt)
+void cg_step_lgate(struct lgate *lgate, struct ship *ship, double dt)
 {
 	for (size_t i = 0; i < 4; ++i) {
 		if (!lgate->active) {
@@ -325,19 +347,27 @@ void cg_step_lgate(struct ship *ship, struct lgate *lgate,
 	lgate->active = 0;
 }
 
-void cg_step_airgen(struct airgen *airgen, struct cg *cg,
-		__attribute__((unused)) double time, double dt)
+void cg_step_airgen(struct airgen *airgen, struct ship *ship, double dt)
 {
 	if (!airgen->active)
 		return;
 	switch (airgen->spin) {
 	case CW:
-		cg_ship_rotate(cg->ship, AIRGEN_ROT_SPEED * dt);
+		cg_ship_rotate(ship, AIRGEN_ROT_SPEED * dt);
 		break;
 	case CCW:
-		cg_ship_rotate(cg->ship, -AIRGEN_ROT_SPEED * dt);
+		cg_ship_rotate(ship, -AIRGEN_ROT_SPEED * dt);
 		break;
 	}
 	airgen->active = 0;
+}
+
+void cg_step_airport(struct airport *airport, struct ship *ship, double dt)
+{
+	if (!airport->has_ship)
+		return;
+	ship->y = airport->base[0]->y - 20 ;
+	ship->vx = ship->vy = 0;
+	airport->has_ship = 0;
 }
 /* ==================== /Object simulators ==================== */

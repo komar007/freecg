@@ -949,12 +949,14 @@ int cgl_read_one_lpts(struct airport *airport, FILE *fp)
 	nread = fread(buf, sizeof(uint8_t), LPTS_HDR_SIZE, fp);
 	if (nread < LPTS_HDR_SIZE)
 		return -EBADLPTS;
-	/* parse header */
+	airport->type = buf[0] & 0x0f;
 	err = read_short((int16_t*)buf2, LPTS_NUM_SHORTS, fp);
 	if (err)
 		return -EBADLPTS;
 	parse_tile_minimal(buf2, airport->base[0],
 			buf2[2]*32, 20, buf2[3], buf2[4]);
+	airport->base[0]->collision_type = AirportAction;
+	airport->base[0]->data = airport;
 	airport->base[0]->y += 32;
 	nread = fread(buf, sizeof(uint8_t), 1, fp);
 	if (nread < 1)
@@ -1022,4 +1024,7 @@ void cgl_preprocess(struct cgl *cgl)
 			cgl->blocks[j][i][is[i + j*cgl->width]] = NULL;
 	free(sizes);
 	free(is);
+	for (size_t i = 0; i < cgl->nairports; ++i)
+		if (cgl->airports[i].type == Homebase)
+			cgl->hb = &cgl->airports[i];
 }

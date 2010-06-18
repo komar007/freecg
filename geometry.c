@@ -46,3 +46,14 @@ int tiles_intersect(const struct tile *t1, const struct tile *t2,
 	else
 		return 0;
 }
+
+void rect_to_tile(const struct rect *r, struct tile *t)
+{
+	t->x = r->x, t->y = r->y;
+	t->w = r->w, t->h = r->h;
+}
+
+int discrete_rot(double rot)
+{
+	return (int)(rot/(2*M_PI) * 360) / 15;
+}
