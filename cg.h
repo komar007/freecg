@@ -14,7 +14,7 @@ enum {
 	GATE_BAR_MIN_LEN = 2,
 	GATE_BAR_SPEED = 23,
 	ENGINE_ACCEL = 130,
-	GRAVITY = 20
+	GRAVITY = 23
 };
 
 struct ship {

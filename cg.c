@@ -47,6 +47,9 @@ void cg_step_ship(struct ship* s, double time, double dt)
 		s->airport->sched_cargo_transfer = 0;
 		s->airport = NULL;
 	}
+	if (s->airport)
+		/* clear any speed caused by fans, magns, etc. */
+		s->vx = s->vy = 0;
 	s->vx += ax * dt;
 	s->vy += ay * dt;
 	s->x += s->vx * dt;
@@ -510,7 +513,7 @@ void cg_step_fan(struct fan *fan, struct ship *ship, double dt)
 	}
 	fan->modifier = 0;
 }
-static const double magn_accel = 35;
+static const double magn_accel = 50;
 void cg_step_magnet(struct magnet *magnet, struct ship *ship, double dt)
 {
 	if (magnet->modifier == 0)

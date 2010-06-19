@@ -545,6 +545,7 @@ int cgl_read_one_vent(struct fan *fan, FILE *fp)
 	parse_rect(buf2 + 0x0e, &r);
 	rect_to_tile(&r, fan->act);
 	fan->act->type = Transparent;
+	fan->act->collision_test = RectPoint;
 	fan->act->collision_type = FanAction;
 	fan->act->data = fan;
 	return 0;
@@ -578,6 +579,7 @@ int cgl_read_one_magn(struct magnet *magnet, FILE *fp)
 	parse_rect(buf2 + 0x0e, &r);
 	rect_to_tile(&r, magnet->act);
 	magnet->act->type = Transparent;
+	magnet->act->collision_test = RectPoint;
 	magnet->act->collision_type = MagnetAction;
 	magnet->act->data = magnet;
 	return 0;
