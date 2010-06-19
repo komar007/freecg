@@ -179,5 +179,5 @@ void animate_key(struct airport *airport, double time)
 		return;
 	int phase = round(time * KEY_ANIM_SPEED);
 	int cur_tex = key_anim_order[phase % 8];
-	airport->stuff[0]->tex_x = KEY_TEX_X + cur_tex * airport->stuff[0]->w;
+	airport->cargo[0]->tex_x = KEY_TEX_X + cur_tex * airport->cargo[0]->w;
 }

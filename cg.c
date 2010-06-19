@@ -25,15 +25,23 @@ struct cg *cg_init(struct cgl *l)
 void cg_step_ship(struct ship* s, double time, double dt)
 {
 	double ax = 0, ay = 0;
-	cg_ship_rotate(s, s->rots*dt);
-	double rot = discrete_rot(s->rot)/24.0 * 2*M_PI;
+	if (!s->on_airport)
+		cg_ship_rotate(s, s->rots*dt);
+	double drot = discrete_rot(s->rot)/24.0 * 2*M_PI;
 	if (s->engine) {
-		ax = cos(rot)*100;
-		ay = sin(rot)*100;
+		ax = cos(drot) * ENGINE_ACCEL;
+		ay = sin(drot) * ENGINE_ACCEL;
 	}
-	ax += -s->vx*0.2;
-	ay += -s->vy*0.2;
-	ay += 20;
+	ax += -s->vx*AIR_RESISTANCE;
+	ay += -s->vy*AIR_RESISTANCE;
+	/* no gravity on airport to prevent multiple airport collision */
+	if (!s->on_airport)
+		ay += GRAVITY;
+	if (ay < 0) {
+		/* taking off */
+		s->on_airport = 0;
+		s->airport->sched_cargo_load = 0;
+	}
 	s->vx += ax * dt;
 	s->vy += ay * dt;
 	s->x += s->vx * dt;
@@ -53,7 +61,7 @@ void cg_step_objects(struct cg *cg, double time, double dt)
 	            cg_step_bar(struct bar*, double, double),
 	            cg_step_gate(struct gate*, double),
 	            cg_step_lgate(struct lgate*, struct ship*, double),
-		    cg_step_airport(struct airport*, struct ship*, double);
+		    cg_step_airport(struct airport*, struct ship*, double, double);
 	for (size_t i = 0; i < cg->level->nairgens; ++i)
 		cg_step_airgen(&cg->level->airgens[i], cg->ship, dt);
 	for (size_t i = 0; i < cg->level->nbars; ++i)
@@ -63,7 +71,7 @@ void cg_step_objects(struct cg *cg, double time, double dt)
 	for (size_t i = 0; i < cg->level->nlgates; ++i)
 		cg_step_lgate(&cg->level->lgates[i], cg->ship, dt);
 	for (size_t i = 0; i < cg->level->nairports; ++i)
-		cg_step_airport(&cg->level->airports[i], cg->ship, dt);
+		cg_step_airport(&cg->level->airports[i], cg->ship, time, dt);
 }
 
 /* ==================== Collision detectors ==================== */
@@ -209,7 +217,7 @@ void cg_handle_collision_airport(struct ship *ship, struct airport *airport)
 	ship_to_tile(ship, &stile);
 	if (discrete_rot(ship->rot) == ROT_UP &&
 			cg_collision_rect_point(&stile, &allowed))
-		airport->has_ship = 1;
+		airport->ship_touched = 1;
 	else
 		ship->dead = 1;
 }
@@ -362,12 +370,30 @@ void cg_step_airgen(struct airgen *airgen, struct ship *ship, double dt)
 	airgen->active = 0;
 }
 
-void cg_step_airport(struct airport *airport, struct ship *ship, double dt)
+void cg_step_airport(struct airport *airport, struct ship *ship, double time, double dt)
 {
-	if (!airport->has_ship)
+	if (airport->sched_cargo_load && airport->load_time < time) {
+		airport->sched_cargo_load = 0;
+		/* remove the last piece of cargo */
+		--airport->num_cargo;
+		airport->cargo[airport->num_cargo]->type = Transparent;
+		airport->cargo[airport->num_cargo]->collision_test = NoCollision;
+		switch (airport->type) {
+		case Key:
+			ship->keys[airport->key] = 1;
+			break;
+		}
+	}
+	if (!airport->ship_touched)
 		return;
-	ship->y = airport->base[0]->y - 20 ;
+	ship->y = airport->base[0]->y - 20;
 	ship->vx = ship->vy = 0;
-	airport->has_ship = 0;
+	ship->on_airport = 1;
+	ship->airport = airport;
+	if (airport->num_cargo > 0) {
+		airport->sched_cargo_load = 1;
+		airport->load_time = time + 1;
+	}
+	airport->ship_touched = 0;
 }
 /* ==================== /Object simulators ==================== */

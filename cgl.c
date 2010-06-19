@@ -278,7 +278,7 @@ struct cgl *read_cgl(const char *path, uint8_t **out_soin)
 	FIX_PTRS(cgl->airports,  arrow[0], cgl->nairports,   lpts_tiles)
 	FIX_PTRS(cgl->airports,  arrow[1], cgl->nairports,   lpts_tiles)
 	for (size_t k = 0; k < 10; ++k)
-		FIX_PTRS(cgl->airports, stuff[k], cgl->nairports, lpts_tiles);
+		FIX_PTRS(cgl->airports, cargo[k], cgl->nairports, lpts_tiles);
 	cgl->ntiles += nlpts_tiles;
 	free(lpts_tiles);
 	if (out_soin)
@@ -936,7 +936,7 @@ BEGIN_CGL_READ_X(lpts, LPTS, airport, 14)
 	cgl->airports[i].arrow[0] = &tiles[14*i + 2];
 	cgl->airports[i].arrow[1] = &tiles[14*i + 3];
 	for (size_t k = 0; k < 10; ++k)
-		cgl->airports[i].stuff[k] = &tiles[14*i + 4+k];
+		cgl->airports[i].cargo[k] = &tiles[14*i + 4+k];
 END_CGL_READ_X(lpts, LPTS, airport, 14)
 
 int cgl_read_one_lpts(struct airport *airport, FILE *fp)
@@ -962,20 +962,20 @@ int cgl_read_one_lpts(struct airport *airport, FILE *fp)
 	nread = fread(buf, sizeof(uint8_t), 1, fp);
 	if (nread < 1)
 		return -EBADLPTS;
-	airport->num_stuff = buf[0];
+	airport->num_cargo = buf[0];
 	nread = fread(buf, sizeof(uint8_t), LPTS_NUM_STUFF*3, fp);
 	if (nread < LPTS_NUM_STUFF*3)
 		return -EBADLPTS;
-	for (size_t i = 0; i < airport->num_stuff; ++i) {
-		airport->stuff[i]->x = airport->base[0]->x + buf[i];
-		airport->stuff[i]->y = airport->base[0]->y - 32 + buf[10+i];
-		airport->stuff[i]->w = airport->stuff[i]->h = STUFF_SIZE;
-		airport->stuff[i]->tex_x = STUFF_TEX_X + buf[20+i]*16;
-		airport->stuff[i]->tex_y = STUFF_TEX_Y;
+	for (size_t i = 0; i < airport->num_cargo; ++i) {
+		airport->cargo[i]->x = airport->base[0]->x + buf[i];
+		airport->cargo[i]->y = airport->base[0]->y - 32 + buf[10+i];
+		airport->cargo[i]->w = airport->cargo[i]->h = STUFF_SIZE;
+		airport->cargo[i]->tex_x = STUFF_TEX_X + buf[20+i]*16;
+		airport->cargo[i]->tex_y = STUFF_TEX_Y;
 	}
 	if (airport->type == Key) {
-		airport->stuff[0]->tex_x = KEY_TEX_X;
-		airport->stuff[0]->tex_y = KEY_TEX_Y + airport->key*STUFF_SIZE;
+		airport->cargo[0]->tex_x = KEY_TEX_X;
+		airport->cargo[0]->tex_y = KEY_TEX_Y + airport->key*STUFF_SIZE;
 	}
 	err = read_short((int16_t*)buf2, 4, fp);
 	if (err)

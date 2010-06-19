@@ -188,7 +188,7 @@ struct lgate {
 struct airport {
 	struct tile *base[2],
 		    *arrow[2],
-		    *stuff[10];
+		    *cargo[10];
 	struct rect lbbox;
 	enum {
 		Homebase = 1,
@@ -197,8 +197,10 @@ struct airport {
 		Freigh,
 		Extras,
 	} type;
-	size_t num_stuff;
-	int has_ship;
+	size_t num_cargo;
+	double load_time;
+	int sched_cargo_load;
+	int ship_touched;
 	int key;
 };
 typedef struct tile **block;
