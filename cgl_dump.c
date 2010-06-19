@@ -203,7 +203,6 @@ void print_one_vent(struct fan *fan, int num)
 			fan->dir == Left ? "Left" : "Right");
 	printf("\t\tbase:\t"), print_tile(fan->base);
 	printf("\t\tpipes:\t"), print_tile(fan->pipes);
-	printf("\t\trange\t= "), print_rect(&fan->range);
 }
 
 void print_magn(const struct cgl *cgl)

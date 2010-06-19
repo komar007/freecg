@@ -7,7 +7,7 @@
 
 #define AIRGEN_ROT_SPEED 4.97
 #define ROT_UP 18
-#define AIR_RESISTANCE 0.20
+#define AIR_RESISTANCE 0.3
 enum {
 	BAR_SPEED_CHANGE_INTERVAL = 4,
 	BAR_MIN_LEN = 2,

@@ -82,7 +82,8 @@ struct tile {
 		AirgenAction,
 		GateAction,
 		LGateAction,
-		AirportAction
+		AirportAction,
+		FanAction
 	} collision_type;
 	/* necessary for renderer, the number of the most recent frame in
 	 * which the tile was rendered */
@@ -97,9 +98,10 @@ struct fan {
 	} power;
 	enum dir dir;
 	struct tile *base,
-		    *pipes; /* unused */
-	struct rect range; /* unused */
+		    *pipes, /* unused */
+		    *act;
 	int tex_x;
+	int active;
 };
 struct magnet {
 	enum dir dir;

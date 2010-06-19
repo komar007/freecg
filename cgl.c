@@ -213,6 +213,7 @@ struct cgl *read_cgl(const char *path, uint8_t **out_soin)
 			nvent_tiles * sizeof(*cgl->tiles));
 	FIX_PTRS(cgl->fans,    base,      cgl->nfans,    vent_tiles)
 	FIX_PTRS(cgl->fans,    pipes,     cgl->nfans,    vent_tiles)
+	FIX_PTRS(cgl->fans,    act,       cgl->nfans,    vent_tiles)
 	cgl->ntiles += nvent_tiles;
 	free(vent_tiles);
 	memcpy(cgl->tiles + cgl->ntiles, magn_tiles,
@@ -514,10 +515,11 @@ error:                                                                      \
  * file. They allocate space for tiles needed by these objects, place the
  * objects there and return a pointer through the pointer in the second argument.
  */
-BEGIN_CGL_READ_X(vent, VENT, fan, 2)
-	cgl->fans[i].base  = &tiles[2*i + 0];
-	cgl->fans[i].pipes = &tiles[2*i + 1];
-END_CGL_READ_X(vent, VENT, fan, 2)
+BEGIN_CGL_READ_X(vent, VENT, fan, 3)
+	cgl->fans[i].base  = &tiles[3*i + 0];
+	cgl->fans[i].pipes = &tiles[3*i + 1];
+	cgl->fans[i].act   = &tiles[3*i + 2];
+END_CGL_READ_X(vent, VENT, fan, 3)
 
 int cgl_read_one_vent(struct fan *fan, FILE *fp)
 {
@@ -538,7 +540,12 @@ int cgl_read_one_vent(struct fan *fan, FILE *fp)
 	fan->tex_x = fan->base->tex_x;
 	parse_tile_normal(buf2 + 0x04, fan->pipes);
 	fan->pipes->collision_test = Bitmap;
-	parse_rect(buf2 + 0x0e, &fan->range);
+	struct rect r;
+	parse_rect(buf2 + 0x0e, &r);
+	rect_to_tile(&r, fan->act);
+	fan->act->type = Transparent;
+	fan->act->collision_type = FanAction;
+	fan->act->data = fan;
 	return 0;
 }
 

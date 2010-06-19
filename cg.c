@@ -66,7 +66,8 @@ void cg_step_objects(struct cg *cg, double time, double dt)
 	            cg_step_bar(struct bar*, double, double),
 	            cg_step_gate(struct gate*, double),
 	            cg_step_lgate(struct lgate*, struct ship*, double),
-		    cg_step_airport(struct airport*, struct ship*, double, double);
+		    cg_step_airport(struct airport*, struct ship*, double, double),
+		    cg_step_fan(struct fan*, struct ship*, double);
 	for (size_t i = 0; i < cg->level->nairgens; ++i)
 		cg_step_airgen(&cg->level->airgens[i], cg->ship, dt);
 	for (size_t i = 0; i < cg->level->nbars; ++i)
@@ -77,6 +78,8 @@ void cg_step_objects(struct cg *cg, double time, double dt)
 		cg_step_lgate(&cg->level->lgates[i], cg->ship, dt);
 	for (size_t i = 0; i < cg->level->nairports; ++i)
 		cg_step_airport(&cg->level->airports[i], cg->ship, time, dt);
+	for (size_t i = 0; i < cg->level->nfans; ++i)
+		cg_step_fan(&cg->level->fans[i], cg->ship, dt);
 }
 
 /* ==================== Collision detectors ==================== */
@@ -168,7 +171,8 @@ void cg_call_collision_handler(struct cg *cg, struct tile *tile)
 	extern void cg_handle_collision_gate(struct gate*),
 	            cg_handle_collision_lgate(struct ship*, struct lgate*),
 	            cg_handle_collision_airgen(struct airgen*),
-		    cg_handle_collision_airport(struct ship*, struct airport*);
+		    cg_handle_collision_airport(struct ship*, struct airport*),
+		    cg_handle_collision_fan(struct fan*);
 	switch (tile->collision_type) {
 	case GateAction:
 		cg_handle_collision_gate((struct gate*)tile->data);
@@ -181,6 +185,9 @@ void cg_call_collision_handler(struct cg *cg, struct tile *tile)
 		break;
 	case AirportAction:
 		cg_handle_collision_airport(cg->ship, (struct airport*)tile->data);
+		break;
+	case FanAction:
+		cg_handle_collision_fan((struct fan*)tile->data);
 		break;
 	case Kaboom:
 		cg->ship->dead = 1;
@@ -229,6 +236,10 @@ void cg_handle_collision_airport(struct ship *ship, struct airport *airport)
 		airport->ship_touched = 1;
 	else
 		ship->dead = 1;
+}
+void cg_handle_collision_fan(struct fan *fan)
+{
+	fan->active = 1;
 }
 /* ==================== /Collision handlers ==================== */
 
@@ -447,5 +458,24 @@ void airport_schedule_transfer(struct airport *airport, double time)
 {
 	airport->sched_cargo_transfer = 1;
 	airport->transfer_time = time + 1;
+}
+
+static const double fan_accel[] = {40, 20};
+void cg_step_fan(struct fan *fan, struct ship *ship, double dt)
+{
+	if (!fan->active)
+		return;
+	double dv = fan_accel[fan->power] * dt;
+	switch (fan->dir) {
+	case Down:
+		ship->vy += dv; break;
+	case Up:
+		ship->vy -= dv; break;
+	case Right:
+		ship->vx += dv; break;
+	case Left:
+		ship->vx -= dv; break;
+	}
+	fan->active = 0;
 }
 /* ==================== /Object simulators ==================== */
