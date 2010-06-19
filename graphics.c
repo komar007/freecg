@@ -66,10 +66,10 @@ void gl_draw_scene()
 	glLoadIdentity();
 	glClear(GL_COLOR_BUFFER_BIT);
 	glBegin(GL_QUADS);
+	gl_draw_ship();
 	for (size_t j = y1/BLOCK_SIZE; j*BLOCK_SIZE < y2; ++j)
 		for (size_t i = x1/BLOCK_SIZE; i*BLOCK_SIZE < x2; ++i)
 			gl_draw_block(l->blocks[j][i]);
-	gl_draw_ship();
 	glEnd();
 	SDL_GL_SwapBuffers();
 	gl.frame++;

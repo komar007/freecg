@@ -67,7 +67,8 @@ void cg_step_objects(struct cg *cg, double time, double dt)
 	            cg_step_gate(struct gate*, double),
 	            cg_step_lgate(struct lgate*, struct ship*, double),
 		    cg_step_airport(struct airport*, struct ship*, double, double),
-		    cg_step_fan(struct fan*, struct ship*, double);
+		    cg_step_fan(struct fan*, struct ship*, double),
+		    cg_step_magnet(struct magnet*, struct ship*, double);
 	for (size_t i = 0; i < cg->level->nairgens; ++i)
 		cg_step_airgen(&cg->level->airgens[i], cg->ship, dt);
 	for (size_t i = 0; i < cg->level->nbars; ++i)
@@ -80,6 +81,8 @@ void cg_step_objects(struct cg *cg, double time, double dt)
 		cg_step_airport(&cg->level->airports[i], cg->ship, time, dt);
 	for (size_t i = 0; i < cg->level->nfans; ++i)
 		cg_step_fan(&cg->level->fans[i], cg->ship, dt);
+	for (size_t i = 0; i < cg->level->nmagnets; ++i)
+		cg_step_magnet(&cg->level->magnets[i], cg->ship, dt);
 }
 
 /* ==================== Collision detectors ==================== */
@@ -172,7 +175,8 @@ void cg_call_collision_handler(struct cg *cg, struct tile *tile)
 	            cg_handle_collision_lgate(struct ship*, struct lgate*),
 	            cg_handle_collision_airgen(struct airgen*),
 		    cg_handle_collision_airport(struct ship*, struct airport*),
-		    cg_handle_collision_fan(struct fan*);
+		    cg_handle_collision_fan(struct ship*, struct fan*),
+		    cg_handle_collision_magnet(struct ship*, struct magnet*);
 	switch (tile->collision_type) {
 	case GateAction:
 		cg_handle_collision_gate((struct gate*)tile->data);
@@ -187,7 +191,10 @@ void cg_call_collision_handler(struct cg *cg, struct tile *tile)
 		cg_handle_collision_airport(cg->ship, (struct airport*)tile->data);
 		break;
 	case FanAction:
-		cg_handle_collision_fan((struct fan*)tile->data);
+		cg_handle_collision_fan(cg->ship, (struct fan*)tile->data);
+		break;
+	case MagnetAction:
+		cg_handle_collision_magnet(cg->ship, (struct magnet*)tile->data);
 		break;
 	case Kaboom:
 		cg->ship->dead = 1;
@@ -237,9 +244,35 @@ void cg_handle_collision_airport(struct ship *ship, struct airport *airport)
 	else
 		ship->dead = 1;
 }
-void cg_handle_collision_fan(struct fan *fan)
+double field_modifier(enum dir dir, struct tile *act, struct ship *ship)
 {
-	fan->active = 1;
+	int beg = 0;
+	double modifier = 0;
+	switch (dir) {
+	case Up:    beg = act->y + act->h; break;
+	case Down:  beg = act->y; break;
+	case Left:  beg = act->x + act->w; break;
+	case Right: beg = act->x; break;
+	}
+	switch (dir) {
+	case Up:
+	case Down:
+		modifier = 1 - fabs(beg - (ship->y + SHIP_H/2)) / act->h;
+		break;
+	case Left:
+	case Right:
+		modifier = 1 - fabs(beg - (ship->x + SHIP_W/2)) / act->w;
+		break;
+	}
+	return modifier;
+}
+void cg_handle_collision_fan(struct ship *ship, struct fan *fan)
+{
+	fan->modifier = field_modifier(fan->dir, fan->act, ship);
+}
+void cg_handle_collision_magnet(struct ship *ship, struct magnet *magnet)
+{
+	magnet->modifier = field_modifier(magnet->dir, magnet->act, ship);
 }
 /* ==================== /Collision handlers ==================== */
 
@@ -459,13 +492,12 @@ void airport_schedule_transfer(struct airport *airport, double time)
 	airport->sched_cargo_transfer = 1;
 	airport->transfer_time = time + 1;
 }
-
-static const double fan_accel[] = {40, 20};
+static const double fan_accel[] = {80, 40};
 void cg_step_fan(struct fan *fan, struct ship *ship, double dt)
 {
-	if (!fan->active)
+	if (fan->modifier == 0)
 		return;
-	double dv = fan_accel[fan->power] * dt;
+	double dv = fan_accel[fan->power] * fan->modifier * dt;
 	switch (fan->dir) {
 	case Down:
 		ship->vy += dv; break;
@@ -476,6 +508,24 @@ void cg_step_fan(struct fan *fan, struct ship *ship, double dt)
 	case Left:
 		ship->vx -= dv; break;
 	}
-	fan->active = 0;
+	fan->modifier = 0;
+}
+static const double magn_accel = 35;
+void cg_step_magnet(struct magnet *magnet, struct ship *ship, double dt)
+{
+	if (magnet->modifier == 0)
+		return;
+	double dv = magn_accel * magnet->modifier * dt;
+	switch (magnet->dir) {
+	case Down:
+		ship->vy -= dv; break;
+	case Up:
+		ship->vy += dv; break;
+	case Right:
+		ship->vx -= dv; break;
+	case Left:
+		ship->vx += dv; break;
+	}
+	magnet->modifier = 0;
 }
 /* ==================== /Object simulators ==================== */

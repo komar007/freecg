@@ -220,6 +220,7 @@ struct cgl *read_cgl(const char *path, uint8_t **out_soin)
 			nmagn_tiles * sizeof(*cgl->tiles));
 	FIX_PTRS(cgl->magnets, base,      cgl->nmagnets, magn_tiles)
 	FIX_PTRS(cgl->magnets, magn,      cgl->nmagnets, magn_tiles)
+	FIX_PTRS(cgl->magnets, act,       cgl->nmagnets, magn_tiles)
 	cgl->ntiles += nmagn_tiles;
 	free(magn_tiles);
 	memcpy(cgl->tiles + cgl->ntiles, dist_tiles,
@@ -549,10 +550,11 @@ int cgl_read_one_vent(struct fan *fan, FILE *fp)
 	return 0;
 }
 
-BEGIN_CGL_READ_X(magn, MAGN, magnet, 2)
-	cgl->magnets[i].base = &tiles[2*i + 0];
-	cgl->magnets[i].magn = &tiles[2*i + 1];
-END_CGL_READ_X(magn, MAGN, magnet, 2)
+BEGIN_CGL_READ_X(magn, MAGN, magnet, 3)
+	cgl->magnets[i].base = &tiles[3*i + 0];
+	cgl->magnets[i].magn = &tiles[3*i + 1];
+	cgl->magnets[i].act  = &tiles[3*i + 2];
+END_CGL_READ_X(magn, MAGN, magnet, 3)
 
 int cgl_read_one_magn(struct magnet *magnet, FILE *fp)
 {
@@ -572,7 +574,12 @@ int cgl_read_one_magn(struct magnet *magnet, FILE *fp)
 	parse_tile_normal(buf2 + 0x04, magnet->magn);
 	magnet->tex_x = magnet->magn->tex_x;
 	magnet->magn->collision_test = Bitmap;
-	parse_rect(buf2 + 0x0e, &magnet->range);
+	struct rect r;
+	parse_rect(buf2 + 0x0e, &r);
+	rect_to_tile(&r, magnet->act);
+	magnet->act->type = Transparent;
+	magnet->act->collision_type = MagnetAction;
+	magnet->act->data = magnet;
 	return 0;
 }
 
