@@ -30,6 +30,7 @@ struct ship {
 	int num_freigh, max_freigh;
 	struct airport *airport;
 	double fuel;
+	int has_turbo;
 	int dead;
 };
 struct cg {

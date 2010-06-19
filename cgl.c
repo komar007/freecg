@@ -992,6 +992,9 @@ int cgl_read_one_lpts(struct airport *airport, FILE *fp)
 		case Freigh:
 			airport->c.freigh[i] = buf[20+i] - 1;
 			break;
+		case Extras:
+			airport->c.extras[i] = buf[20+i] - 5;
+			break;
 		case Key:
 			airport->cargo[i]->tex_x = KEY_TEX_X;
 			airport->cargo[i]->tex_y = KEY_TEX_Y +

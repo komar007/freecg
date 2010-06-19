@@ -11,6 +11,7 @@ void cg_init_ship(struct cg *cg, int x, int y, struct cgl *l)
 	cg->ship->x = x, cg->ship->y = y;
 	cg->ship->airport = l->hb;
 	cg->ship->fuel = MAX_FUEL;
+	cg->ship->has_turbo = 0;
 	cg->ship->max_freigh = 1;
 	cg->ship->freigh = calloc(cg->level->num_all_freigh,
 			sizeof(*cg->ship->freigh));
@@ -443,6 +444,15 @@ void cg_step_airport(struct airport *airport, struct ship *ship, double time, do
 		switch (airport->type) {
 		case Key:
 			ship->keys[airport->c.key] = 1;
+			airport_pop_cargo(airport);
+			break;
+		case Extras:
+			switch (airport->c.extras[airport->num_cargo - 1]) {
+			case Turbo:
+				ship->has_turbo = 1; break;
+			case Cargo:
+				++ship->max_freigh; break;
+			}
 			airport_pop_cargo(airport);
 			break;
 		case Freigh:

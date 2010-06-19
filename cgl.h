@@ -214,6 +214,11 @@ struct airport {
 	union {
 		int key;
 		enum freigh freigh[10];
+		enum {
+			Turbo = 0,
+			Life,
+			Cargo
+		} extras[10];
 	} c /* common */;
 };
 typedef struct tile **block;
@@ -223,7 +228,7 @@ struct cgl {
 		Full,
 		Demo
 	} type;
-	int num_all_freigh;
+	size_t num_all_freigh;
 	size_t width, height;
 	size_t ntiles;
 	struct tile *tiles;

@@ -188,6 +188,8 @@ int main(int argc, char *argv[])
 				printf("%d", cg->level->hb->c.freigh[i]);
 			printf("]%d/%d ", cg->level->hb->num_cargo,
 					cg->level->num_all_freigh);
+			if (cg->ship->has_turbo)
+				printf("T ");
 			if (cg->ship->dead) {
 				if (cg->level->hb->num_cargo == cg->level->num_all_freigh)
 					printf("You won!");
