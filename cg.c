@@ -4,11 +4,15 @@
 #include <math.h>
 #include <assert.h>
 
-void cg_init_ship(struct ship *s, int x, int y)
+void cg_init_ship(struct cg *cg, int x, int y, struct cgl *l)
 {
-	s->engine = 0;
-	s->rot = 3/2.0 * M_PI;
-	s->x = x, s->y = y;
+	cg->ship->engine = 0;
+	cg->ship->rot = 3/2.0 * M_PI;
+	cg->ship->x = x, cg->ship->y = y;
+	cg->ship->airport = l->hb;
+	cg->ship->max_freigh = 1;
+	cg->ship->freigh = calloc(cg->level->num_all_freigh,
+			sizeof(*cg->ship->freigh));
 }
 struct cg *cg_init(struct cgl *l)
 {
@@ -18,14 +22,14 @@ struct cg *cg_init(struct cgl *l)
 	cg->ship = calloc(1, sizeof(*cg->ship));
 	int x = l->hb->base[0]->x + (l->hb->base[0]->w - SHIP_W) / 2,
 	    y = l->hb->base[0]->y - 20;
-	cg_init_ship(cg->ship, x, y);
+	cg_init_ship(cg, x, y, l);
 	return cg;
 }
 
 void cg_step_ship(struct ship* s, double time, double dt)
 {
 	double ax = 0, ay = 0;
-	if (!s->on_airport)
+	if (!s->airport)
 		cg_ship_rotate(s, s->rots*dt);
 	double drot = discrete_rot(s->rot)/24.0 * 2*M_PI;
 	if (s->engine) {
@@ -35,12 +39,13 @@ void cg_step_ship(struct ship* s, double time, double dt)
 	ax += -s->vx*AIR_RESISTANCE;
 	ay += -s->vy*AIR_RESISTANCE;
 	/* no gravity on airport to prevent multiple airport collision */
-	if (!s->on_airport)
+	if (!s->airport)
 		ay += GRAVITY;
-	if (ay < 0) {
-		/* taking off */
-		s->on_airport = 0;
-		s->airport->sched_cargo_load = 0;
+	/* taking off */
+	if (s->airport && ay < 0) {
+		/* cancel any pending cargo transfer */
+		s->airport->sched_cargo_transfer = 0;
+		s->airport = NULL;
 	}
 	s->vx += ax * dt;
 	s->vy += ay * dt;
@@ -372,15 +377,26 @@ void cg_step_airgen(struct airgen *airgen, struct ship *ship, double dt)
 
 void cg_step_airport(struct airport *airport, struct ship *ship, double time, double dt)
 {
-	if (airport->sched_cargo_load && airport->load_time < time) {
-		airport->sched_cargo_load = 0;
-		/* remove the last piece of cargo */
-		--airport->num_cargo;
-		airport->cargo[airport->num_cargo]->type = Transparent;
-		airport->cargo[airport->num_cargo]->collision_test = NoCollision;
+	extern void airport_schedule_transfer(struct airport*, double),
+	            airport_pop_cargo(struct airport*),
+		    ship_load_freigh(struct ship*, struct airport*),
+		    ship_unload_freigh(struct ship*, struct airport*);
+	if (airport->sched_cargo_transfer && airport->transfer_time < time) {
+		airport->sched_cargo_transfer = 0;
 		switch (airport->type) {
 		case Key:
-			ship->keys[airport->key] = 1;
+			ship->keys[airport->c.key] = 1;
+			airport_pop_cargo(airport);
+			printf("Got key %i\n", airport->c.key);
+			break;
+		case Freigh:
+			ship_load_freigh(ship, airport);
+			printf("Got freigh %i\n",
+					airport->c.freigh[airport->num_cargo]);
+			break;
+		case Homebase:
+			ship_unload_freigh(ship, airport);
+			printf("Freigh home: %i\n", airport->num_cargo);
 			break;
 		}
 	}
@@ -388,12 +404,44 @@ void cg_step_airport(struct airport *airport, struct ship *ship, double time, do
 		return;
 	ship->y = airport->base[0]->y - 20;
 	ship->vx = ship->vy = 0;
-	ship->on_airport = 1;
 	ship->airport = airport;
-	if (airport->num_cargo > 0) {
-		airport->sched_cargo_load = 1;
-		airport->load_time = time + 1;
+	switch (airport->type) {
+	case Freigh:
+		if (airport->num_cargo > 0 && ship->num_freigh < ship->max_freigh)
+			airport_schedule_transfer(airport, time);
+		break;
+	case Extras:
+	case Key:
+		if (airport->num_cargo > 0)
+			airport_schedule_transfer(airport, time);
+		break;
+	case Homebase:
+		if (ship->num_freigh > 0)
+			airport_schedule_transfer(airport, time);
+		break;
 	}
 	airport->ship_touched = 0;
+}
+void airport_pop_cargo(struct airport *airport)
+{
+	--airport->num_cargo;
+	airport->cargo[airport->num_cargo]->type = Transparent;
+	airport->cargo[airport->num_cargo]->collision_test = NoCollision;
+}
+void ship_load_freigh(struct ship *ship, struct airport *airport)
+{
+	ship->freigh[ship->num_freigh++] =
+		airport->c.freigh[airport->num_cargo-1];
+	airport_pop_cargo(airport);
+}
+void ship_unload_freigh(struct ship *ship, struct airport *airport)
+{
+	airport->c.freigh[airport->num_cargo++] =
+		ship->freigh[--ship->num_freigh];
+}
+void airport_schedule_transfer(struct airport *airport, double time)
+{
+	airport->sched_cargo_transfer = 1;
+	airport->transfer_time = time + 1;
 }
 /* ==================== /Object simulators ==================== */

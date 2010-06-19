@@ -950,7 +950,7 @@ int cgl_read_one_lpts(struct airport *airport, FILE *fp)
 	if (nread < LPTS_HDR_SIZE)
 		return -EBADLPTS;
 	airport->type = buf[0] & 0x0f;
-	airport->key = buf[0] >> 4;
+	airport->c.key = buf[0] >> 4;
 	err = read_short((int16_t*)buf2, LPTS_NUM_SHORTS, fp);
 	if (err)
 		return -EBADLPTS;
@@ -972,10 +972,16 @@ int cgl_read_one_lpts(struct airport *airport, FILE *fp)
 		airport->cargo[i]->w = airport->cargo[i]->h = STUFF_SIZE;
 		airport->cargo[i]->tex_x = STUFF_TEX_X + buf[20+i]*16;
 		airport->cargo[i]->tex_y = STUFF_TEX_Y;
-	}
-	if (airport->type == Key) {
-		airport->cargo[0]->tex_x = KEY_TEX_X;
-		airport->cargo[0]->tex_y = KEY_TEX_Y + airport->key*STUFF_SIZE;
+		switch (airport->type) {
+		case Freigh:
+			airport->c.freigh[i] = buf[20+i] - 1;
+			break;
+		case Key:
+			airport->cargo[i]->tex_x = KEY_TEX_X;
+			airport->cargo[i]->tex_y = KEY_TEX_Y +
+				airport->c.key*STUFF_SIZE;
+			break;
+		}
 	}
 	err = read_short((int16_t*)buf2, 4, fp);
 	if (err)
@@ -1035,7 +1041,16 @@ void cgl_preprocess(struct cgl *cgl)
 			cgl->blocks[j][i][is[i + j*cgl->width]] = NULL;
 	free(sizes);
 	free(is);
-	for (size_t i = 0; i < cgl->nairports; ++i)
-		if (cgl->airports[i].type == Homebase)
+	for (size_t i = 0; i < cgl->nairports; ++i) {
+		switch (cgl->airports[i].type) {
+		case Homebase:
 			cgl->hb = &cgl->airports[i];
+			break;
+		case Freigh:
+			cgl->num_all_freigh += cgl->airports[i].num_cargo;
+			break;
+		default:
+			break;
+		}
+	}
 }

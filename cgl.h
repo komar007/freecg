@@ -185,6 +185,12 @@ struct lgate {
 	int active;
 	int open;
 };
+enum freigh {
+	Freigh1 = 0,
+	Freigh2,
+	Freigh3,
+	Freigh4
+};
 struct airport {
 	struct tile *base[2],
 		    *arrow[2],
@@ -198,10 +204,13 @@ struct airport {
 		Extras,
 	} type;
 	size_t num_cargo;
-	double load_time;
-	int sched_cargo_load;
+	double transfer_time;
+	int sched_cargo_transfer;
 	int ship_touched;
-	int key;
+	union {
+		int key;
+		enum freigh freigh[10];
+	} c /* common */;
 };
 typedef struct tile **block;
 /* cgl level contents */
@@ -210,6 +219,7 @@ struct cgl {
 		Full,
 		Demo
 	} type;
+	int num_all_freigh;
 	size_t width, height;
 	size_t ntiles;
 	struct tile *tiles;

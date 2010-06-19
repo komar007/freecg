@@ -7,13 +7,13 @@
 
 #define AIRGEN_ROT_SPEED 4.97
 #define ROT_UP 18
-#define AIR_RESISTANCE 0.2
+#define AIR_RESISTANCE 0.20
 enum {
 	BAR_SPEED_CHANGE_INTERVAL = 4,
 	BAR_MIN_LEN = 2,
 	GATE_BAR_MIN_LEN = 2,
 	GATE_BAR_SPEED = 23,
-	ENGINE_ACCEL = 100,
+	ENGINE_ACCEL = 130,
 	GRAVITY = 20
 };
 
@@ -23,7 +23,8 @@ struct ship {
 	double rot, rots;
 	int engine;
 	int keys[4];
-	int on_airport;
+	enum freigh *freigh;
+	int num_freigh, max_freigh;
 	struct airport *airport;
 	int dead;
 };
