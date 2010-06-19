@@ -10,6 +10,7 @@ void cg_init_ship(struct cg *cg, int x, int y, struct cgl *l)
 	cg->ship->rot = 3/2.0 * M_PI;
 	cg->ship->x = x, cg->ship->y = y;
 	cg->ship->airport = l->hb;
+	cg->ship->fuel = MAX_FUEL;
 	cg->ship->max_freigh = 1;
 	cg->ship->freigh = calloc(cg->level->num_all_freigh,
 			sizeof(*cg->ship->freigh));
@@ -26,6 +27,10 @@ struct cg *cg_init(struct cgl *l)
 	return cg;
 }
 
+void cg_ship_set_engine(struct ship *ship, int eng)
+{
+	ship->engine = eng && ship->fuel > 0;
+}
 void cg_step_ship(struct ship* s, double time, double dt)
 {
 	double ax = 0, ay = 0;
@@ -35,6 +40,9 @@ void cg_step_ship(struct ship* s, double time, double dt)
 	if (s->engine) {
 		ax = cos(drot) * ENGINE_ACCEL;
 		ay = sin(drot) * ENGINE_ACCEL;
+		s->fuel -= FUEL_SPEED * dt;
+		if (s->fuel < 0)
+			s->engine = 0;
 	}
 	ax += -s->vx*AIR_RESISTANCE;
 	ay += -s->vy*AIR_RESISTANCE;
@@ -212,10 +220,8 @@ void cg_step(struct cg *cg, double time)
 	cg_step_objects(cg, time, dt);
 	if (!cg->ship->dead)
 		cg_step_ship(cg->ship, time, dt);
-	if (cg->level->hb->num_cargo == cg->level->num_all_freigh) {
-		printf("You Won!\n");
+	if (cg->level->hb->num_cargo == cg->level->num_all_freigh)
 		cg->ship->dead = 1;
-	}
 	cg->time = time;
 }
 
@@ -438,16 +444,16 @@ void cg_step_airport(struct airport *airport, struct ship *ship, double time, do
 		case Key:
 			ship->keys[airport->c.key] = 1;
 			airport_pop_cargo(airport);
-			printf("Got key %i\n", airport->c.key);
 			break;
 		case Freigh:
 			ship_load_freigh(ship, airport);
-			printf("Got freigh %i\n",
-					airport->c.freigh[airport->num_cargo]);
 			break;
 		case Homebase:
 			ship_unload_freigh(ship, airport);
-			printf("Freigh home: %zu\n", airport->num_cargo);
+			break;
+		case Fuel:
+			ship->fuel = min(MAX_FUEL, ship->fuel + FUEL_BARREL);
+			airport_pop_cargo(airport);
 			break;
 		}
 	}
@@ -464,6 +470,10 @@ void cg_step_airport(struct airport *airport, struct ship *ship, double time, do
 	case Extras:
 	case Key:
 		if (airport->num_cargo > 0)
+			airport_schedule_transfer(airport, time);
+		break;
+	case Fuel:
+		if (airport->num_cargo > 0 && ship->fuel <= MAX_FUEL - 1)
 			airport_schedule_transfer(airport, time);
 		break;
 	case Homebase:

@@ -94,7 +94,7 @@ void process_event(SDL_Event *e)
 			gl.cg->ship->rots = 5.5;
 			break;
 		case SDLK_UP:
-			gl.cg->ship->engine = 1;
+			cg_ship_set_engine(gl.cg->ship, 1);
 			break;
 		default:
 			break;
@@ -103,7 +103,7 @@ void process_event(SDL_Event *e)
 	case SDL_KEYUP:
 		switch(e->key.keysym.sym) {
 		case SDLK_UP:
-			gl.cg->ship->engine = 0;
+			cg_ship_set_engine(gl.cg->ship, 0);
 		case SDLK_LEFT:
 			if (gl.cg->ship->rots == -5.5)
 				gl.cg->ship->rots = 0;
@@ -172,9 +172,30 @@ int main(int argc, char *argv[])
 		nt = time - t;
 		cg_step(cg, time / 1000.0);
 		gl_change_viewport(cg->ship->x - 512, cg->ship->y - 384, screen->w/scale, screen->h/scale);
-		if (nt > 1000) {
-			printf("%d frames in %d ms - %.1f fps\n",
-					gl.frame - fr, nt, (float)(gl.frame - fr) / nt * 1000);
+		if (nt > 100) {
+			//printf("%d frames in %d ms - %.1f fps\n",
+			//		gl.frame - fr, nt, (float)(gl.frame - fr) / nt * 1000);
+			printf("\rF %.1lf k[", cg->ship->fuel);
+			for (size_t i = 0; i < 4; ++i)
+				printf("%c", cg->ship->keys[i] ? i + '0' : ' ');
+			printf("] sh[");
+			for (size_t i = 0; i < cg->ship->num_freigh; ++i)
+				printf("%d", cg->ship->freigh[i]);
+			for (size_t i = 0; i < cg->ship->max_freigh - cg->ship->num_freigh; ++i)
+				printf(" ");
+			printf("] hb[");
+			for (size_t i = 0; i < cg->level->hb->num_cargo; ++i)
+				printf("%d", cg->level->hb->c.freigh[i]);
+			printf("]%d/%d ", cg->level->hb->num_cargo,
+					cg->level->num_all_freigh);
+			if (cg->ship->dead) {
+				if (cg->level->hb->num_cargo == cg->level->num_all_freigh)
+					printf("You won!");
+				else
+					printf("Dead. Game over!");
+			}
+			fflush(stdout);
+
 			t += nt;
 			fr = gl.frame;
 		}
