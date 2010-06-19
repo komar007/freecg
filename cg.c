@@ -191,10 +191,14 @@ void cg_call_collision_handler(struct cg *cg, struct tile *tile)
 void cg_step(struct cg *cg, double time)
 {
 	double dt = time - cg->time;
-	if (!cg->ship->dead)
-		cg_step_ship(cg->ship, time, dt);
 	cg_handle_collisions(cg);
 	cg_step_objects(cg, time, dt);
+	if (!cg->ship->dead)
+		cg_step_ship(cg->ship, time, dt);
+	if (cg->level->hb->num_cargo == cg->level->num_all_freigh) {
+		printf("You Won!\n");
+		cg->ship->dead = 1;
+	}
 	cg->time = time;
 }
 
@@ -396,7 +400,7 @@ void cg_step_airport(struct airport *airport, struct ship *ship, double time, do
 			break;
 		case Homebase:
 			ship_unload_freigh(ship, airport);
-			printf("Freigh home: %i\n", airport->num_cargo);
+			printf("Freigh home: %zu\n", airport->num_cargo);
 			break;
 		}
 	}
