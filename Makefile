@@ -7,7 +7,7 @@ HEADERS=cgl.h gfx.h texmgr.h graphics.h cg.h mathgeom.h basic_types.h
 FILES=$(SOURCES) $(HEADERS)
 
 all: dep
-	make cgl_view cgl_dump
+	make cgl_view
 
 dep:
 	@echo -en > Makefile.dep
@@ -18,10 +18,6 @@ dep:
 	done
 
 -include Makefile.dep
-
-cgl_dump: cgl_dump.o cgl.o
-	@echo LINK cgl_dump
-	@$(CC) $(LIBS) -o cgl_dump $^
 
 cgl_view: cgl_view.o cgl.o gfx.o graphics.o texmgr.o cg.o geometry.o
 	@echo LINK opencg
