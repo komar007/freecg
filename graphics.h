@@ -33,6 +33,16 @@ enum graphics_config {
 	BAR_TEX_OFFSET = 28,
 	KEY_ANIM_SPEED = 20,
 };
+struct osd_element {
+	int rel;
+	int x, y;
+	int w, h;
+	double z;
+	double a;
+	int texrel;
+	int tex_x, tex_y;
+	int tex_w, tex_h;
+};
 
 #define BLINK_SPEED 1.8
 

@@ -56,9 +56,9 @@ enum error_codes {
 /* basic tile, max. 8x8 units = 32x32 px */
 struct tile {
 	short x, y;	/* tile's origin */
-	double z;
 	unsigned short w, h;
 	short tex_x, tex_y;
+	double z;
 	enum {
 		Simple = 0,
 		Transparent,

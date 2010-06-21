@@ -4,6 +4,7 @@
 
 SDL_Surface *read_gfx(const char *path)
 {
+	extern void fix_transparency(SDL_Surface*, int, int, int, int);
 	FILE *fp;
 	uint8_t *buffer;
 	size_t size;
@@ -50,11 +51,24 @@ SDL_Surface *read_gfx(const char *path)
 	SDL_BlitSurface(bmp, NULL, gfx, NULL);
 	/* Make sure all next blits copy all channels, including alpha */
 	SDL_SetAlpha(gfx, 0, 255);
+	fix_transparency(gfx, 0, 400, 64, 64);
 	SDL_FreeSurface(bmp);
 cleanup:
 	fclose(fp);
 	free(buffer);
 	return gfx;
+}
+
+void fix_transparency(SDL_Surface *gfx, int _x, int _y, int w, int h)
+{
+	for (int y = _y; y < _y + h; ++y) {
+		uint32_t *pixel = (uint32_t*)((uint8_t*)gfx->pixels +
+				y*gfx->pitch);
+		for (int x = _x; x < _x + w; ++x, ++pixel) {
+			if ((*pixel & (~AMASK)) == 0) /* Black */
+				*pixel = 0;
+		}
+	}
 }
 
 int make_collision_map(const SDL_Surface *gfx, collision_map cmap)

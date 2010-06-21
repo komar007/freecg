@@ -6,6 +6,7 @@
 #include "basic_types.h"
 #include <assert.h>
 
+#define ARRSZ(a) (sizeof(a)/sizeof(*(a)))
 inline int max(int a, int b)
 {
 	return a > b ? a : b;

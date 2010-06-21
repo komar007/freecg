@@ -10,25 +10,25 @@ struct texmgr {
 	GLuint texno;
 };
 
-inline void tm_coord_tl(struct texmgr *tm, const struct tile *tile)
+inline void tm_coord_tl(struct texmgr *tm, int x, int y, int w, int h)
 {
-	glTexCoord2f((double)tile->tex_x / tm->w,
-			(double)tile->tex_y / tm->h);
+	glTexCoord2f((double)x / tm->w,
+			(double)y / tm->h);
 }
-inline void tm_coord_bl(struct texmgr *tm, const struct tile *tile)
+inline void tm_coord_bl(struct texmgr *tm, int x, int y, int w, int h)
 {
-	glTexCoord2f((double)tile->tex_x / tm->w,
-			(double)(tile->tex_y + tile->h) / tm->h);
+	glTexCoord2f((double)x / tm->w,
+			(double)(y + h) / tm->h);
 }
-inline void tm_coord_br(struct texmgr *tm, const struct tile *tile)
+inline void tm_coord_br(struct texmgr *tm, int x, int y, int w, int h)
 {
-	glTexCoord2f((double)(tile->tex_x + tile->w) / tm->w,
-			(double)(tile->tex_y + tile->h) / tm->h);
+	glTexCoord2f((double)(x + w) / tm->w,
+			(double)(y + h) / tm->h);
 }
-inline void tm_coord_tr(struct texmgr *tm, const struct tile *tile)
+inline void tm_coord_tr(struct texmgr *tm, int x, int y, int w, int h)
 {
-	glTexCoord2f((double)(tile->tex_x + tile->w) / tm->w,
-			(double)tile->tex_y / tm->h);
+	glTexCoord2f((double)(x + w) / tm->w,
+			(double)y / tm->h);
 }
 inline void tm_bind_texture(struct texmgr *tm)
 {

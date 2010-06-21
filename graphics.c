@@ -84,13 +84,13 @@ void gl_draw_ship(void)
  * support subpixel rendering */
 void gl_draw_sprite(double x, double y, const struct tile *tile)
 {
-	tm_coord_tl(gl.ttm, tile);
+	tm_coord_tl(gl.ttm, tile->tex_x, tile->tex_y, tile->w, tile->h);
 	glVertex3d(x, y, tile->z);
-	tm_coord_bl(gl.ttm, tile);
+	tm_coord_bl(gl.ttm, tile->tex_x, tile->tex_y, tile->w, tile->h);
 	glVertex3d(x, y + tile->h, tile->z);
-	tm_coord_br(gl.ttm, tile);
+	tm_coord_br(gl.ttm, tile->tex_x, tile->tex_y, tile->w, tile->h);
 	glVertex3d(x + tile->w, y + tile->h, tile->z);
-	tm_coord_tr(gl.ttm, tile);
+	tm_coord_tr(gl.ttm, tile->tex_x, tile->tex_y, tile->w, tile->h);
 	glVertex3d(x + tile->w, y, tile->z);
 }
 /* Each tile may be referenced by many blocks. This function makes sure each
@@ -130,9 +130,89 @@ void gl_dispatch_drawing(const struct tile *tile)
 	}
 }
 
+struct osd_element elems[] = {
+        /*    x    y     w    h     z      a  tr   tx    ty    tw   th */
+/*0*/	{-1,  0, -80,    0,  80,    0,   0.6, -1,   0,  179,   1,   1}, /* gray plane */
+/*1*/	{0,  40,   8,   64,  64,  0.1,   0.8, -1,   0,  400,  64,  64}, /* cross*/
+/*2*/	{1,  31,  16,    2,  32,  0.2,   0.8, -1, 384,  366,   2,  32}, /* hbar */
+/*3*/	{1,  16,  31,   32,   2,  0.2,   0.8, -1, 384,  398,  32,   2}, /* vbar */
+/*4*/	{0,  16,  69,   16,   3,  0.1,   0.8, -1, 388,  393,  16,   3}, /* red fuelbar */
+/*5*/	{4,   0,  -4,    0,   0,  0.1,   0.8,  4,   0,    0,   0,   0},
+/*6*/	{5,   0,  -4,    0,   0,  0.1,   0.8,  4,   0,    0,   0,   0},
+/*7*/	{6,   0,  -4,    0,   0,  0.1,   0.8,  4,   0,    0,   0,   0},
+/*8*/	{7,   0,  -4,    0,   0,  0.1,   0.8, -1, 388,  390,  16,   3}, /* yellow fb */
+/*9*/	{8,   0,  -4,    0,   0,  0.1,   0.8,  8,   0,    0,   0,   0},
+/*10*/	{9,   0,  -4,    0,   0,  0.1,   0.8,  8,   0,    0,   0,   0},
+/*11*/	{10,  0,  -4,    0,   0,  0.1,   0.8,  8,   0,    0,   0,   0},
+/*12*/	{11,  0,  -4,    0,   0,  0.1,   0.8,  8,   0,    0,   0,   0},
+/*13*/	{12,  0,  -4,    0,   0,  0.1,   0.8,  8,   0,    0,   0,   0},
+/*14*/	{13,  0,  -4,    0,   0,  0.1,   0.8, -1, 388,  387,  16,   3}, /* green fb */
+/*15*/	{14,  0,  -4,    0,   0,  0.1,   0.8, 14,   0,    0,   0,   0},
+/*16*/	{15,  0,  -4,    0,   0,  0.1,   0.8, 14,   0,    0,   0,   0},
+/*17*/	{16,  0,  -4,    0,   0,  0.1,   0.8, 14,   0,    0,   0,   0},
+/*18*/	{17,  0,  -4,    0,   0,  0.1,   0.8, 14,   0,    0,   0,   0},
+/*19*/	{18,  0,  -4,    0,   0,  0.1,   0.8, 14,   0,    0,   0,   0},
+/*20*/	{0, 112,   6,   16,  16,  0.1,   0.6, -1, 256,  360,  16,  16}, /* keys */
+/*21*/	{20,  0,  17,    0,   0,  0.1,   0.8, 20,   0,   16,   0,   0},
+/*22*/	{21,  0,  17,    0,   0,  0.1,   0.8, 21,   0,   16,   0,   0},
+/*23*/	{22,  0,  17,    0,   0,  0.1,   0.8, 22,   0,   16,   0,   0},
+};
 void gl_draw_osd()
 {
+	/* convert relative coords to absolute */
+	struct osd_element e[ARRSZ(elems)];
+	memcpy(e, elems, sizeof(elems));
+	for (size_t i = 0; i < ARRSZ(elems); ++i) {
+		if (e[i].rel == -1) {
+			e[i].x = e[i].x >= 0 ? e[i].x : e[i].x + gl.win_w;
+			e[i].y = e[i].y >= 0 ? e[i].y : e[i].y + gl.win_h;
+			e[i].w = e[i].w >  0 ? e[i].w : e[i].w + gl.win_w;
+			e[i].h = e[i].h >  0 ? e[i].h : e[i].h + gl.win_h;
+		} else {
+			e[i].x = e[i].x + e[e[i].rel].x;
+			e[i].y = e[i].y + e[e[i].rel].y;
+			e[i].w = e[i].w >  0 ? e[i].w : e[i].w + e[e[i].rel].w;
+			e[i].h = e[i].h >  0 ? e[i].h : e[i].h + e[e[i].rel].h;
+		}
+		if(e[i].texrel != -1) {
+			e[i].tex_x = e[i].tex_x + e[e[i].texrel].tex_x;
+			e[i].tex_y = e[i].tex_y + e[e[i].texrel].tex_y;
+			e[i].tex_w = e[i].tex_w >  0 ? e[i].tex_w :
+				e[i].tex_w + e[e[i].texrel].tex_w;
+			e[i].tex_h = e[i].tex_h >  0 ? e[i].tex_h :
+				e[i].tex_h + e[e[i].texrel].tex_h;
+		}
+	}
+	struct osd_element *bars  = e+2,
+			   *fbars = e+4,
+			   *keys  = e+20;
+	bars[0].x += fmin(32, fmax(-32, gl.cg->ship->vx/3));
+	bars[1].y += fmin(32, fmax(-32, gl.cg->ship->vy/3));
+	for (size_t i = (size_t)ceil(gl.cg->ship->fuel); i < 16; ++i)
+		fbars[i].a = 0;
+	for (size_t i = 0; i < 4; ++i)
+		if (!gl.cg->ship->keys[i])
+			keys[i].a = 0;
+
 	glTranslated(0, 0, 3);
+	tm_bind_texture(gl.ttm);
+	glBegin(GL_QUADS);
+	for (size_t i = 0; i < ARRSZ(e); ++i) {
+		glColor4f(1, 1, 1, e[i].a);
+		tm_coord_tl(gl.ttm, e[i].tex_x, e[i].tex_y,
+				e[i].tex_w, e[i].tex_h);
+		glVertex3d(e[i].x, e[i].y, e[i].z);
+		tm_coord_bl(gl.ttm, e[i].tex_x, e[i].tex_y,
+				e[i].tex_w, e[i].tex_h);
+		glVertex3d(e[i].x, e[i].y + e[i].h, e[i].z);
+		tm_coord_br(gl.ttm, e[i].tex_x, e[i].tex_y,
+				e[i].tex_w, e[i].tex_h);
+		glVertex3d(e[i].x + e[i].w, e[i].y + e[i].h, e[i].z);
+		tm_coord_tr(gl.ttm, e[i].tex_x, e[i].tex_y,
+				e[i].tex_w, e[i].tex_h);
+		glVertex3d(e[i].x + e[i].w, e[i].y, e[i].z);
+	}
+	glEnd();
 }
 
 void gl_update_window()
