@@ -2,14 +2,13 @@
 #include "gfx.h"
 #include <math.h>
 
-struct texmgr texm;
-
-void tm_request_texture(const SDL_Surface *image)
+struct texmgr *tm_request_texture(const SDL_Surface *image)
 {
 	extern GLuint tm_load_texture(SDL_Surface*);
-	texm.w = 1 << (int)ceil(log2(image->w));
-	texm.h = 1 << (int)ceil(log2(image->h));
-	SDL_Surface *tile = SDL_CreateRGBSurface(0, texm.w, texm.h, 32,
+	struct texmgr *texm = calloc(1, sizeof(*texm));
+	texm->w = 1 << (int)ceil(log2(image->w));
+	texm->h = 1 << (int)ceil(log2(image->h));
+	SDL_Surface *tile = SDL_CreateRGBSurface(0, texm->w, texm->h, 32,
 			RMASK, GMASK, BMASK, AMASK);
 	SDL_Rect rect = {
 		.x = 0,
@@ -21,10 +20,11 @@ void tm_request_texture(const SDL_Surface *image)
 		SDL_LockSurface(tile);
 	SDL_BlitSurface((SDL_Surface*)image, &rect,
 			tile, NULL);
-	texm.texno = tm_load_texture(tile);
+	texm->texno = tm_load_texture(tile);
 	if (SDL_MUSTLOCK(tile))
 		SDL_UnlockSurface(tile);
 	SDL_FreeSurface(tile);
+	return texm;
 }
 
 GLuint tm_load_texture(SDL_Surface *image)

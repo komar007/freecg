@@ -497,6 +497,8 @@ int cgl_read_##what(struct cgl *cgl, struct tile **out_tiles,               \
 	*ntiles = howmany * cgl->n##obj##s;                                 \
 	cgl->obj##s = calloc(num, sizeof(*cgl->obj##s));                    \
 	struct tile *tiles = calloc(howmany * num, sizeof(*tiles));         \
+	for (size_t i = 0; i < howmany * num; ++i)                          \
+		tiles[i].z = DYN_TILES_Z;                                             \
 	*out_tiles = tiles;                                                 \
 	for (size_t i = 0; i < num; ++i) {
 
@@ -848,6 +850,7 @@ int cgl_read_one_onew(struct gate *gate, FILE *fp)
 	arrow_dir = (arrow_dir + 4) % 4;
 	gate->arrow->tex_y = ARROW_TEX_Y;
 	gate->arrow->tex_x = ARROW_SIDE * arrow_dir;
+	gate->arrow->z = DYN_TILES_OVERLAY_Z;
 	return 0;
 }
 
@@ -873,6 +876,7 @@ void set_light_tile(struct tile *light, int num, int x, int y)
 	light->tex_x = LIGHTS_TEX_X + num * 8;
 	light->tex_y = LIGHTS_TEX_Y;
 	light->type = Transparent;
+	light->z = DYN_TILES_OVERLAY_Z;
 }
 int cgl_read_one_barr(struct lgate *lgate, FILE *fp)
 {

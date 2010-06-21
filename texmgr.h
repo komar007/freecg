@@ -6,32 +6,35 @@
 #include <SDL/SDL_opengl.h>
 
 struct texmgr {
-	int w, h;
+	double w, h;
 	GLuint texno;
 };
-struct texmgr texm;
 
-inline void tm_coord_tl(const struct tile *tile)
+inline void tm_coord_tl(struct texmgr *tm, const struct tile *tile)
 {
-	glTexCoord2f((double)tile->tex_x / texm.w,
-			(double)tile->tex_y / texm.h);
+	glTexCoord2f((double)tile->tex_x / tm->w,
+			(double)tile->tex_y / tm->h);
 }
-inline void tm_coord_bl(const struct tile *tile)
+inline void tm_coord_bl(struct texmgr *tm, const struct tile *tile)
 {
-	glTexCoord2f((double)tile->tex_x / texm.w,
-			(double)(tile->tex_y + tile->h) / texm.h);
+	glTexCoord2f((double)tile->tex_x / tm->w,
+			(double)(tile->tex_y + tile->h) / tm->h);
 }
-inline void tm_coord_br(const struct tile *tile)
+inline void tm_coord_br(struct texmgr *tm, const struct tile *tile)
 {
-	glTexCoord2f((double)(tile->tex_x + tile->w) / texm.w,
-			(double)(tile->tex_y + tile->h) / texm.h);
+	glTexCoord2f((double)(tile->tex_x + tile->w) / tm->w,
+			(double)(tile->tex_y + tile->h) / tm->h);
 }
-inline void tm_coord_tr(const struct tile *tile)
+inline void tm_coord_tr(struct texmgr *tm, const struct tile *tile)
 {
-	glTexCoord2f((double)(tile->tex_x + tile->w) / texm.w,
-			(double)tile->tex_y / texm.h);
+	glTexCoord2f((double)(tile->tex_x + tile->w) / tm->w,
+			(double)tile->tex_y / tm->h);
+}
+inline void tm_bind_texture(struct texmgr *tm)
+{
+	glBindTexture(GL_TEXTURE_2D, tm->texno);
 }
 
-void tm_request_texture(const SDL_Surface*);
+struct texmgr *tm_request_texture(const SDL_Surface*);
 
 #endif

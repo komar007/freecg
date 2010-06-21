@@ -32,6 +32,8 @@ enum cgl_sizes {
 	LPTS_NUM_SHORTS = 6,
 	LPTS_NUM_STUFF = 10
 };
+#define DYN_TILES_OVERLAY_Z 0.2
+#define DYN_TILES_Z 0.1
 enum error_codes {
 	EBADHDR = 1,
 	EBADSHDR,
@@ -54,6 +56,7 @@ enum error_codes {
 /* basic tile, max. 8x8 units = 32x32 px */
 struct tile {
 	short x, y;	/* tile's origin */
+	double z;
 	unsigned short w, h;
 	short tex_x, tex_y;
 	enum {

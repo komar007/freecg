@@ -14,21 +14,6 @@
 #define SCALE_ASTEP 0.01
 
 int mouse, running;
-double scale = 1;
-double nextscale = 1;
-
-void scale_viewport(double nscale)
-{
-	double offs_x, offs_y;
-	int x, y;
-	SDL_GetMouseState(&x, &y);
-	offs_x = (nscale - scale) / (scale*nscale) * x;
-	offs_y = (nscale - scale) / (scale*nscale) * y;
-	scale = nscale;
-	gl_change_viewport(gl.viewport.x + offs_x, gl.viewport.y + offs_y,
-			SCREEN_W/scale,
-			SCREEN_H/scale);
-}
 
 void process_event(SDL_Event *e)
 {
@@ -38,9 +23,9 @@ void process_event(SDL_Event *e)
 		break;
 	case SDL_MOUSEMOTION:
 		if (mouse) {
-			gl_change_viewport(gl.viewport.x - e->motion.xrel/scale,
-				gl.viewport.y - e->motion.yrel/scale,
-				gl.viewport.w, gl.viewport.h);
+//			gl_change_viewport(gl.viewport.x - e->motion.xrel/scale,
+//				gl.viewport.y - e->motion.yrel/scale,
+//				gl.viewport.w, gl.viewport.h);
 		} else {
 			//gl.cg->ship->x += e->motion.xrel/scale;
 			//gl.cg->ship->y += e->motion.yrel/scale;
@@ -52,14 +37,16 @@ void process_event(SDL_Event *e)
 			mouse = 0;
 			break;
 		case 4:
-			nextscale += SCALE_STEP;
-			if (nextscale > 10)
-				nextscale = 10;
+			gl.cam.scale += 0.2;
+//			nextscale += SCALE_STEP;
+//			if (nextscale > 10)
+//				nextscale = 10;
 			break;
 		case 5:
-			nextscale -= SCALE_STEP;
-			if (nextscale < 0.4)
-				nextscale = 0.4;
+			gl.cam.scale -= 0.2;
+//			nextscale -= SCALE_STEP;
+//			if (nextscale < 0.4)
+//				nextscale = 0.4;
 			break;
 		}
 		break;
@@ -144,9 +131,9 @@ int main(int argc, char *argv[])
 		abort();
 	}
 	screen = SDL_SetVideoMode(SCREEN_W, SCREEN_H, 0, MODE);
-	gl_change_viewport(0, 0, screen->w/scale, screen->h/scale);
-	tm_request_texture(gfx);
-	gl_init(cg);
+	gl_resize_viewport(screen->w, screen->h);
+	struct texmgr *ttm = tm_request_texture(gfx);
+	gl_init(cg, ttm);
 	int t = SDL_GetTicks(),
 	    nt = t,
 	    time = t,
@@ -157,21 +144,9 @@ int main(int argc, char *argv[])
 	while (running) {
 		while (SDL_PollEvent(&e))
 			process_event(&e);
-		if (nextscale < scale) {
-			if (scale - SCALE_ASTEP < nextscale)
-				scale_viewport(nextscale);
-			else
-				scale_viewport(scale - SCALE_ASTEP);
-		} else if (nextscale > scale) {
-			if (scale + SCALE_ASTEP > nextscale)
-				scale_viewport(nextscale);
-			else
-				scale_viewport(scale + SCALE_ASTEP);
-		}
 		time = SDL_GetTicks();
 		nt = time - t;
 		cg_step(cg, time / 1000.0);
-		gl_change_viewport(cg->ship->x - 512, cg->ship->y - 384, screen->w/scale, screen->h/scale);
 		if (nt > 100) {
 			//printf("%d frames in %d ms - %.1f fps\n",
 			//		gl.frame - fr, nt, (float)(gl.frame - fr) / nt * 1000);
@@ -201,7 +176,9 @@ int main(int argc, char *argv[])
 			t += nt;
 			fr = gl.frame;
 		}
-		gl_draw_scene();
+		gl.cam.x = cg->ship->x;
+		gl.cam.y = cg->ship->y;
+		gl_update_window();
 	}
 	free_cgl(cgl);
 	return 0;
