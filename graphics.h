@@ -17,6 +17,7 @@ struct glengine {
 	double win_w, win_h;
 	struct cg *cg;
 	unsigned int frame;
+	GLuint curtex;
 };
 extern struct glengine gl;
 
@@ -42,6 +43,7 @@ struct osd_element {
 	int texrel;
 	int tex_x, tex_y;
 	int tex_w, tex_h;
+	struct texmgr *tm;
 };
 
 #define BLINK_SPEED 1.8

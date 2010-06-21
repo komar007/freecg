@@ -39,6 +39,13 @@ void gl_look_at(double x, double y, double scale)
 	glTranslated(-gl.viewport.x, -gl.viewport.y, 0);
 }
 
+inline void gl_bind_texture(struct texmgr *tm)
+{
+	if (gl.curtex != tm->texno) {
+		glBindTexture(GL_TEXTURE_2D, tm->texno);
+		gl.curtex = tm->texno;
+	}
+}
 void gl_draw_scene()
 {
 	extern void fix_lframes(struct cgl*),
@@ -130,35 +137,36 @@ void gl_dispatch_drawing(const struct tile *tile)
 	}
 }
 
-struct osd_element elems[] = {
-        /*    x    y     w    h     z      a  tr   tx    ty    tw   th */
-/*0*/	{-1,  0, -80,    0,  80,    0,   0.6, -1,   0,  179,   1,   1}, /* gray plane */
-/*1*/	{0,  40,   8,   64,  64,  0.1,   0.8, -1,   0,  400,  64,  64}, /* cross*/
-/*2*/	{1,  31,  16,    2,  32,  0.2,   0.8, -1, 384,  366,   2,  32}, /* hbar */
-/*3*/	{1,  16,  31,   32,   2,  0.2,   0.8, -1, 384,  398,  32,   2}, /* vbar */
-/*4*/	{0,  16,  69,   16,   3,  0.1,   0.8, -1, 388,  393,  16,   3}, /* red fuelbar */
-/*5*/	{4,   0,  -4,    0,   0,  0.1,   0.8,  4,   0,    0,   0,   0},
-/*6*/	{5,   0,  -4,    0,   0,  0.1,   0.8,  4,   0,    0,   0,   0},
-/*7*/	{6,   0,  -4,    0,   0,  0.1,   0.8,  4,   0,    0,   0,   0},
-/*8*/	{7,   0,  -4,    0,   0,  0.1,   0.8, -1, 388,  390,  16,   3}, /* yellow fb */
-/*9*/	{8,   0,  -4,    0,   0,  0.1,   0.8,  8,   0,    0,   0,   0},
-/*10*/	{9,   0,  -4,    0,   0,  0.1,   0.8,  8,   0,    0,   0,   0},
-/*11*/	{10,  0,  -4,    0,   0,  0.1,   0.8,  8,   0,    0,   0,   0},
-/*12*/	{11,  0,  -4,    0,   0,  0.1,   0.8,  8,   0,    0,   0,   0},
-/*13*/	{12,  0,  -4,    0,   0,  0.1,   0.8,  8,   0,    0,   0,   0},
-/*14*/	{13,  0,  -4,    0,   0,  0.1,   0.8, -1, 388,  387,  16,   3}, /* green fb */
-/*15*/	{14,  0,  -4,    0,   0,  0.1,   0.8, 14,   0,    0,   0,   0},
-/*16*/	{15,  0,  -4,    0,   0,  0.1,   0.8, 14,   0,    0,   0,   0},
-/*17*/	{16,  0,  -4,    0,   0,  0.1,   0.8, 14,   0,    0,   0,   0},
-/*18*/	{17,  0,  -4,    0,   0,  0.1,   0.8, 14,   0,    0,   0,   0},
-/*19*/	{18,  0,  -4,    0,   0,  0.1,   0.8, 14,   0,    0,   0,   0},
-/*20*/	{0, 112,   6,   16,  16,  0.1,   0.6, -1, 256,  360,  16,  16}, /* keys */
-/*21*/	{20,  0,  17,    0,   0,  0.1,   0.8, 20,   0,   16,   0,   0},
-/*22*/	{21,  0,  17,    0,   0,  0.1,   0.8, 21,   0,   16,   0,   0},
-/*23*/	{22,  0,  17,    0,   0,  0.1,   0.8, 22,   0,   16,   0,   0},
-};
 void gl_draw_osd()
 {
+struct osd_element elems[] = {
+        /*    x    y     w    h     z      a   tr    tx    ty    tw   th */
+/*0*/	{-1,  0, -24,    0,  24,    0,   0.6,  -1,    0,  179,   1,   1, gl.ttm}, /* gray plane 1 */
+/*1*/	{-1,  0, -80,  142,  56,    0,   0.6,  -1,    0,  179,   1,   1, gl.ttm}, /* gray plane 2 */
+/*2*/	{1,  40,   8,   64,  64,  0.1,   0.8,  -1,    0,  400,  64,  64, gl.ttm}, /* cross*/
+/*3*/	{2,  31,  16,    2,  32,  0.2,   0.8,  -1,  384,  366,   2,  32, gl.ttm}, /* hbar */
+/*4*/	{2,  16,  31,   32,   2,  0.2,   0.8,  -1,  384,  398,  32,   2, gl.ttm}, /* vbar */
+/*5*/	{1,  16,  69,   16,   3,  0.1,   0.8,  -1,  388,  393,  16,   3, gl.ttm}, /* red fuelbar */
+/*6*/	{5,   0,  -4,    0,   0,  0.1,   0.8,   5,    0,    0,   0,   0, gl.ttm},
+/*7*/	{6,   0,  -4,    0,   0,  0.1,   0.8,   5,    0,    0,   0,   0, gl.ttm},
+/*8*/	{7,   0,  -4,    0,   0,  0.1,   0.8,   5,    0,    0,   0,   0, gl.ttm},
+/*9*/	{8,   0,  -4,    0,   0,  0.1,   0.8,  -1,  388,  390,  16,   3, gl.ttm}, /* yellow fb */
+/*10*/	{9,   0,  -4,    0,   0,  0.1,   0.8,   9,    0,    0,   0,   0, gl.ttm},
+/*11*/	{10,  0,  -4,    0,   0,  0.1,   0.8,   9,    0,    0,   0,   0, gl.ttm},
+/*12*/	{11,  0,  -4,    0,   0,  0.1,   0.8,   9,    0,    0,   0,   0, gl.ttm},
+/*13*/	{12,  0,  -4,    0,   0,  0.1,   0.8,   9,    0,    0,   0,   0, gl.ttm},
+/*14*/	{13,  0,  -4,    0,   0,  0.1,   0.8,   9,    0,    0,   0,   0, gl.ttm},
+/*15*/	{14,  0,  -4,    0,   0,  0.1,   0.8,  -1,  388,  387,  16,   3, gl.ttm}, /* green fb */
+/*16*/	{15,  0,  -4,    0,   0,  0.1,   0.8,  15,    0,    0,   0,   0, gl.ttm},
+/*17*/	{16,  0,  -4,    0,   0,  0.1,   0.8,  15,    0,    0,   0,   0, gl.ttm},
+/*18*/	{17,  0,  -4,    0,   0,  0.1,   0.8,  15,    0,    0,   0,   0, gl.ttm},
+/*19*/	{18,  0,  -4,    0,   0,  0.1,   0.8,  15,    0,    0,   0,   0, gl.ttm},
+/*20*/	{19,  0,  -4,    0,   0,  0.1,   0.8,  15,    0,    0,   0,   0, gl.ttm},
+/*21*/	{1, 112,   6,   16,  16,  0.1,   0.6,  -1,  256,  360,  16,  16, gl.ttm}, /* keys */
+/*22*/	{21,  0,  17,    0,   0,  0.1,   0.8,  21,    0,   16,   0,   0, gl.ttm},
+/*23*/	{22,  0,  17,    0,   0,  0.1,   0.8,  22,    0,   16,   0,   0, gl.ttm},
+/*24*/	{23,  0,  17,    0,   0,  0.1,   0.8,  23,    0,   16,   0,   0, gl.ttm},
+};
 	/* convert relative coords to absolute */
 	struct osd_element e[ARRSZ(elems)];
 	memcpy(e, elems, sizeof(elems));
@@ -183,32 +191,35 @@ void gl_draw_osd()
 				e[i].tex_h + e[e[i].texrel].tex_h;
 		}
 	}
-	struct osd_element *bars  = e+2,
-			   *fbars = e+4,
-			   *keys  = e+20;
+	struct osd_element *bars  = e+3,
+			   *fbars = e+5,
+			   *keys  = e+21;
 	bars[0].x += fmin(32, fmax(-32, gl.cg->ship->vx/3));
 	bars[1].y += fmin(32, fmax(-32, gl.cg->ship->vy/3));
 	for (size_t i = (size_t)ceil(gl.cg->ship->fuel); i < 16; ++i)
-		fbars[i].a = 0;
-	for (size_t i = 0; i < 4; ++i)
+		fbars[i].a = 0.1;
+	for (size_t i = 0; i < 4; ++i) {
 		if (!gl.cg->ship->keys[i])
-			keys[i].a = 0;
+			keys[i].a = 0.2;
+		else
+			keys[i].tex_x += 16 * ((int)(gl.cg->time*KEY_ANIM_SPEED + i) % 8);
+	}
 
 	glTranslated(0, 0, 3);
-	tm_bind_texture(gl.ttm);
+	gl_bind_texture(gl.ttm);
 	glBegin(GL_QUADS);
 	for (size_t i = 0; i < ARRSZ(e); ++i) {
 		glColor4f(1, 1, 1, e[i].a);
-		tm_coord_tl(gl.ttm, e[i].tex_x, e[i].tex_y,
+		tm_coord_tl(e[i].tm, e[i].tex_x, e[i].tex_y,
 				e[i].tex_w, e[i].tex_h);
 		glVertex3d(e[i].x, e[i].y, e[i].z);
-		tm_coord_bl(gl.ttm, e[i].tex_x, e[i].tex_y,
+		tm_coord_bl(e[i].tm, e[i].tex_x, e[i].tex_y,
 				e[i].tex_w, e[i].tex_h);
 		glVertex3d(e[i].x, e[i].y + e[i].h, e[i].z);
-		tm_coord_br(gl.ttm, e[i].tex_x, e[i].tex_y,
+		tm_coord_br(e[i].tm, e[i].tex_x, e[i].tex_y,
 				e[i].tex_w, e[i].tex_h);
 		glVertex3d(e[i].x + e[i].w, e[i].y + e[i].h, e[i].z);
-		tm_coord_tr(gl.ttm, e[i].tex_x, e[i].tex_y,
+		tm_coord_tr(e[i].tm, e[i].tex_x, e[i].tex_y,
 				e[i].tex_w, e[i].tex_h);
 		glVertex3d(e[i].x + e[i].w, e[i].y, e[i].z);
 	}
