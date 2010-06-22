@@ -11,7 +11,7 @@ struct cg_osd {
 			   *fuel,
 			   *keys,
 			   *freigh,
-			   *sfreigh;
+			   *hbfreigh;
 };
 
 void osd_init();

@@ -32,9 +32,9 @@ void osd_init()
 		osd.keys[i] = _o(0, 17*i,  16, 16,  0.2,  256, 360+16*i,  16, 16, 0, gl.ttm);
 	/* panel */
 	osd.els[1] = _o(142,-32,     0,  32,   0.8,    0,  90,  1,  1, 0, gl.ttm);
-	struct osd_element *freigh_cont, *freigh_img, *sfreigh_cont, *sfreigh_img;
+	struct osd_element *freigh_cont, *freigh_img, *hbfreigh_cont, *hbfreigh_img;
 	osdlib_make_children(&osd.els[1], 4, 1, &freigh_cont, &freigh_img,
-			&sfreigh_cont, &sfreigh_img);
+			&hbfreigh_cont, &hbfreigh_img);
 
 	*freigh_img   = _o(4,  10, 36, 18, 0.8, 384, 400, 48, 24, 0, gl.ttm);
 	size_t num_freigh = gl.cg->level->num_all_freigh;
@@ -45,13 +45,11 @@ void osd_init()
 	osd.freigh = freigh_cont->ch;
 
 	fcont_pos += fcont_len + 12;
-	*sfreigh_img  = _o(fcont_pos, 10, 36, 18, 0.8, 432, 400, 48, 24, 0, gl.ttm);
-	num_freigh = gl.cg->level->num_all_freigh; /**/
-	fcont_len = num_freigh * 19 + 8 - 3;
+	*hbfreigh_img  = _o(fcont_pos, 10, 36, 18, 0.8, 480, 400, 48, 24, 0, gl.ttm);
 	fcont_pos += 44;
-	*sfreigh_cont = _o(fcont_pos, 16, fcont_len, 12, 0.2, 4, 302, 1, 1, 0, gl.ttm);
-	/*osdlib_make_children(sfreigh_cont, num_freigh, 0);
-	osd.sfreigh = sfreigh_cont->ch;*/
+	*hbfreigh_cont = _o(fcont_pos, 16, fcont_len, 12, 0.2, 4, 302, 1, 1, 0, gl.ttm);
+	osdlib_make_children(hbfreigh_cont, num_freigh, 0);
+	osd.hbfreigh = hbfreigh_cont->ch;
 }
 void osd_step()
 {
@@ -82,8 +80,13 @@ void osd_step()
 			}
 		}
 	}
-	for (size_t i = k; i < nfreigh; ++i)
+	for (size_t i = k; i < gl.cg->level->num_all_freigh; ++i)
 		osd.freigh[i].transparent = 1;
+
+	for (size_t i = 0; i < gl.cg->level->hb->num_cargo; ++i)
+		osd.hbfreigh[i] = _o(4 + i*19, -18, 16, 16, 0.9, 80+gl.cg->level->hb->c.freigh[i]*16, 392, 16, 16, 0, gl.ttm);
+	for (size_t i = gl.cg->level->hb->num_cargo; i < gl.cg->level->num_all_freigh; ++i)
+		osd.hbfreigh[i].transparent = 1;
 }
 void osd_draw()
 {
