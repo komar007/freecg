@@ -145,8 +145,8 @@ int main(int argc, char *argv[])
 		nt = time - t;
 		cg_step(cg, time / 1000.0);
 		if (nt > 100) {
-			//printf("%d frames in %d ms - %.1f fps\n",
-			//		gl.frame - fr, nt, (float)(gl.frame - fr) / nt * 1000);
+			printf("%d frames in %d ms - %.1f fps\n",
+					gl.frame - fr, nt, (float)(gl.frame - fr) / nt * 1000);
 			printf("\rF %.1lf k[", cg->ship->fuel);
 			for (size_t i = 0; i < 4; ++i)
 				printf("%c", cg->ship->keys[i] ? i + '0' : ' ');

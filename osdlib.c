@@ -1,48 +1,50 @@
 #include "osdlib.h"
 #include "graphics.h"
 #include "texmgr.h"
+#include <stdarg.h>
 
-void osdlib_draw(const struct osd_element *e, size_t size)
+void osdlib_make_children(struct osd_element *e, size_t num, int init, ...)
 {
-	/* convert relative coords to absolute */
-	struct osd_element *el;
-	gl_bind_texture(gl.ttm);
-	glBegin(GL_QUADS);
-	el = calloc(size, sizeof(*el));
-	memcpy(el, e, size * sizeof(*el));
-	for (size_t i = 0; i < size; ++i) {
-		if (el[i].rel == -1) {
-			el[i].x = el[i].x >= 0 ? el[i].x : el[i].x + gl.win_w;
-			el[i].y = el[i].y >= 0 ? el[i].y : el[i].y + gl.win_h;
-			el[i].w = el[i].w >  0 ? el[i].w : el[i].w + gl.win_w;
-			el[i].h = el[i].h >  0 ? el[i].h : el[i].h + gl.win_h;
-		} else {
-			el[i].x = el[i].x + el[el[i].rel].x;
-			el[i].y = el[i].y + el[el[i].rel].y;
-			el[i].w = el[i].w >  0 ? el[i].w : el[i].w + el[el[i].rel].w;
-			el[i].h = el[i].h >  0 ? el[i].h : el[i].h + el[el[i].rel].h;
-		}
-		if(el[i].texrel != -1) {
-			el[i].tex_x = el[i].tex_x + el[el[i].texrel].tex_x;
-			el[i].tex_y = el[i].tex_y + el[el[i].texrel].tex_y;
-			el[i].tex_w = el[i].tex_w >  0 ? el[i].tex_w :
-				el[i].tex_w + el[el[i].texrel].tex_w;
-			el[i].tex_h = el[i].tex_h >  0 ? el[i].tex_h :
-				el[i].tex_h + el[el[i].texrel].tex_h;
-		}
-		glColor4f(1, 1, 1, el[i].a);
-		tm_coord_tl(el[i].t, el[i].tex_x, el[i].tex_y,
-				el[i].tex_w, el[i].tex_h);
-		glVertex3d(el[i].x, el[i].y, el[i].z);
-		tm_coord_bl(el[i].t, el[i].tex_x, el[i].tex_y,
-				el[i].tex_w, el[i].tex_h);
-		glVertex3d(el[i].x, el[i].y + el[i].h, el[i].z);
-		tm_coord_br(el[i].t, el[i].tex_x, el[i].tex_y,
-				el[i].tex_w, el[i].tex_h);
-		glVertex3d(el[i].x + el[i].w, el[i].y + el[i].h, el[i].z);
-		tm_coord_tr(el[i].t, el[i].tex_x, el[i].tex_y,
-				el[i].tex_w, el[i].tex_h);
-		glVertex3d(el[i].x + el[i].w, el[i].y, el[i].z);
+	e->ch = calloc(num, sizeof(*e->ch));
+	e->nch = num;
+	for (size_t i = 0; i < num; ++i)
+		e->ch[i].transparent = 1;
+	if (!init)
+		return;
+	va_list ptrs;
+	va_start(ptrs, init);
+	for (size_t i = 0; i < num; ++i)
+		*va_arg(ptrs, struct osd_element**) = &e->ch[i];
+	va_end(ptrs);
+}
+
+void osdlib_draw(const struct osd_element *e, double px, double py,
+		double pw, double ph, double pz)
+{
+	double x, y, z, w, h;
+	x = e->x >= 0 ? px + e->x : px + pw + e->x;
+	y = e->y >= 0 ? py + e->y : py + ph + e->y;
+	w = e->w > 0 ? e->w : pw + e->w;
+	h = e->h > 0 ? e->h : ph + e->h;
+	z = pz + 0.01;
+	if (!e->transparent) {
+		gl_bind_texture(e->t);
+		glBegin(GL_QUADS);
+		glColor4f(1, 1, 1, e->a);
+		tm_coord_tl(e->t, e->tex_x, e->tex_y,
+				e->tex_w, e->tex_h);
+		glVertex3d(x, y, z);
+		tm_coord_bl(e->t, e->tex_x, e->tex_y,
+				e->tex_w, e->tex_h);
+		glVertex3d(x, y + h, z);
+		tm_coord_br(e->t, e->tex_x, e->tex_y,
+				e->tex_w, e->tex_h);
+		glVertex3d(x + w, y + h, z);
+		tm_coord_tr(e->t, e->tex_x, e->tex_y,
+				e->tex_w, e->tex_h);
+		glVertex3d(x + w, y, z);
+		glEnd();
 	}
-	glEnd();
+	for (size_t i = 0; i < e->nch; ++i)
+		osdlib_draw(&e->ch[i], x, y, w, h, z);
 }

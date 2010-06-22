@@ -45,5 +45,7 @@ void cg_step(struct cg*, double);
 void cg_ship_set_engine(struct ship*, int);
 void cg_ship_rotate(struct ship*, double);
 
+size_t cg_freigh_remaining(struct cg*);
+
 
 #endif

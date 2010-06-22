@@ -552,3 +552,13 @@ void cg_step_magnet(struct magnet *magnet, struct ship *ship, double dt)
 	magnet->modifier = 0;
 }
 /* ==================== /Object simulators ==================== */
+
+size_t cg_freigh_remaining(struct cg *cg)
+{
+	size_t nfreigh = 0;
+	for (size_t i = 0; i < cg->level->nairports; ++i) {
+		if (cg->level->airports[i].type == Freigh)
+			nfreigh += cg->level->airports[i].num_cargo;
+	}
+	return nfreigh;
+}
