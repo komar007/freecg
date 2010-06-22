@@ -2,6 +2,7 @@
 #include "graphics.h"
 #include "texmgr.h"
 #include <stdarg.h>
+#include <float.h>
 
 void osdlib_make_children(struct osd_element *e, size_t num, int init, ...)
 {
@@ -18,14 +19,29 @@ void osdlib_make_children(struct osd_element *e, size_t num, int init, ...)
 	va_end(ptrs);
 }
 
-void osdlib_draw(const struct osd_element *e, double px, double py,
+/* recursively count position relative to sibling */
+void count_rel(struct osd_element *e)
+{
+	if (e->rx != DBL_MAX)
+		return;
+	if (e->rel) {
+		count_rel(e->rel);
+		e->rx = e->x >= 0 ? e->x + e->rel->rx : e->rel->rx + e->rel->w - e->x;
+		e->ry = e->y >= 0 ? e->y + e->rel->ry : e->rel->ry + e->rel->h - e->y;
+	} else {
+		e->rx = e->x;
+		e->ry = e->y;
+	}
+}
+void osdlib_draw(struct osd_element *e, double px, double py,
 		double pw, double ph, double pz)
 {
 	double x, y, z, w, h;
-	x = e->x >= 0 ? px + e->x : px + pw + e->x;
-	y = e->y >= 0 ? py + e->y : py + ph + e->y;
-	w = e->w > 0 ? e->w : pw + e->w;
-	h = e->h > 0 ? e->h : ph + e->h;
+	w = e->w;
+	h = e->h;
+	count_rel(e);
+	x = e->rx >= 0 ? px + e->rx : px + pw + e->rx;
+	y = e->ry >= 0 ? py + e->ry : py + ph + e->ry;
 	z = pz + 0.01;
 	if (!e->transparent) {
 		gl_bind_texture(e->t);
@@ -45,6 +61,10 @@ void osdlib_draw(const struct osd_element *e, double px, double py,
 		glVertex3d(x + w, y, z);
 		glEnd();
 	}
+	/* clean memoized vaules for children */
+	for (size_t i = 0; i < e->nch; ++i)
+		e->ch[i].rx = e->ch[i].ry = DBL_MAX;
+	/* recurse into the children */
 	for (size_t i = 0; i < e->nch; ++i)
 		osdlib_draw(&e->ch[i], x, y, w, h, z);
 }
