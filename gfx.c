@@ -51,7 +51,7 @@ SDL_Surface *read_gfx(const char *path)
 	SDL_BlitSurface(bmp, NULL, gfx, NULL);
 	/* Make sure all next blits copy all channels, including alpha */
 	SDL_SetAlpha(gfx, 0, 255);
-	fix_transparency(gfx, 0, 400, 64, 64);
+	fix_transparency(gfx, 0, 0, 588, 464);
 	SDL_FreeSurface(bmp);
 cleanup:
 	fclose(fp);
