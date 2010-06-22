@@ -37,8 +37,8 @@ void osdlib_draw(struct osd_element *e, double px, double py,
 		double pw, double ph, double pz)
 {
 	double x, y, z, w, h;
-	w = e->w;
-	h = e->h;
+	w = e->w > 0 ? e->w : pw + e->w;
+	h = e->h > 0 ? e->h : ph + e->h;
 	count_rel(e);
 	x = e->rx >= 0 ? px + e->rx : px + pw + e->rx;
 	y = e->ry >= 0 ? py + e->ry : py + ph + e->ry;
