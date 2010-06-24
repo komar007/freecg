@@ -1004,6 +1004,13 @@ int cgl_read_one_lpts(struct airport *airport, FILE *fp)
 			airport->cargo[i]->tex_y = KEY_TEX_Y +
 				airport->c.key*STUFF_SIZE;
 			break;
+		case Homebase:
+			/* This should never happen - homebase has no cargo */
+			assert(airport->type != Homebase);
+			break;
+		case Fuel:
+			/* Do nothing - no special treatment of fuel */
+			break;
 		}
 	}
 	err = read_short((int16_t*)buf2, 4, fp);

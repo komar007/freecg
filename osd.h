@@ -27,11 +27,8 @@ struct cg_osd {
 			  freigh_ship,
 			  freigh_hb;
 	struct osd_element *rect,
-			   *panel;
-
-
-	struct osd_element *freigh,
-			   *hbfreigh;
+			   *panel,
+			   *pause;
 };
 
 void osd_init();

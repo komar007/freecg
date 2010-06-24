@@ -7,24 +7,24 @@
 #include <assert.h>
 
 #define ARRSZ(a) (sizeof(a)/sizeof(*(a)))
-inline int max(int a, int b)
+static inline int max(int a, int b)
 {
 	return a > b ? a : b;
 }
-inline int min(int a, int b)
+static inline int min(int a, int b)
 {
 	return a < b ? a : b;
 }
-inline int sgn(double a)
+static inline int sgn(double a)
 {
 	return a < 0 ? -1 : a == 0 ? 0 : 1;
 }
-inline int rand_range(int min_n, int max_n)
+static inline int rand_range(int min_n, int max_n)
 {
 	assert(min_n <= max_n);
 	return rand() % (max_n - min_n + 1) + min_n;
 }
-inline int rand_sign()
+static inline int rand_sign()
 {
 	return 2 * rand_range(0, 1) - 1;
 }

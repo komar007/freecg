@@ -56,7 +56,7 @@ void osd_freigh_init(struct osd_freigh *f, struct osd_element *container,
 void osd_init()
 {
 	osd.root = _o(0, 0, gl.win_w, gl.win_h, 1, 0, 0, 0, 0, 1, gl.ttm);
-	osdlib_make_children(&osd.root, 2, 1, &osd.rect, &osd.panel);
+	osdlib_make_children(&osd.root, 3, 1, &osd.rect, &osd.panel, &osd.pause);
 	/* left rect */
 	*osd.rect = _o(0,   -80,  144, 80,  0.8,  0, 90,  1, 1,  0, gl.ttm);
 	struct osd_element *fuel_cont, *cross, *key_cont;
@@ -73,6 +73,12 @@ void osd_init()
 	sfreigh->rel = lfreigh;
 	osd_freigh_init(&osd.freigh_hb, hbfreigh, -12, 0, 480, 400);
 	hbfreigh->rel = sfreigh;
+	int pause_x = gl.win_w/2 - 264/2,
+	    pause_y = gl.win_h/2 - 120/2;
+	*osd.pause = _o(pause_x,pause_y, 264, 120, 0.8, 0, 90, 1, 1, 0, gl.ttm);
+	struct osd_element *pause_img;
+	osdlib_make_children(osd.pause, 1, 1, &pause_img);
+	*pause_img = _o(48, 42, 168, 36, 0.55, 64, 408, 168, 36, 0, gl.ttm);
 }
 
 void osd_fuel_step(struct osd_fuel *f, double fuel)

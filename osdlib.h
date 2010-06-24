@@ -21,7 +21,7 @@ struct osd_element {
 void osdlib_draw(struct osd_element*, double, double, double, double, double);
 
 /* create absolutely positioned element (relatively to the parent) */
-inline struct osd_element _o(double x, double y, double w, double h,
+static inline struct osd_element _o(double x, double y, double w, double h,
 		double a, double tx, double ty, double tw, double th,
 		int tr, struct texmgr *t)
 {
@@ -37,7 +37,7 @@ inline struct osd_element _o(double x, double y, double w, double h,
 }
 
 /* create element relatively positioned to the sibling */
-inline struct osd_element _ro(struct osd_element *s, double x, double y,
+static inline struct osd_element _ro(struct osd_element *s, double x, double y,
 		double w, double h, double a, double tx, double ty,
 		double tw, double th, int tr, struct texmgr *t)
 {

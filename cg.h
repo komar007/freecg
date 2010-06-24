@@ -32,6 +32,7 @@ struct ship {
 	double fuel;
 	int has_turbo;
 	int dead;
+	int life;
 };
 struct cg {
 	struct cgl *level;

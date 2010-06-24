@@ -25,7 +25,7 @@ void gl_init(struct cg*, struct texmgr*);
 void gl_resize_viewport(double, double);
 void gl_update_window();
 
-inline void gl_bind_texture(struct texmgr *tm)
+static inline void gl_bind_texture(struct texmgr *tm)
 {
 	if (gl.curtex != tm->texno) {
 		glBindTexture(GL_TEXTURE_2D, tm->texno);

@@ -32,7 +32,7 @@ void cg_ship_set_engine(struct ship *ship, int eng)
 {
 	ship->engine = eng && ship->fuel > 0;
 }
-void cg_step_ship(struct ship* s, double time, double dt)
+void cg_step_ship(struct ship* s, double dt)
 {
 	double ax = 0, ay = 0;
 	if (!s->airport)
@@ -78,7 +78,7 @@ void cg_step_objects(struct cg *cg, double time, double dt)
 	            cg_step_bar(struct bar*, double, double),
 	            cg_step_gate(struct gate*, double),
 	            cg_step_lgate(struct lgate*, struct ship*, double),
-		    cg_step_airport(struct airport*, struct ship*, double, double),
+		    cg_step_airport(struct airport*, struct ship*, double),
 		    cg_step_fan(struct fan*, struct ship*, double),
 		    cg_step_magnet(struct magnet*, struct ship*, double);
 	for (size_t i = 0; i < cg->level->nairgens; ++i)
@@ -90,7 +90,7 @@ void cg_step_objects(struct cg *cg, double time, double dt)
 	for (size_t i = 0; i < cg->level->nlgates; ++i)
 		cg_step_lgate(&cg->level->lgates[i], cg->ship, dt);
 	for (size_t i = 0; i < cg->level->nairports; ++i)
-		cg_step_airport(&cg->level->airports[i], cg->ship, time, dt);
+		cg_step_airport(&cg->level->airports[i], cg->ship, time);
 	for (size_t i = 0; i < cg->level->nfans; ++i)
 		cg_step_fan(&cg->level->fans[i], cg->ship, dt);
 	for (size_t i = 0; i < cg->level->nmagnets; ++i)
@@ -220,7 +220,7 @@ void cg_step(struct cg *cg, double time)
 	cg_handle_collisions(cg);
 	cg_step_objects(cg, time, dt);
 	if (!cg->ship->dead)
-		cg_step_ship(cg->ship, time, dt);
+		cg_step_ship(cg->ship, dt);
 	if (cg->level->hb->num_cargo == cg->level->num_all_freigh)
 		cg->ship->dead = 1;
 	cg->time = time;
@@ -433,7 +433,7 @@ void cg_step_airgen(struct airgen *airgen, struct ship *ship, double dt)
 	airgen->active = 0;
 }
 
-void cg_step_airport(struct airport *airport, struct ship *ship, double time, double dt)
+void cg_step_airport(struct airport *airport, struct ship *ship, double time)
 {
 	extern void airport_schedule_transfer(struct airport*, double),
 	            airport_pop_cargo(struct airport*),
@@ -452,6 +452,8 @@ void cg_step_airport(struct airport *airport, struct ship *ship, double time, do
 				ship->has_turbo = 1; break;
 			case Cargo:
 				++ship->max_freigh; break;
+			case Life:
+				++ship->life; break;
 			}
 			airport_pop_cargo(airport);
 			break;
