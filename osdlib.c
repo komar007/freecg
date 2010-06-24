@@ -40,8 +40,8 @@ void osdlib_draw(struct osd_element *e, double px, double py,
 	w = e->w > 0 ? e->w : pw + e->w;
 	h = e->h > 0 ? e->h : ph + e->h;
 	count_rel(e);
-	x = e->rx >= 0 ? px + e->rx : px + pw + e->rx;
-	y = e->ry >= 0 ? py + e->ry : py + ph + e->ry;
+	x = e->rx >= 0 ? px + e->rx : px + pw + e->rx - w;
+	y = e->ry >= 0 ? py + e->ry : py + ph + e->ry - h;
 	z = pz + 0.01;
 	if (!e->transparent) {
 		gl_bind_texture(e->t);

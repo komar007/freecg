@@ -49,7 +49,7 @@ void osd_freigh_init(struct osd_freigh *f, struct osd_element *container,
 	*shelf = _o(shelf_pos, 6, -shelf_pos, 12,  0.2,  4, 302, 1, 1, 0, gl.ttm);
 	osdlib_make_children(shelf, f->max_freigh, 0);
 	f->freigh = shelf->ch;
-	f->freigh[0] = _o(4, -18,  16, 16,  0.8,  80, 392,  16, 16, 1, gl.ttm);
+	f->freigh[0] = _o(4, -2,  16, 16,  0.8,  80, 392,  16, 16, 1, gl.ttm);
 	for (size_t i = 1; i < f->max_freigh; ++i)
 		f->freigh[i] = _ro(&f->freigh[i-1], -3, 0,  16, 16,  0.8,  80, 392,  16, 16, 1, gl.ttm);
 }
@@ -58,14 +58,14 @@ void osd_init()
 	osd.root = _o(0, 0, gl.win_w, gl.win_h, 1, 0, 0, 0, 0, 1, gl.ttm);
 	osdlib_make_children(&osd.root, 3, 1, &osd.rect, &osd.panel, &osd.pause);
 	/* left rect */
-	*osd.rect = _o(0,   -80,  144, 80,  0.8,  0, 90,  1, 1,  0, gl.ttm);
+	*osd.rect = _o(0,  -.1,  144, 80,  0.8,  0, 90,  1, 1,  0, gl.ttm);
 	struct osd_element *fuel_cont, *cross, *key_cont;
 	osdlib_make_children(osd.rect, 3, 1, &fuel_cont, &cross, &key_cont);
-	osd_fuel_init(&osd.fuel, fuel_cont, 16, 8);
+	osd_fuel_init(&osd.fuel, fuel_cont, 12, 8);
 	osd_velocity_init(&osd.velocity, cross, 40, 8);
-	osd_keys_init(&osd.keys, key_cont, -32, 8);
+	osd_keys_init(&osd.keys, key_cont, -12, 8);
 	/* panel */
-	*osd.panel = _o(142, -32, -142, 32,  0.8,  0, 90,  1, 1,  0, gl.ttm);
+	*osd.panel = _o(142, -.1, -142, 32,  0.8,  0, 90,  1, 1,  0, gl.ttm);
 	struct osd_element *lfreigh, *sfreigh, *hbfreigh;
 	osdlib_make_children(osd.panel, 3, 1, &lfreigh, &sfreigh, &hbfreigh);
 	osd_freigh_init(&osd.freigh_level, lfreigh, 8, 8, 384, 400);
