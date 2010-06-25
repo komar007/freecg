@@ -34,13 +34,13 @@ struct glengine {
 	struct drect viewport;
 	struct camera cam;
 	double win_w, win_h;
-	struct cg *cg;
+	struct cgl *l;
 	unsigned int frame;
 	GLuint curtex;
 };
 extern struct glengine gl;
 
-void gl_init(struct cg*, struct texmgr*);
+void gl_init(struct cgl*, struct texmgr*);
 void gl_resize_viewport(double, double);
 void gl_update_window();
 

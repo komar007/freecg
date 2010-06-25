@@ -17,8 +17,8 @@
  * along with FreeCG. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "cg.h"
 #include "cgl.h"
+#include "cg.h"
 #include "mathgeom.h"
 #include <SDL/SDL_error.h>
 #include <stdio.h>

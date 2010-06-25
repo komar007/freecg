@@ -19,7 +19,6 @@
 
 #include "mathgeom.h"
 #include "gfx.h"
-#include "cgl.h"
 #include "cg.h"
 #include <math.h>
 

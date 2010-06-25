@@ -59,7 +59,7 @@ void osd_freigh_init(struct osd_freigh *f, struct osd_element *container,
 		double x, double y, int tex_x, int tex_y)
 {
 	f->container = container;
-	f->max_freigh = gl.cg->level->num_all_freigh;
+	f->max_freigh = gl.l->num_all_freigh;
 	int shelf_pos = 44;
 	struct osd_element *img, *shelf;
 	/* containter's width is updated in real-time, thus w = 0 */
@@ -120,7 +120,7 @@ void osd_keys_step(struct osd_keys *k, const int *keys)
 			k->keys[i].a = 0.2;
 			k->keys[i].tex_x = 256;
 		} else {
-			k->keys[i].tex_x = 256 + 16 * ((int)(gl.cg->time*KEY_ANIM_SPEED + i) % 8);
+			k->keys[i].tex_x = 256 + 16 * ((int)(gl.l->time*KEY_ANIM_SPEED + i) % 8);
 			k->keys[i].a = 0.8;
 		}
 	}
@@ -139,16 +139,16 @@ void osd_freigh_step(struct osd_freigh *f, const enum freigh *flist, size_t nfre
 }
 void osd_step()
 {
-	struct ship *ship = gl.cg->ship;
+	struct ship *ship = gl.l->ship;
 	osd_fuel_step(&osd.fuel, ship->fuel);
 	osd_velocity_step(&osd.velocity, ship->vx, ship->vy);
 	osd_keys_step(&osd.keys, ship->keys);
-	size_t nfreigh = cg_freigh_remaining(gl.cg);
+	size_t nfreigh = cg_freigh_remaining(gl.l);
 	enum freigh freigh[nfreigh];
 	size_t k = 0;
-	for (size_t i = 0; i < gl.cg->level->nairports; ++i) {
-		if (gl.cg->level->airports[i].type == Freigh) {
-			struct airport *a = &gl.cg->level->airports[i];
+	for (size_t i = 0; i < gl.l->nairports; ++i) {
+		if (gl.l->airports[i].type == Freigh) {
+			struct airport *a = &gl.l->airports[i];
 			for (size_t j = 0; j < a->num_cargo; ++j)
 				freigh[k++] = a->c.freigh[j];
 		}
@@ -156,7 +156,7 @@ void osd_step()
 	osd_freigh_step(&osd.freigh_level, freigh, nfreigh);
 	osd.freigh_ship.max_freigh = ship->max_freigh;
 	osd_freigh_step(&osd.freigh_ship, ship->freigh, ship->num_freigh);
-	struct airport *hb = gl.cg->level->hb;
+	struct airport *hb = gl.l->hb;
 	osd_freigh_step(&osd.freigh_hb, hb->c.freigh, hb->num_cargo);
 }
 void osd_draw()

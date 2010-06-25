@@ -20,7 +20,6 @@
 #ifndef TEXMGR_H
 #define TEXMGR_H
 
-#include "cgl.h"
 #include <SDL/SDL.h>
 #include <SDL/SDL_opengl.h>
 

@@ -23,28 +23,25 @@
 #include <math.h>
 #include <assert.h>
 
-void cg_init_ship(struct cg *cg, int x, int y, struct cgl *l)
+void cg_init_ship(struct cgl *l, int x, int y)
 {
-	cg->ship->engine = 0;
-	cg->ship->rot = 3/2.0 * M_PI;
-	cg->ship->x = x, cg->ship->y = y;
-	cg->ship->airport = l->hb;
-	cg->ship->fuel = MAX_FUEL;
-	cg->ship->has_turbo = 0;
-	cg->ship->max_freigh = 1;
-	cg->ship->freigh = calloc(cg->level->num_all_freigh,
-			sizeof(*cg->ship->freigh));
+	l->ship->engine = 0;
+	l->ship->rot = 3/2.0 * M_PI;
+	l->ship->x = x, l->ship->y = y;
+	l->ship->airport = l->hb;
+	l->ship->fuel = MAX_FUEL;
+	l->ship->has_turbo = 0;
+	l->ship->max_freigh = 1;
+	l->ship->freigh = calloc(l->num_all_freigh,
+			sizeof(*l->ship->freigh));
 }
-struct cg *cg_init(struct cgl *l)
+void cg_init(struct cgl *l)
 {
-	struct cg *cg = calloc(1, sizeof(*cg));
-	cg->level = l;
-	cg->time = 0.0;
-	cg->ship = calloc(1, sizeof(*cg->ship));
+	l->time = 0.0;
+	l->ship = calloc(1, sizeof(*l->ship));
 	int x = l->hb->base->x + (l->hb->base->w - SHIP_W) / 2,
 	    y = l->hb->base->y - 20;
-	cg_init_ship(cg, x, y, l);
-	return cg;
+	cg_init_ship(l, x, y);
 }
 
 void cg_ship_set_engine(struct ship *ship, int eng)
@@ -55,7 +52,7 @@ void cg_step_ship(struct ship* s, double dt)
 {
 	double ax = 0, ay = 0;
 	if (!s->airport)
-		cg_ship_rotate(s, s->rots*dt);
+		cg_ship_rotate(s, s->rot_speed*dt);
 	double drot = discrete_rot(s->rot)/24.0 * 2*M_PI;
 	if (s->engine) {
 		ax = cos(drot) * ENGINE_ACCEL;
@@ -91,7 +88,7 @@ void cg_ship_rotate(struct ship *s, double delta)
 }
 
 /* perform logic simulation of all objects */
-void cg_step_objects(struct cg *cg, double time, double dt)
+void cg_step_objects(struct cgl *l, double time, double dt)
 {
 	extern void cg_step_airgen(struct airgen*, struct ship*, double),
 	            cg_step_bar(struct bar*, double, double),
@@ -100,20 +97,20 @@ void cg_step_objects(struct cg *cg, double time, double dt)
 		    cg_step_airport(struct airport*, struct ship*, double),
 		    cg_step_fan(struct fan*, struct ship*, double),
 		    cg_step_magnet(struct magnet*, struct ship*, double);
-	for (size_t i = 0; i < cg->level->nairgens; ++i)
-		cg_step_airgen(&cg->level->airgens[i], cg->ship, dt);
-	for (size_t i = 0; i < cg->level->nbars; ++i)
-		cg_step_bar(&cg->level->bars[i], time, dt);
-	for (size_t i = 0; i < cg->level->ngates; ++i)
-		cg_step_gate(&cg->level->gates[i], dt);
-	for (size_t i = 0; i < cg->level->nlgates; ++i)
-		cg_step_lgate(&cg->level->lgates[i], cg->ship, dt);
-	for (size_t i = 0; i < cg->level->nairports; ++i)
-		cg_step_airport(&cg->level->airports[i], cg->ship, time);
-	for (size_t i = 0; i < cg->level->nfans; ++i)
-		cg_step_fan(&cg->level->fans[i], cg->ship, dt);
-	for (size_t i = 0; i < cg->level->nmagnets; ++i)
-		cg_step_magnet(&cg->level->magnets[i], cg->ship, dt);
+	for (size_t i = 0; i < l->nairgens; ++i)
+		cg_step_airgen(&l->airgens[i], l->ship, dt);
+	for (size_t i = 0; i < l->nbars; ++i)
+		cg_step_bar(&l->bars[i], time, dt);
+	for (size_t i = 0; i < l->ngates; ++i)
+		cg_step_gate(&l->gates[i], dt);
+	for (size_t i = 0; i < l->nlgates; ++i)
+		cg_step_lgate(&l->lgates[i], l->ship, dt);
+	for (size_t i = 0; i < l->nairports; ++i)
+		cg_step_airport(&l->airports[i], l->ship, time);
+	for (size_t i = 0; i < l->nfans; ++i)
+		cg_step_fan(&l->fans[i], l->ship, dt);
+	for (size_t i = 0; i < l->nmagnets; ++i)
+		cg_step_magnet(&l->magnets[i], l->ship, dt);
 }
 
 /* ==================== Collision detectors ==================== */
@@ -129,50 +126,50 @@ int cg_collision_rect_point(const struct tile *ship, const struct tile *tile)
 }
 /* check if tile t's bounding box collides with the ship within rectangle r,
  * knowing that r's origin in collision map is (img_x, img_y) */
-int cg_collision_rect(const struct cg *cg, const struct rect *r,
+int cg_collision_rect(const struct cgl *l, const struct rect *r,
 		int img_x, int img_y, __attribute__((unused)) const struct tile *t)
 {
 	for (unsigned j = 0; j < r->h; ++j)
 		for (unsigned i = 0; i < r->w; ++i)
-			if (cg->cmap[img_y + j][img_x + i])
+			if (l->cmap[img_y + j][img_x + i])
 				return 1;
 	return 0;
 }
 /* check if tile t collides with the ship within the rectangle r, knowing
  * that r's origin in collision map is (img_x, img_y) */
-int cg_collision_bitmap(const struct cg *cg, const struct rect *r,
+int cg_collision_bitmap(const struct cgl *l, const struct rect *r,
 	int img_x, int img_y, const struct tile *t)
 {
 	int tile_img_x = t->tex_x + (r->x - t->x),
 	    tile_img_y = t->tex_y + (r->y - t->y);
 	for (unsigned j = 0; j < r->h; ++j)
 		for (unsigned i = 0; i < r->w; ++i)
-			if (cg->cmap[img_y + j][img_x + i] &&
-			    cg->cmap[tile_img_y + j][tile_img_x + i])
+			if (l->cmap[img_y + j][img_x + i] &&
+			    l->cmap[tile_img_y + j][tile_img_x + i])
 				return 1;
 	return 0;
 }
 /* ==================== /Collision detectors ==================== */
 
-void cg_handle_collisions(struct cg *cg)
+void cg_handle_collisions(struct cgl *l)
 {
-	extern void cg_handle_collisions_block(struct cg*, block);
-	size_t x = max(0, cg->ship->x / BLOCK_SIZE),
-	       y = max(0, cg->ship->y / BLOCK_SIZE);
-	int end_x = min(cg->ship->x + SHIP_W,
-			cg->level->width * BLOCK_SIZE),
-	    end_y = min(cg->ship->y + SHIP_H,
-			cg->level->height * BLOCK_SIZE);
+	extern void cg_handle_collisions_block(struct cgl*, block);
+	size_t x = max(0, l->ship->x / BLOCK_SIZE),
+	       y = max(0, l->ship->y / BLOCK_SIZE);
+	int end_x = min(l->ship->x + SHIP_W,
+			l->width * BLOCK_SIZE),
+	    end_y = min(l->ship->y + SHIP_H,
+			l->height * BLOCK_SIZE);
 	for (size_t j = y; (signed)j*BLOCK_SIZE < end_y; ++j)
 		for (size_t i = x; (signed)i*BLOCK_SIZE < end_x; ++i)
-			cg_handle_collisions_block(cg, cg->level->blocks[j][i]);
+			cg_handle_collisions_block(l, l->blocks[j][i]);
 }
-void cg_handle_collisions_block(struct cg *cg, block blk)
+void cg_handle_collisions_block(struct cgl *l, block blk)
 {
-	extern void cg_call_collision_handler(struct cg*, struct tile*);
+	extern void cg_call_collision_handler(struct cgl*, struct tile*);
 	struct rect r;
 	struct tile stile;
-	ship_to_tile(cg->ship, &stile);
+	ship_to_tile(l->ship, &stile);
 	for (size_t i = 0; blk[i] != NULL; ++i) {
 		if (!tiles_intersect(&stile, blk[i], &r))
 			continue;
@@ -184,10 +181,10 @@ void cg_handle_collisions_block(struct cg *cg, block blk)
 			coll = cg_collision_rect_point(&stile, blk[i]);
 			break;
 		case Rect:
-			coll = cg_collision_rect(cg, &r, img_x, img_y, blk[i]);
+			coll = cg_collision_rect(l, &r, img_x, img_y, blk[i]);
 			break;
 		case Bitmap:
-			coll = cg_collision_bitmap(cg, &r, img_x, img_y, blk[i]);
+			coll = cg_collision_bitmap(l, &r, img_x, img_y, blk[i]);
 			break;
 		case Cannon:
 			/* FIXME */
@@ -197,10 +194,10 @@ void cg_handle_collisions_block(struct cg *cg, block blk)
 			break;
 		}
 		if (coll)
-			cg_call_collision_handler(cg, blk[i]);
+			cg_call_collision_handler(l, blk[i]);
 	}
 }
-void cg_call_collision_handler(struct cg *cg, struct tile *tile)
+void cg_call_collision_handler(struct cgl *l, struct tile *tile)
 {
 	extern void cg_handle_collision_gate(struct gate*),
 	            cg_handle_collision_lgate(struct ship*, struct lgate*),
@@ -213,36 +210,36 @@ void cg_call_collision_handler(struct cg *cg, struct tile *tile)
 		cg_handle_collision_gate((struct gate*)tile->data);
 		break;
 	case LGateAction:
-		cg_handle_collision_lgate(cg->ship, (struct lgate*)tile->data);
+		cg_handle_collision_lgate(l->ship, (struct lgate*)tile->data);
 		break;
 	case AirgenAction:
 		cg_handle_collision_airgen((struct airgen*)tile->data);
 		break;
 	case AirportAction:
-		cg_handle_collision_airport(cg->ship, (struct airport*)tile->data);
+		cg_handle_collision_airport(l->ship, (struct airport*)tile->data);
 		break;
 	case FanAction:
-		cg_handle_collision_fan(cg->ship, (struct fan*)tile->data);
+		cg_handle_collision_fan(l->ship, (struct fan*)tile->data);
 		break;
 	case MagnetAction:
-		cg_handle_collision_magnet(cg->ship, (struct magnet*)tile->data);
+		cg_handle_collision_magnet(l->ship, (struct magnet*)tile->data);
 		break;
 	case Kaboom:
-		cg->ship->dead = 1;
+		l->ship->dead = 1;
 		break;
 	}
 }
 
-void cg_step(struct cg *cg, double time)
+void cg_step(struct cgl *l, double time)
 {
-	double dt = time - cg->time;
-	cg_handle_collisions(cg);
-	cg_step_objects(cg, time, dt);
-	if (!cg->ship->dead)
-		cg_step_ship(cg->ship, dt);
-	if (cg->level->hb->num_cargo == cg->level->num_all_freigh)
-		cg->ship->dead = 1;
-	cg->time = time;
+	double dt = time - l->time;
+	cg_handle_collisions(l);
+	cg_step_objects(l, time, dt);
+	if (!l->ship->dead)
+		cg_step_ship(l->ship, dt);
+	if (l->hb->num_cargo == l->num_all_freigh)
+		l->ship->dead = 1;
+	l->time = time;
 }
 
 /* ==================== Collision handlers ==================== */
@@ -574,12 +571,12 @@ void cg_step_magnet(struct magnet *magnet, struct ship *ship, double dt)
 }
 /* ==================== /Object simulators ==================== */
 
-size_t cg_freigh_remaining(struct cg *cg)
+size_t cg_freigh_remaining(struct cgl *l)
 {
 	size_t nfreigh = 0;
-	for (size_t i = 0; i < cg->level->nairports; ++i) {
-		if (cg->level->airports[i].type == Freigh)
-			nfreigh += cg->level->airports[i].num_cargo;
+	for (size_t i = 0; i < l->nairports; ++i) {
+		if (l->airports[i].type == Freigh)
+			nfreigh += l->airports[i].num_cargo;
 	}
 	return nfreigh;
 }

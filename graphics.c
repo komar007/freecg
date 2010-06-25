@@ -27,11 +27,11 @@
 struct glengine gl;
 void gl_draw_sprite(double, double, const struct tile*);
 
-void gl_init(struct cg* cg, struct texmgr *ttm)
+void gl_init(struct cgl* l, struct texmgr *ttm)
 {
 	gl.ttm = ttm;
 	gl.frame = 0;
-	gl.cg = cg;
+	gl.l = l;
 	gl.cam.scale = 1;
 	glEnable(GL_TEXTURE_2D);
 	glEnable(GL_DEPTH_TEST);
@@ -53,9 +53,9 @@ void gl_look_at(double x, double y, double scale)
 {
 	gl.viewport.w = gl.win_w/scale;
 	gl.viewport.h = gl.win_h/scale;
-	gl.viewport.x = fmin(gl.cg->level->width*BLOCK_SIZE - gl.viewport.w,
+	gl.viewport.x = fmin(gl.l->width*BLOCK_SIZE - gl.viewport.w,
 			fmax(0, x - gl.viewport.w/2));
-	gl.viewport.y = fmin(gl.cg->level->height*BLOCK_SIZE - gl.viewport.h,
+	gl.viewport.y = fmin(gl.l->height*BLOCK_SIZE - gl.viewport.h,
 			fmax(0, y - gl.viewport.h/2));
 	glScalef(scale, scale, 1);
 	glTranslated(-gl.viewport.x, -gl.viewport.y, 0);
@@ -69,14 +69,13 @@ void gl_draw_scene()
 		    animate_tiles();
 	animate_tiles();
 	if (gl.frame == 0)
-		fix_lframes(gl.cg->level);
+		fix_lframes(gl.l);
 	double x1 = fmax(0, gl.viewport.x),
 	       y1 = fmax(0, gl.viewport.y),
 	       x2 = fmin(gl.viewport.x + gl.viewport.w,
-			       gl.cg->level->width * BLOCK_SIZE),
+			       gl.l->width * BLOCK_SIZE),
 	       y2 = fmin(gl.viewport.y + gl.viewport.h,
-			       gl.cg->level->height * BLOCK_SIZE);
-	struct cgl *l = gl.cg->level;
+			       gl.l->height * BLOCK_SIZE);
 	glColor4f(1, 1, 1, 1);
 	gl_draw_ship();
 	glPushMatrix();
@@ -84,7 +83,7 @@ void gl_draw_scene()
 	glBegin(GL_QUADS);
 	for (size_t j = y1/BLOCK_SIZE; j*BLOCK_SIZE < y2; ++j)
 		for (size_t i = x1/BLOCK_SIZE; i*BLOCK_SIZE < x2; ++i)
-			gl_draw_block(l->blocks[j][i]);
+			gl_draw_block(gl.l->blocks[j][i]);
 	glEnd();
 	glPopMatrix();
 	gl.frame++;
@@ -98,9 +97,9 @@ void fix_lframes(struct cgl *level)
 void gl_draw_ship(void)
 {
 	struct tile tile;
-	ship_to_tile(gl.cg->ship, &tile); /* to get tex coordinates */
+	ship_to_tile(gl.l->ship, &tile); /* to get tex coordinates */
 	glBegin(GL_QUADS);
-	gl_draw_sprite(gl.cg->ship->x, gl.cg->ship->y, &tile);
+	gl_draw_sprite(gl.l->ship->x, gl.l->ship->y, &tile);
 	glEnd();
 }
 /* this function uses x and y as coordinates instead of tile's x and y, to
@@ -136,7 +135,7 @@ inline void gl_draw_simple_tile(const struct tile *tile)
 }
 inline void gl_draw_blinking_tile(const struct tile *tile)
 {
-	int phase = round(gl.cg->time * BLINK_SPEED);
+	int phase = round(gl.l->time * BLINK_SPEED);
 	if (phase % 2 == 0)
 		gl_draw_sprite(tile->x, tile->y, tile);
 }
@@ -178,16 +177,16 @@ void animate_tiles()
 	            animate_airgen(struct airgen*, double),
 	            animate_bar(struct bar*, double),
 	            animate_key(struct airport*, double);
-	for (size_t i = 0; i < gl.cg->level->nmagnets; ++i)
-		animate_magnet(&gl.cg->level->magnets[i], gl.cg->time);
-	for (size_t i = 0; i < gl.cg->level->nfans; ++i)
-		animate_fan(&gl.cg->level->fans[i], gl.cg->time);
-	for (size_t i = 0; i < gl.cg->level->nairgens; ++i)
-		animate_airgen(&gl.cg->level->airgens[i], gl.cg->time);
-	for (size_t i = 0; i < gl.cg->level->nbars; ++i)
-		animate_bar(&gl.cg->level->bars[i], gl.cg->time);
-	for (size_t i = 0; i < gl.cg->level->nairports; ++i)
-		animate_key(&gl.cg->level->airports[i], gl.cg->time);
+	for (size_t i = 0; i < gl.l->nmagnets; ++i)
+		animate_magnet(&gl.l->magnets[i], gl.l->time);
+	for (size_t i = 0; i < gl.l->nfans; ++i)
+		animate_fan(&gl.l->fans[i], gl.l->time);
+	for (size_t i = 0; i < gl.l->nairgens; ++i)
+		animate_airgen(&gl.l->airgens[i], gl.l->time);
+	for (size_t i = 0; i < gl.l->nbars; ++i)
+		animate_bar(&gl.l->bars[i], gl.l->time);
+	for (size_t i = 0; i < gl.l->nairports; ++i)
+		animate_key(&gl.l->airports[i], gl.l->time);
 }
 /* Animators */
 static const int magnet_anim_order[] = {0, 1, 2, 1};

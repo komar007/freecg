@@ -19,6 +19,7 @@
 #include "graphics.h"
 #include "texmgr.h"
 #include "gfx.h"
+#include "cg.h"
 
 #include <stdio.h>
 #include <assert.h>
@@ -78,25 +79,25 @@ void process_event(SDL_Event *e)
 			running = 0;
 			break;
 		case SDLK_1:
-			gl.cg->ship->keys[0] = !gl.cg->ship->keys[0];
+			gl.l->ship->keys[0] = !gl.l->ship->keys[0];
 			break;
 		case SDLK_2:
-			gl.cg->ship->keys[1] = !gl.cg->ship->keys[1];
+			gl.l->ship->keys[1] = !gl.l->ship->keys[1];
 			break;
 		case SDLK_3:
-			gl.cg->ship->keys[2] = !gl.cg->ship->keys[2];
+			gl.l->ship->keys[2] = !gl.l->ship->keys[2];
 			break;
 		case SDLK_4:
-			gl.cg->ship->keys[3] = !gl.cg->ship->keys[3];
+			gl.l->ship->keys[3] = !gl.l->ship->keys[3];
 			break;
 		case SDLK_LEFT:
-			gl.cg->ship->rots = -5.5;
+			gl.l->ship->rot_speed = -5.5;
 			break;
 		case SDLK_RIGHT:
-			gl.cg->ship->rots = 5.5;
+			gl.l->ship->rot_speed = 5.5;
 			break;
 		case SDLK_UP:
-			cg_ship_set_engine(gl.cg->ship, 1);
+			cg_ship_set_engine(gl.l->ship, 1);
 			break;
 		default:
 			break;
@@ -105,14 +106,14 @@ void process_event(SDL_Event *e)
 	case SDL_KEYUP:
 		switch(e->key.keysym.sym) {
 		case SDLK_UP:
-			cg_ship_set_engine(gl.cg->ship, 0);
+			cg_ship_set_engine(gl.l->ship, 0);
 		case SDLK_LEFT:
-			if (gl.cg->ship->rots == -5.5)
-				gl.cg->ship->rots = 0;
+			if (gl.l->ship->rot_speed == -5.5)
+				gl.l->ship->rot_speed = 0;
 			break;
 		case SDLK_RIGHT:
-			if (gl.cg->ship->rots == 5.5)
-				gl.cg->ship->rots = 0;
+			if (gl.l->ship->rot_speed == 5.5)
+				gl.l->ship->rot_speed = 0;
 			break;
 		default:
 			break;
@@ -139,8 +140,8 @@ int main(int argc, char *argv[])
 		abort();
 	}
 	cgl_preprocess(cgl);
-	struct cg *cg = cg_init(cgl);
-	make_collision_map(gfx, cg->cmap);
+	cg_init(cgl);
+	make_collision_map(gfx, cgl->cmap);
 	if (SDL_Init(SDL_INIT_VIDEO) != 0) {
 		fprintf(stderr, "SDL failed: %s\n", SDL_GetError());
 		abort();
@@ -148,7 +149,7 @@ int main(int argc, char *argv[])
 	screen = SDL_SetVideoMode(SCREEN_W, SCREEN_H, 0, MODE);
 	gl_resize_viewport(screen->w, screen->h);
 	struct texmgr *ttm = tm_request_texture(gfx);
-	gl_init(cg, ttm);
+	gl_init(cgl, ttm);
 	int t = SDL_GetTicks(),
 	    nt = t,
 	    time = t,
@@ -161,27 +162,12 @@ int main(int argc, char *argv[])
 			process_event(&e);
 		time = SDL_GetTicks();
 		nt = time - t;
-		cg_step(cg, time / 1000.0);
+		cg_step(cgl, time / 1000.0);
 		if (nt > 100) {
 			printf("%d frames in %d ms - %.1f fps\n",
 					gl.frame - fr, nt, (float)(gl.frame - fr) / nt * 1000);
-			printf("\rF %.1lf k[", cg->ship->fuel);
-			for (size_t i = 0; i < 4; ++i)
-				printf("%c", cg->ship->keys[i] ? i + '0' : ' ');
-			printf("] sh[");
-			for (size_t i = 0; i < cg->ship->num_freigh; ++i)
-				printf("%d", cg->ship->freigh[i]);
-			for (size_t i = 0; i < cg->ship->max_freigh - cg->ship->num_freigh; ++i)
-				printf(" ");
-			printf("] hb[");
-			for (size_t i = 0; i < cg->level->hb->num_cargo; ++i)
-				printf("%d", cg->level->hb->c.freigh[i]);
-			printf("]%d/%d ", cg->level->hb->num_cargo,
-					cg->level->num_all_freigh);
-			if (cg->ship->has_turbo)
-				printf("T ");
-			if (cg->ship->dead) {
-				if (cg->level->hb->num_cargo == cg->level->num_all_freigh)
+			if (cgl->ship->dead) {
+				if (cgl->hb->num_cargo == cgl->num_all_freigh)
 					printf("You won!");
 				else
 					printf("Dead. Game over!");
@@ -191,8 +177,8 @@ int main(int argc, char *argv[])
 			t += nt;
 			fr = gl.frame;
 		}
-		gl.cam.x = cg->ship->x;
-		gl.cam.y = cg->ship->y;
+		gl.cam.x = cgl->ship->x;
+		gl.cam.y = cgl->ship->y;
 		gl_update_window();
 	}
 	free_cgl(cgl);

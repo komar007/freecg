@@ -21,8 +21,8 @@
 #ifndef CG_H
 #define CG_H
 
-#include "gfx.h"
 #include "cgl.h"
+#include "gfx.h"
 #include <stdint.h>
 
 #define AIRGEN_ROT_SPEED 4.97
@@ -43,7 +43,7 @@ enum {
 struct ship {
 	double x, y;
 	double vx, vy;
-	double rot, rots;
+	double rot, rot_speed;
 	int engine;
 	int keys[4];
 	enum freigh *freigh;
@@ -54,19 +54,13 @@ struct ship {
 	int dead;
 	int life;
 };
-struct cg {
-	struct cgl *level;
-	struct ship *ship;
-	double time;
-	collision_map cmap;
-};
 
-struct cg *cg_init(struct cgl*);
-void cg_step(struct cg*, double);
+struct cgl;
+void cg_init(struct cgl*);
+void cg_step(struct cgl*, double);
 void cg_ship_set_engine(struct ship*, int);
 void cg_ship_rotate(struct ship*, double);
-
-size_t cg_freigh_remaining(struct cg*);
+size_t cg_freigh_remaining(struct cgl*);
 
 
 #endif

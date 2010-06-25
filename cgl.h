@@ -276,6 +276,9 @@ struct cgl {
 	struct airport *airports;
 	struct airport *hb;
 	block **blocks;
+	struct ship *ship;
+	double time;
+	collision_map cmap;
 };
 
 struct cgl *read_cgl(const char*, uint8_t**);
