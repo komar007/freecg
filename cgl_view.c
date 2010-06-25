@@ -1,5 +1,5 @@
- * Copyright (C) 2010 Michal Trybus.
-/*
+/* Copyright (C) 2010 Michal Trybus.
+ *
  * This file is part of FreeCG.
  *
  * FreeCG is free software; you can redistribute it and/or modify
