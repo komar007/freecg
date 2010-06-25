@@ -214,6 +214,8 @@ struct airport {
 	double transfer_time;
 	int sched_cargo_transfer;
 	int ship_touched;
+	int has_left_arrow,
+	    has_right_arrow;
 	union {
 		int key;
 		enum freigh freigh[10];

@@ -961,6 +961,8 @@ END_CGL_READ_X(lpts, LPTS, airport, 14)
 
 int cgl_read_one_lpts(struct airport *airport, FILE *fp)
 {
+	static const int16_t larrow_data[] = {0, 0, 24, 32, 232, 360},
+		             rarrow_data[] = {0, 0, 24, 32, 232, 392};
 	int err;
 	uint8_t buf[LPTS_NUM_STUFF*3];
 	int16_t buf2[LPTS_NUM_SHORTS];
@@ -970,7 +972,12 @@ int cgl_read_one_lpts(struct airport *airport, FILE *fp)
 	if (nread < LPTS_HDR_SIZE)
 		return -EBADLPTS;
 	airport->type = buf[0] & 0x0f;
-	airport->c.key = buf[0] >> 4;
+	if (airport->type == Key) {
+		airport->c.key = buf[0] >> 4;
+	} else {
+		airport->has_left_arrow  = (buf[0] >> 4) & 0x01;
+		airport->has_right_arrow = (buf[0] >> 5) & 0x01;
+	}
 	err = read_short((int16_t*)buf2, LPTS_NUM_SHORTS, fp);
 	if (err)
 		return -EBADLPTS;
@@ -979,6 +986,19 @@ int cgl_read_one_lpts(struct airport *airport, FILE *fp)
 	airport->base[0]->collision_type = AirportAction;
 	airport->base[0]->data = airport;
 	airport->base[0]->y += 32;
+	if (airport->has_left_arrow) {
+		parse_tile_normal(larrow_data, airport->arrow[0]);
+		airport->arrow[0]->x = airport->base[0]->x;
+		airport->arrow[0]->y = airport->base[0]->y - 32;
+		airport->arrow[0]->collision_test = Bitmap;
+	}
+	if (airport->has_right_arrow) {
+		parse_tile_normal(rarrow_data, airport->arrow[1]);
+		airport->arrow[1]->x = airport->base[0]->x +
+			airport->base[0]->w - 24;
+		airport->arrow[1]->y = airport->base[0]->y - 32;
+		airport->arrow[1]->collision_test = Bitmap;
+	}
 	nread = fread(buf, sizeof(uint8_t), 1, fp);
 	if (nread < 1)
 		return -EBADLPTS;
