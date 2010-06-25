@@ -294,10 +294,11 @@ struct cgl *read_cgl(const char *path, uint8_t **out_soin)
 	free(barr_tiles);
 	memcpy(cgl->tiles + cgl->ntiles, lpts_tiles,
 			nlpts_tiles * sizeof(*cgl->tiles));
-	FIX_PTRS(cgl->airports,  base[0],  cgl->nairports,   lpts_tiles)
-	FIX_PTRS(cgl->airports,  base[1],  cgl->nairports,   lpts_tiles)
-	FIX_PTRS(cgl->airports,  arrow[0], cgl->nairports,   lpts_tiles)
-	FIX_PTRS(cgl->airports,  arrow[1], cgl->nairports,   lpts_tiles)
+	FIX_PTRS(cgl->airports,  base,      cgl->nairports,   lpts_tiles)
+	FIX_PTRS(cgl->airports,  stripe[0], cgl->nairports,   lpts_tiles)
+	FIX_PTRS(cgl->airports,  stripe[1], cgl->nairports,   lpts_tiles)
+	FIX_PTRS(cgl->airports,  arrow[0],  cgl->nairports,   lpts_tiles)
+	FIX_PTRS(cgl->airports,  arrow[1],  cgl->nairports,   lpts_tiles)
 	for (size_t k = 0; k < 10; ++k)
 		FIX_PTRS(cgl->airports, cargo[k], cgl->nairports, lpts_tiles);
 	cgl->ntiles += nlpts_tiles;
@@ -969,14 +970,15 @@ int cgl_read_one_barr(struct lgate *lgate, FILE *fp)
 	return 0;
 }
 
-BEGIN_CGL_READ_X(lpts, LPTS, airport, 14)
-	cgl->airports[i].base[0]  = &tiles[14*i + 0];
-	cgl->airports[i].base[1]  = &tiles[14*i + 1];
-	cgl->airports[i].arrow[0] = &tiles[14*i + 2];
-	cgl->airports[i].arrow[1] = &tiles[14*i + 3];
+BEGIN_CGL_READ_X(lpts, LPTS, airport, 15)
+	cgl->airports[i].base      = &tiles[15*i + 0];
+	cgl->airports[i].stripe[0] = &tiles[15*i + 1];
+	cgl->airports[i].stripe[1] = &tiles[15*i + 2];
+	cgl->airports[i].arrow[0]  = &tiles[15*i + 3];
+	cgl->airports[i].arrow[1]  = &tiles[15*i + 4];
 	for (size_t k = 0; k < 10; ++k)
-		cgl->airports[i].cargo[k] = &tiles[14*i + 4+k];
-END_CGL_READ_X(lpts, LPTS, airport, 14)
+		cgl->airports[i].cargo[k] = &tiles[15*i + 5+k];
+END_CGL_READ_X(lpts, LPTS, airport, 15)
 
 int cgl_read_one_lpts(struct airport *airport, FILE *fp)
 {
@@ -1000,22 +1002,41 @@ int cgl_read_one_lpts(struct airport *airport, FILE *fp)
 	err = read_short((int16_t*)buf2, LPTS_NUM_SHORTS, fp);
 	if (err)
 		return -EBADLPTS;
-	parse_tile_minimal(buf2, airport->base[0],
+	int stripe_tex_y = buf2[LPTS_NUM_SHORTS - 1];
+	printf("%i\n", stripe_tex_y);
+	parse_tile_minimal(buf2, airport->base,
 			buf2[2]*32, 20, buf2[3], buf2[4]);
-	airport->base[0]->collision_type = AirportAction;
-	airport->base[0]->data = airport;
-	airport->base[0]->y += 32;
+	airport->base->collision_type = AirportAction;
+	airport->base->data = airport;
+	airport->base->y += 32;
+	airport->stripe[0]->x = airport->base->x + STRIPE_OFFS;
+	airport->stripe[0]->y = airport->base->y + STRIPE_OFFS;
+	airport->stripe[0]->w = airport->base->w - 2*STRIPE_OFFS -
+		STRIPE_END_W;
+	airport->stripe[0]->h = STRIPE_H;
+	airport->stripe[0]->tex_x = TILESET_W;
+	airport->stripe[0]->tex_y = stripe_tex_y - STRIPE_ORYG_Y;
+	airport->stripe[0]->z = DYN_TILES_OVERLAY_Z;
+
+	airport->stripe[1]->x = airport->stripe[0]->x + airport->stripe[0]->w;
+	airport->stripe[1]->y = airport->stripe[0]->y;
+	airport->stripe[1]->w = STRIPE_END_W;
+	airport->stripe[1]->h = STRIPE_H;
+	airport->stripe[1]->tex_x = STRIPE_ORYG_X + STRIPE_ORYG_W -
+		STRIPE_END_W;
+	airport->stripe[1]->tex_y = stripe_tex_y;
+	airport->stripe[1]->z = DYN_TILES_OVERLAY_Z;
 	if (airport->has_left_arrow) {
 		parse_tile_normal(larrow_data, airport->arrow[0]);
-		airport->arrow[0]->x = airport->base[0]->x;
-		airport->arrow[0]->y = airport->base[0]->y - 32;
+		airport->arrow[0]->x = airport->base->x;
+		airport->arrow[0]->y = airport->base->y - 32;
 		airport->arrow[0]->collision_test = Bitmap;
 	}
 	if (airport->has_right_arrow) {
 		parse_tile_normal(rarrow_data, airport->arrow[1]);
-		airport->arrow[1]->x = airport->base[0]->x +
-			airport->base[0]->w - 24;
-		airport->arrow[1]->y = airport->base[0]->y - 32;
+		airport->arrow[1]->x = airport->base->x +
+			airport->base->w - 24;
+		airport->arrow[1]->y = airport->base->y - 32;
 		airport->arrow[1]->collision_test = Bitmap;
 	}
 	nread = fread(buf, sizeof(uint8_t), 1, fp);
@@ -1026,8 +1047,8 @@ int cgl_read_one_lpts(struct airport *airport, FILE *fp)
 	if (nread < LPTS_NUM_STUFF*3)
 		return -EBADLPTS;
 	for (size_t i = 0; i < airport->num_cargo; ++i) {
-		airport->cargo[i]->x = airport->base[0]->x + buf[i];
-		airport->cargo[i]->y = airport->base[0]->y - 32 + buf[10+i];
+		airport->cargo[i]->x = airport->base->x + buf[i];
+		airport->cargo[i]->y = airport->base->y - 32 + buf[10+i];
 		airport->cargo[i]->w = airport->cargo[i]->h = STUFF_SIZE;
 		airport->cargo[i]->tex_x = STUFF_TEX_X + buf[20+i]*16;
 		airport->cargo[i]->tex_y = STUFF_TEX_Y;

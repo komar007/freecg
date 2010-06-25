@@ -80,7 +80,13 @@ enum gfx_consts {
 	STUFF_TEX_X = 64,
 	STUFF_TEX_Y = 392,
 	KEY_TEX_X = 256,
-	KEY_TEX_Y = 360
+	KEY_TEX_Y = 360,
+	STRIPE_ORYG_X = 392,
+	STRIPE_ORYG_Y = 316,
+	STRIPE_ORYG_W = 84,
+	STRIPE_END_W = 26,
+	STRIPE_H = 8,
+	STRIPE_OFFS = 6
 };
 typedef uint8_t collision_map[TILESET_H][TILESET_W];
 

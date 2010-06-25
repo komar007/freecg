@@ -219,7 +219,8 @@ enum freigh {
 	Freigh4
 };
 struct airport {
-	struct tile *base[2],
+	struct tile *base,
+		    *stripe[2],
 		    *arrow[2],
 		    *cargo[10];
 	struct rect lbbox;

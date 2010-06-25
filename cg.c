@@ -41,8 +41,8 @@ struct cg *cg_init(struct cgl *l)
 	cg->level = l;
 	cg->time = 0.0;
 	cg->ship = calloc(1, sizeof(*cg->ship));
-	int x = l->hb->base[0]->x + (l->hb->base[0]->w - SHIP_W) / 2,
-	    y = l->hb->base[0]->y - 20;
+	int x = l->hb->base->x + (l->hb->base->w - SHIP_W) / 2,
+	    y = l->hb->base->y - 20;
 	cg_init_ship(cg, x, y, l);
 	return cg;
 }
@@ -490,7 +490,7 @@ void cg_step_airport(struct airport *airport, struct ship *ship, double time)
 	}
 	if (!airport->ship_touched)
 		return;
-	ship->y = airport->base[0]->y - 20;
+	ship->y = airport->base->y - 20;
 	ship->vx = ship->vy = 0;
 	ship->airport = airport;
 	switch (airport->type) {
