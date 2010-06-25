@@ -112,10 +112,10 @@ void osd_init()
 	osd_life_init(&osd.life, life, -8, 6);
 	int pause_x = gl.win_w/2 - 264/2,
 	    pause_y = gl.win_h/2 - 120/2;
-	*osd.pause = _o(pause_x,pause_y, 264, 120, 0.8, 0, 90, 1, 1, 0, gl.ttm);
+	*osd.pause = _o(pause_x,pause_y, 264, 120, 0.8, 0, 90, 1, 1, 1, gl.ttm);
 	struct osd_element *pause_img;
 	osdlib_make_children(osd.pause, 1, 1, &pause_img);
-	*pause_img = _o(48, 42, 168, 36, 0.55, 64, 408, 168, 36, 0, gl.ttm);
+	*pause_img = _o(48, 42, 168, 36, 0.55, 64, 408, 168, 36, 1, gl.ttm);
 }
 
 void osd_fuel_step(struct osd_fuel *f, double fuel)
