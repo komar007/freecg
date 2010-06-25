@@ -166,9 +166,9 @@ int main(int argc, char *argv[])
 		if (nt > 100) {
 			printf("%d frames in %d ms - %.1f fps\n",
 					gl.frame - fr, nt, (float)(gl.frame - fr) / nt * 1000);
-			if (cgl->ship->life == -1)
+			if (cgl->status == Lost)
 				printf("Dead. Game over!");
-			if (cgl->hb->num_cargo == cgl->num_all_freight)
+			if (cgl->status == Victory)
 				printf("You won!");
 			fflush(stdout);
 

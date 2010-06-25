@@ -47,9 +47,9 @@ struct ship {
 	int engine;
 	int keys[4];
 	/* the size of cargo hold */
-	int max_freight;
+	size_t max_freight;
 	/* freight currently on board */
-	int num_freight;
+	size_t num_freight;
 	struct freight *freight;
 	/* reference to the airport on which the ship is waiting */
 	struct airport *airport;

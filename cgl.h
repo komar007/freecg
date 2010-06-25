@@ -267,6 +267,11 @@ struct airport {
 };
 typedef struct tile **block;
 /* cgl level contents */
+enum game_status {
+	Alive = 0,
+	Lost,
+	Victory
+};
 struct cgl {
 	enum {
 		Full,
@@ -297,6 +302,8 @@ struct cgl {
 
 	double time;
 	struct ship *ship;
+	double kaboom_end;
+	enum game_status status;
 	collision_map cmap;
 };
 

@@ -21,16 +21,32 @@
 #include "mathgeom.h"
 #include <stdlib.h>
 #include <math.h>
+#include <float.h>
 #include <assert.h>
 
-void cg_init_ship(struct cgl *l)
+void airport_push_cargo(struct airport*);
+void cg_revert_held_freigh(struct cgl *l)
 {
+	for (size_t i = 0; i < l->ship->num_freight; ++i)
+		airport_push_cargo(l->ship->freight[i].ap);
+	l->ship->num_freight = 0;
+}
+void cg_restart_ship(struct cgl *l)
+{
+	l->ship->vx = l->ship->vy = 0;
+	l->ship->rot_speed = 0;
 	l->ship->x = l->hb->base->x + (l->hb->base->w - SHIP_W)/2,
 	l->ship->y = l->hb->base->y - 20;
 	l->ship->engine = 0;
 	l->ship->rot = 3/2.0 * M_PI; /* vertical */
 	l->ship->airport = l->hb;
 	l->ship->fuel = MAX_FUEL;
+	l->ship->dead = 0;
+	cg_revert_held_freigh(l);
+}
+void cg_init_ship(struct cgl *l)
+{
+	cg_restart_ship(l);
 	l->ship->has_turbo = 0;
 	l->ship->max_freight = 1;
 	l->ship->life = DEFAULT_LIFE;
@@ -42,6 +58,8 @@ void cg_init(struct cgl *l)
 	l->time = 0.0;
 	l->ship = calloc(1, sizeof(*l->ship));
 	cg_init_ship(l);
+	l->kaboom_end = -DBL_MAX;
+	l->status = Alive;
 }
 
 void cg_ship_set_engine(struct ship *ship, int eng)
@@ -80,13 +98,22 @@ void cg_step_ship(struct ship* s, double dt)
 	s->x += s->vx * dt;
 	s->y += s->vy * dt;
 }
-
+void cg_kill_ship(struct cgl *l)
+{
+	--l->ship->life;
+	l->ship->dead = 1;
+	l->kaboom_end = l->time + 1;
+}
 void cg_ship_rotate(struct ship *s, double delta)
 {
 	s->rot += delta;
 	normalize_angle(&s->rot);
 }
 
+void cg_step_kaboom(struct cgl *l)
+{
+	/* FIXME: step kaboom */
+}
 /* perform logic simulation of all objects */
 void cg_step_objects(struct cgl *l, double time, double dt)
 {
@@ -199,80 +226,100 @@ void cg_handle_collisions_block(struct cgl *l, block blk)
 }
 void cg_call_collision_handler(struct cgl *l, struct tile *tile)
 {
-	extern void cg_handle_collision_gate(struct gate*),
-	            cg_handle_collision_lgate(struct ship*, struct lgate*),
-	            cg_handle_collision_airgen(struct airgen*),
-		    cg_handle_collision_airport(struct ship*, struct airport*),
-		    cg_handle_collision_fan(struct ship*, struct fan*),
-		    cg_handle_collision_magnet(struct ship*, struct magnet*);
+	extern int cg_handle_collision_gate(struct gate*),
+	           cg_handle_collision_lgate(struct ship*, struct lgate*),
+	           cg_handle_collision_airgen(struct airgen*),
+		   cg_handle_collision_airport(struct ship*, struct airport*),
+		   cg_handle_collision_fan(struct ship*, struct fan*),
+		   cg_handle_collision_magnet(struct ship*, struct magnet*);
+	int killed = 0;
 	switch (tile->collision_type) {
 	case GateAction:
-		cg_handle_collision_gate((struct gate*)tile->data);
+		killed = cg_handle_collision_gate((struct gate*)tile->data);
 		break;
 	case LGateAction:
-		cg_handle_collision_lgate(l->ship, (struct lgate*)tile->data);
+		killed = cg_handle_collision_lgate(l->ship, (struct lgate*)tile->data);
 		break;
 	case AirgenAction:
-		cg_handle_collision_airgen((struct airgen*)tile->data);
+		killed = cg_handle_collision_airgen((struct airgen*)tile->data);
 		break;
 	case AirportAction:
-		cg_handle_collision_airport(l->ship, (struct airport*)tile->data);
+		killed = cg_handle_collision_airport(l->ship, (struct airport*)tile->data);
 		break;
 	case FanAction:
-		cg_handle_collision_fan(l->ship, (struct fan*)tile->data);
+		killed = cg_handle_collision_fan(l->ship, (struct fan*)tile->data);
 		break;
 	case MagnetAction:
-		cg_handle_collision_magnet(l->ship, (struct magnet*)tile->data);
+		killed = cg_handle_collision_magnet(l->ship, (struct magnet*)tile->data);
 		break;
 	case Kaboom:
-		--l->ship->life;
-		l->ship->dead = 1;
+		killed = 1;
 		break;
 	}
+	/* remember that collision detection handler may be called multiple
+	 * times per step! */
+	if (killed && !l->ship->dead)
+		cg_kill_ship(l);
 }
 
 void cg_step(struct cgl *l, double time)
 {
 	double dt = time - l->time;
-	cg_handle_collisions(l);
 	cg_step_objects(l, time, dt);
+	if (l->hb->num_cargo == l->num_all_freight) {
+		l->status = Victory;
+		goto end;
+	}
+	if (l->status == Lost)
+		goto end;
 	if (!l->ship->dead) {
 		cg_step_ship(l->ship, dt);
+		cg_handle_collisions(l);
 	} else {
-		/* FIXME: start explosion */
+		if (l->kaboom_end > time) {
+			cg_step_kaboom(l);
+		} else {
+			if (l->ship->life == -1)
+				l->status = Lost;
+			else
+				cg_restart_ship(l);
+		}
 	}
+end:
 	l->time = time;
 }
 
 /* ==================== Collision handlers ==================== */
-void cg_handle_collision_gate(struct gate *gate)
+int cg_handle_collision_gate(struct gate *gate)
 {
 	gate->active = 1;
+	return 0;
 }
-void cg_handle_collision_lgate(struct ship *ship, struct lgate *lgate)
+int cg_handle_collision_lgate(struct ship *ship, struct lgate *lgate)
 {
 	lgate->active = 1;
 	lgate->open = 1;
 	for (size_t i = 0; i < 4; ++i)
 		if (lgate->keys[i] && !ship->keys[i])
 			lgate->open = 0;
+	return 0;
 }
-void cg_handle_collision_airgen(struct airgen *airgen)
+int cg_handle_collision_airgen(struct airgen *airgen)
 {
 	airgen->active = 1;
+	return 0;
 }
-void cg_handle_collision_airport(struct ship *ship, struct airport *airport)
+int cg_handle_collision_airport(struct ship *ship, struct airport *airport)
 {
 	struct tile allowed, stile;
 	rect_to_tile(&airport->lbbox, &allowed);
 	ship_to_tile(ship, &stile);
 	if (discrete_rot(ship->rot) == ROT_UP &&
-			cg_collision_rect_point(&stile, &allowed)) {
+			cg_collision_rect_point(&stile, &allowed))
 		airport->ship_touched = 1;
-	} else {
-		--ship->life;
-		ship->dead = 1;
-	}
+	else
+		return 1;
+	return 0;
 }
 double field_modifier(enum dir dir, struct tile *act, struct ship *ship)
 {
@@ -296,13 +343,15 @@ double field_modifier(enum dir dir, struct tile *act, struct ship *ship)
 	}
 	return modifier;
 }
-void cg_handle_collision_fan(struct ship *ship, struct fan *fan)
+int cg_handle_collision_fan(struct ship *ship, struct fan *fan)
 {
 	fan->modifier = field_modifier(fan->dir, fan->act, ship);
+	return 0;
 }
-void cg_handle_collision_magnet(struct ship *ship, struct magnet *magnet)
+int cg_handle_collision_magnet(struct ship *ship, struct magnet *magnet)
 {
 	magnet->modifier = field_modifier(magnet->dir, magnet->act, ship);
+	return 0;
 }
 /* ==================== /Collision handlers ==================== */
 
@@ -520,6 +569,13 @@ void airport_pop_cargo(struct airport *airport)
 	--airport->num_cargo;
 	airport->cargo[airport->num_cargo]->type = Transparent;
 	airport->cargo[airport->num_cargo]->collision_test = NoCollision;
+}
+/* revert one pop */
+void airport_push_cargo(struct airport *airport)
+{
+	airport->cargo[airport->num_cargo]->type = Simple;
+	airport->cargo[airport->num_cargo]->collision_test = Rect;
+	++airport->num_cargo;
 }
 void ship_load_freight(struct ship *ship, struct airport *airport)
 {
