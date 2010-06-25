@@ -278,6 +278,7 @@ struct cgl {
 		Demo
 	} type;
 	size_t num_all_freight;
+	size_t num_1ups;
 	size_t width, height;
 	size_t ntiles;
 	struct tile *tiles;

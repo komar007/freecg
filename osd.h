@@ -37,6 +37,10 @@ struct osd_freight {
 	struct osd_element *freight;
 	struct osd_element *container;
 };
+struct osd_life {
+	struct osd_element *ships;
+	size_t max_life;
+};
 struct cg_osd {
 	struct osd_element root;
 	struct osd_fuel fuel;
@@ -45,6 +49,7 @@ struct cg_osd {
 	struct osd_freight freight_level,
 			  freight_ship,
 			  freight_hb;
+	struct osd_life life;
 	struct osd_element *rect,
 			   *panel,
 			   *pause;

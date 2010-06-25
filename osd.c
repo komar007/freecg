@@ -65,13 +65,29 @@ void osd_freight_init(struct osd_freight *f, struct osd_element *container,
 	/* containter's width is updated in real-time, thus w = 0 */
 	*container = _o(x, y, 0, 18,  1,  0, 0, 0, 0, 1, gl.ttm);
 	osdlib_make_children(container, 2, 1, &img, &shelf);
-	*img = _o(0, 0,  36, 18,  0.8,  tex_x, tex_y,  48, 24,  0, gl.ttm);
+	*img = _o(0, 0,  36, 18,  0.6,  tex_x, tex_y,  48, 24,  0, gl.ttm);
 	*shelf = _o(shelf_pos, 6, -shelf_pos, 12,  0.2,  4, 302, 1, 1, 0, gl.ttm);
 	osdlib_make_children(shelf, f->max_freight, 0);
 	f->freight = shelf->ch;
 	f->freight[0] = _o(4, -2,  16, 16,  0.8,  80, 392,  16, 16, 1, gl.ttm);
 	for (size_t i = 1; i < f->max_freight; ++i)
 		f->freight[i] = _ro(&f->freight[i-1], -3, 0,  16, 16,  0.8,  80, 392,  16, 16, 1, gl.ttm);
+}
+void osd_life_init(struct osd_life *l, struct osd_element *container,
+		double x, double y)
+{
+	l->max_life = gl.l->num_1ups + DEFAULT_LIFE;
+	int cwidth  = (l->max_life-1)*14 + SHIP_W + 2*2;
+	int cheight = SHIP_H;
+	*container = _o(x, y, cwidth, cheight,  0,  4, 302, 1, 1,  0, gl.ttm);
+	osdlib_make_children(container, l->max_life, 0);
+	l->ships = container->ch;
+	for (size_t i = 0; i < l->max_life; ++i) {
+		l->ships[i] = _o(-((signed)i*14 + .1), 0, SHIP_W, SHIP_H,  0.5,
+				SHIP_ON_IMG_X + 12*SHIP_W*(i%2), SHIP_ON_IMG_Y,
+				SHIP_W, SHIP_H, 0, gl.ttm);
+		l->ships[i].z = i*0.01;
+	}
 }
 void osd_init()
 {
@@ -86,13 +102,14 @@ void osd_init()
 	osd_keys_init(&osd.keys, key_cont, -12, 8);
 	/* panel */
 	*osd.panel = _o(142, -.1, -142, 32,  0.8,  0, 90,  1, 1,  0, gl.ttm);
-	struct osd_element *lfreight, *sfreight, *hbfreight;
-	osdlib_make_children(osd.panel, 3, 1, &lfreight, &sfreight, &hbfreight);
+	struct osd_element *lfreight, *sfreight, *hbfreight, *life;
+	osdlib_make_children(osd.panel, 4, 1, &lfreight, &sfreight, &hbfreight, &life);
 	osd_freight_init(&osd.freight_level, lfreight, 8, 8, 384, 400);
 	osd_freight_init(&osd.freight_ship, sfreight, -12, 0, 432, 400);
 	sfreight->rel = lfreight;
 	osd_freight_init(&osd.freight_hb, hbfreight, -12, 0, 480, 400);
 	hbfreight->rel = sfreight;
+	osd_life_init(&osd.life, life, -8, 6);
 	int pause_x = gl.win_w/2 - 264/2,
 	    pause_y = gl.win_h/2 - 120/2;
 	*osd.pause = _o(pause_x,pause_y, 264, 120, 0.8, 0, 90, 1, 1, 0, gl.ttm);
@@ -137,6 +154,13 @@ void osd_freight_step(struct osd_freight *f, const struct freight *flist, size_t
 	int shelf_len = f->max_freight*16 + (f->max_freight-1)*3 + 8;
 	f->container->w = shelf_len + 44;
 }
+void osd_life_step(struct osd_life *l, size_t life)
+{
+	for (size_t i = 0; i < life; ++i)
+		l->ships[i].transparent = 0;
+	for (size_t i = life; i < l->max_life; ++i)
+		l->ships[i].transparent = 1;
+}
 void osd_step()
 {
 	struct ship *ship = gl.l->ship;
@@ -158,6 +182,7 @@ void osd_step()
 	osd_freight_step(&osd.freight_ship, ship->freight, ship->num_freight);
 	struct airport *hb = gl.l->hb;
 	osd_freight_step(&osd.freight_hb, hb->c.freight, hb->num_cargo);
+	osd_life_step(&osd.life, max(0, gl.l->ship->life));
 }
 void osd_draw()
 {

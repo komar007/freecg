@@ -28,6 +28,7 @@ struct osd_element {
 	double x, y;
 	double w, h;
 	double a;
+	double z;
 	int tex_x, tex_y;
 	int tex_w, tex_h;
 	struct texmgr *t;
@@ -52,6 +53,7 @@ static inline struct osd_element _o(double x, double y, double w, double h,
 	e.ch = NULL;
 	e.rel = NULL;
 	e.transparent = tr;
+	e.z = 0;
 	return e;
 }
 

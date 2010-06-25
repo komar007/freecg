@@ -1019,6 +1019,8 @@ void cgl_preprocess(struct cgl *cgl)
 			cgl->blocks[j][i][is[i + j*cgl->width]] = NULL;
 	free(sizes);
 	free(is);
+	cgl->num_all_freight = 0;
+	cgl->num_1ups = 0;
 	/* Find the homebase and count number of freightt */
 	for (size_t i = 0; i < cgl->nairports; ++i) {
 		switch (cgl->airports[i].type) {
@@ -1027,6 +1029,11 @@ void cgl_preprocess(struct cgl *cgl)
 			break;
 		case Freight:
 			cgl->num_all_freight += cgl->airports[i].num_cargo;
+			break;
+		case Extras:
+			for (size_t j = 0; j < cgl->airports[i].num_cargo; ++j)
+				if (cgl->airports[i].c.extras[j] == Life)
+					++cgl->num_1ups;
 			break;
 		default:
 			break;

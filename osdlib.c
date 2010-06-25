@@ -61,7 +61,7 @@ void osdlib_draw(struct osd_element *e, double px, double py,
 	count_rel(e);
 	x = e->rx >= 0 ? px + e->rx : px + pw + e->rx - w;
 	y = e->ry >= 0 ? py + e->ry : py + ph + e->ry - h;
-	z = pz + 0.01;
+	z = pz + 0.01 + e->z;
 	if (!e->transparent) {
 		gl_bind_texture(e->t);
 		glBegin(GL_QUADS);
