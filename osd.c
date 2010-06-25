@@ -125,11 +125,11 @@ void osd_keys_step(struct osd_keys *k, const int *keys)
 		}
 	}
 }
-void osd_freight_step(struct osd_freight *f, const enum freight *flist, size_t nfreight)
+void osd_freight_step(struct osd_freight *f, const struct freight *flist, size_t nfreight)
 {
 	for (size_t i = 0; i < nfreight; ++i) {
 		f->freight[i].transparent = 0;
-		f->freight[i].tex_x = 80 + 16*flist[i];
+		f->freight[i].tex_x = 80 + 16*flist[i].f;
 	}
 	for (size_t i = nfreight; i < f->max_freight; ++i)
 		f->freight[i].transparent = 1;
@@ -144,7 +144,7 @@ void osd_step()
 	osd_velocity_step(&osd.velocity, ship->vx, ship->vy);
 	osd_keys_step(&osd.keys, ship->keys);
 	size_t nfreight = cg_freight_remaining(gl.l);
-	enum freight freight[nfreight];
+	struct freight freight[nfreight];
 	size_t k = 0;
 	for (size_t i = 0; i < gl.l->nairports; ++i) {
 		if (gl.l->airports[i].type == Freight) {

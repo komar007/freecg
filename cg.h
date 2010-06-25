@@ -40,7 +40,6 @@ enum {
 	FUEL_BARREL = 6,
 	DEFAULT_LIFE = 5
 };
-
 struct ship {
 	double x, y;
 	double vx, vy;
@@ -51,7 +50,7 @@ struct ship {
 	int max_freight;
 	/* freight currently on board */
 	int num_freight;
-	enum freight *freight;
+	struct freight *freight;
 	/* reference to the airport on which the ship is waiting */
 	struct airport *airport;
 	double fuel;
@@ -60,7 +59,6 @@ struct ship {
 	int life;
 };
 
-struct cgl;
 void cg_init(struct cgl*);
 void cg_step(struct cgl*, double);
 void cg_ship_set_engine(struct ship*, int);

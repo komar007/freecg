@@ -23,11 +23,12 @@
 #include <math.h>
 #include <assert.h>
 
-void cg_init_ship(struct cgl *l, int x, int y)
+void cg_init_ship(struct cgl *l)
 {
+	l->ship->x = l->hb->base->x + (l->hb->base->w - SHIP_W)/2,
+	l->ship->y = l->hb->base->y - 20;
 	l->ship->engine = 0;
 	l->ship->rot = 3/2.0 * M_PI; /* vertical */
-	l->ship->x = x, l->ship->y = y;
 	l->ship->airport = l->hb;
 	l->ship->fuel = MAX_FUEL;
 	l->ship->has_turbo = 0;
@@ -40,9 +41,7 @@ void cg_init(struct cgl *l)
 {
 	l->time = 0.0;
 	l->ship = calloc(1, sizeof(*l->ship));
-	int x = l->hb->base->x + (l->hb->base->w - SHIP_W) / 2,
-	    y = l->hb->base->y - 20;
-	cg_init_ship(l, x, y);
+	cg_init_ship(l);
 }
 
 void cg_ship_set_engine(struct ship *ship, int eng)

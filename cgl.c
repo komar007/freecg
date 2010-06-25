@@ -941,7 +941,8 @@ int cgl_read_one_lpts(struct airport *airport, FILE *fp)
 			STUFF_TEX_X + buf[20+i]*16, STUFF_TEX_Y);
 		switch (airport->type) {
 		case Freight:
-			airport->c.freight[i] = buf[20+i] - 1;
+			airport->c.freight[i].f = buf[20+i] - 1;
+			airport->c.freight[i].ap = airport;
 			break;
 		case Extras:
 			airport->c.extras[i] = buf[20+i] - 5;

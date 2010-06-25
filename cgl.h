@@ -227,11 +227,14 @@ struct lgate {
 	int active;
 	int open;
 };
-enum freight {
-	Freight1 = 0,
-	Freight2,
-	Freight3,
-	Freight4
+struct freight {
+	enum {
+		Freight1 = 0,
+		Freight2,
+		Freight3,
+		Freight4
+	} f;
+	struct airport *ap;
 };
 struct airport {
 	struct tile *base,
@@ -254,7 +257,7 @@ struct airport {
 	int ship_touched;
 	union {
 		int key;
-		enum freight freight[10];
+		struct freight freight[10];
 		enum {
 			Turbo = 0,
 			Life,
