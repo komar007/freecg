@@ -1,1 +1,32 @@
-FreeCG is an open-source clone of Crazy Gravity (http://www.xlmsoft.de/crazygravity.php). Currently a level viewer is being developed. In order to play a user will need the original graphics and level files available for free in the demo version of Crazy Gravity.
+                                  FreeCG
+                                 ========
+
+
+INTRODUCTION
+============
+
+FreeCG is an open-source clone of Crazy Gravity
+(http://www.xlmsoft.de/crazygravity.php). The main goal of the project is to
+provide a logically exact clone of the original game with some minor user
+interface and graphics tweaks.
+
+
+BUILD INSTRUCTIONS
+==================
+
+FreeCG depends on SDL and OpenGL. Building is very simple:
+make
+
+In order to work FreeCG requires the original graphics and level files from
+the distribution of Crazy Gravity. Currently only files from version 2.0E are
+supported. Support for current version (2004) will be added soon.
+These files are freely available on the internet, but their legal status is
+considered unknown. You may have to be the owner of the full Crazy Gravity
+license to use them in FreeCG.
+
+
+AUTHORS
+=======
+
+Currently there's one:
+Michal Trybus <komar007@gmail.com>

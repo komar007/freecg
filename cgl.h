@@ -1,5 +1,6 @@
 /* cgl.h - data structures representing a single CGL level file and the tile
  * structure - the main data structure of the game simulation and graphics
+ * Copyright (C) 2010 Michal Trybus.
  *
  * This file is part of FreeCG.
  *
@@ -14,8 +15,7 @@
  * GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
- * along with FreeCG; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
+ * along with FreeCG. If not, see <http://www.gnu.org/licenses/>.
  */
 
 #ifndef CGL_H
