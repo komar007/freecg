@@ -37,7 +37,8 @@ enum {
 	ENGINE_ACCEL = 130,
 	GRAVITY = 23,
 	MAX_FUEL = 16,
-	FUEL_BARREL = 6
+	FUEL_BARREL = 6,
+	DEFAULT_LIFE = 5
 };
 
 struct ship {
@@ -46,8 +47,12 @@ struct ship {
 	double rot, rot_speed;
 	int engine;
 	int keys[4];
-	enum freigh *freigh;
-	int num_freigh, max_freigh;
+	/* the size of cargo hold */
+	int max_freight;
+	/* freight currently on board */
+	int num_freight;
+	enum freight *freight;
+	/* reference to the airport on which the ship is waiting */
 	struct airport *airport;
 	double fuel;
 	int has_turbo;
@@ -60,7 +65,7 @@ void cg_init(struct cgl*);
 void cg_step(struct cgl*, double);
 void cg_ship_set_engine(struct ship*, int);
 void cg_ship_rotate(struct ship*, double);
-size_t cg_freigh_remaining(struct cgl*);
+size_t cg_freight_remaining(struct cgl*);
 
 
 #endif

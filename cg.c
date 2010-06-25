@@ -26,14 +26,15 @@
 void cg_init_ship(struct cgl *l, int x, int y)
 {
 	l->ship->engine = 0;
-	l->ship->rot = 3/2.0 * M_PI;
+	l->ship->rot = 3/2.0 * M_PI; /* vertical */
 	l->ship->x = x, l->ship->y = y;
 	l->ship->airport = l->hb;
 	l->ship->fuel = MAX_FUEL;
 	l->ship->has_turbo = 0;
-	l->ship->max_freigh = 1;
-	l->ship->freigh = calloc(l->num_all_freigh,
-			sizeof(*l->ship->freigh));
+	l->ship->max_freight = 1;
+	l->ship->life = DEFAULT_LIFE;
+	l->ship->freight = calloc(l->num_all_freight,
+			sizeof(*l->ship->freight));
 }
 void cg_init(struct cgl *l)
 {
@@ -225,6 +226,7 @@ void cg_call_collision_handler(struct cgl *l, struct tile *tile)
 		cg_handle_collision_magnet(l->ship, (struct magnet*)tile->data);
 		break;
 	case Kaboom:
+		--l->ship->life;
 		l->ship->dead = 1;
 		break;
 	}
@@ -235,10 +237,11 @@ void cg_step(struct cgl *l, double time)
 	double dt = time - l->time;
 	cg_handle_collisions(l);
 	cg_step_objects(l, time, dt);
-	if (!l->ship->dead)
+	if (!l->ship->dead) {
 		cg_step_ship(l->ship, dt);
-	if (l->hb->num_cargo == l->num_all_freigh)
-		l->ship->dead = 1;
+	} else {
+		/* FIXME: start explosion */
+	}
 	l->time = time;
 }
 
@@ -265,10 +268,12 @@ void cg_handle_collision_airport(struct ship *ship, struct airport *airport)
 	rect_to_tile(&airport->lbbox, &allowed);
 	ship_to_tile(ship, &stile);
 	if (discrete_rot(ship->rot) == ROT_UP &&
-			cg_collision_rect_point(&stile, &allowed))
+			cg_collision_rect_point(&stile, &allowed)) {
 		airport->ship_touched = 1;
-	else
+	} else {
+		--ship->life;
 		ship->dead = 1;
+	}
 }
 double field_modifier(enum dir dir, struct tile *act, struct ship *ship)
 {
@@ -453,8 +458,8 @@ void cg_step_airport(struct airport *airport, struct ship *ship, double time)
 {
 	extern void airport_schedule_transfer(struct airport*, double),
 	            airport_pop_cargo(struct airport*),
-		    ship_load_freigh(struct ship*, struct airport*),
-		    ship_unload_freigh(struct ship*, struct airport*);
+		    ship_load_freight(struct ship*, struct airport*),
+		    ship_unload_freight(struct ship*, struct airport*);
 	if (airport->sched_cargo_transfer && airport->transfer_time < time) {
 		airport->sched_cargo_transfer = 0;
 		switch (airport->type) {
@@ -467,17 +472,17 @@ void cg_step_airport(struct airport *airport, struct ship *ship, double time)
 			case Turbo:
 				ship->has_turbo = 1; break;
 			case Cargo:
-				++ship->max_freigh; break;
+				++ship->max_freight; break;
 			case Life:
 				++ship->life; break;
 			}
 			airport_pop_cargo(airport);
 			break;
-		case Freigh:
-			ship_load_freigh(ship, airport);
+		case Freight:
+			ship_load_freight(ship, airport);
 			break;
 		case Homebase:
-			ship_unload_freigh(ship, airport);
+			ship_unload_freight(ship, airport);
 			break;
 		case Fuel:
 			ship->fuel = min(MAX_FUEL, ship->fuel + FUEL_BARREL);
@@ -491,8 +496,8 @@ void cg_step_airport(struct airport *airport, struct ship *ship, double time)
 	ship->vx = ship->vy = 0;
 	ship->airport = airport;
 	switch (airport->type) {
-	case Freigh:
-		if (airport->num_cargo > 0 && ship->num_freigh < ship->max_freigh)
+	case Freight:
+		if (airport->num_cargo > 0 && ship->num_freight < ship->max_freight)
 			airport_schedule_transfer(airport, time);
 		break;
 	case Extras:
@@ -505,7 +510,7 @@ void cg_step_airport(struct airport *airport, struct ship *ship, double time)
 			airport_schedule_transfer(airport, time);
 		break;
 	case Homebase:
-		if (ship->num_freigh > 0)
+		if (ship->num_freight > 0)
 			airport_schedule_transfer(airport, time);
 		break;
 	}
@@ -517,16 +522,16 @@ void airport_pop_cargo(struct airport *airport)
 	airport->cargo[airport->num_cargo]->type = Transparent;
 	airport->cargo[airport->num_cargo]->collision_test = NoCollision;
 }
-void ship_load_freigh(struct ship *ship, struct airport *airport)
+void ship_load_freight(struct ship *ship, struct airport *airport)
 {
-	ship->freigh[ship->num_freigh++] =
-		airport->c.freigh[airport->num_cargo-1];
+	ship->freight[ship->num_freight++] =
+		airport->c.freight[airport->num_cargo-1];
 	airport_pop_cargo(airport);
 }
-void ship_unload_freigh(struct ship *ship, struct airport *airport)
+void ship_unload_freight(struct ship *ship, struct airport *airport)
 {
-	airport->c.freigh[airport->num_cargo++] =
-		ship->freigh[--ship->num_freigh];
+	airport->c.freight[airport->num_cargo++] =
+		ship->freight[--ship->num_freight];
 }
 void airport_schedule_transfer(struct airport *airport, double time)
 {
@@ -571,12 +576,12 @@ void cg_step_magnet(struct magnet *magnet, struct ship *ship, double dt)
 }
 /* ==================== /Object simulators ==================== */
 
-size_t cg_freigh_remaining(struct cgl *l)
+size_t cg_freight_remaining(struct cgl *l)
 {
-	size_t nfreigh = 0;
+	size_t nfreight = 0;
 	for (size_t i = 0; i < l->nairports; ++i) {
-		if (l->airports[i].type == Freigh)
-			nfreigh += l->airports[i].num_cargo;
+		if (l->airports[i].type == Freight)
+			nfreight += l->airports[i].num_cargo;
 	}
-	return nfreigh;
+	return nfreight;
 }

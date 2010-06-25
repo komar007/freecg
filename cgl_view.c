@@ -166,12 +166,10 @@ int main(int argc, char *argv[])
 		if (nt > 100) {
 			printf("%d frames in %d ms - %.1f fps\n",
 					gl.frame - fr, nt, (float)(gl.frame - fr) / nt * 1000);
-			if (cgl->ship->dead) {
-				if (cgl->hb->num_cargo == cgl->num_all_freigh)
-					printf("You won!");
-				else
-					printf("Dead. Game over!");
-			}
+			if (cgl->ship->life == -1)
+				printf("Dead. Game over!");
+			if (cgl->hb->num_cargo == cgl->num_all_freight)
+				printf("You won!");
 			fflush(stdout);
 
 			t += nt;

@@ -32,7 +32,7 @@ enum cgl_sizes {
 	UNIT = 4,
 	CGL_BLOCK_SIZE = (8 * UNIT),
 	BLOCK_SIZE = 32,
-	/* size of section header */
+	/* size of section headers */
 	CGL_SHDR_SIZE = 4,
 	CGL_MAGIC_SIZE = 4,
 	SOBS_TILE_SIZE = 4,
@@ -52,8 +52,10 @@ enum cgl_sizes {
 	LPTS_NUM_SHORTS = 6,
 	LPTS_NUM_STUFF = 10
 };
-#define DYN_TILES_OVERLAY_Z 0.2
+/* All dynamic tiles (not in SOBS) are placed above the rest */
 #define DYN_TILES_Z 0.1
+/* Some dynamic tiles consist of 2 layers. Second layer's Z */
+#define DYN_TILES_OVERLAY_Z 0.2
 enum error_codes {
 	EBADHDR = 1,
 	EBADSHDR,
@@ -73,15 +75,22 @@ enum error_codes {
 	EBADSHORT,
 	EBADINT
 };
-/* basic tile, max. 8x8 units = 32x32 px */
+/* The main tile data structure. Used to represent all objects in the game. */
 struct tile {
-	short x, y;	/* tile's origin */
+	/* origin */
+	short x, y;
+	/* dimensions */
 	unsigned short w, h;
+	/* texture position - assume the same dimensions of texture */
 	short tex_x, tex_y;
+	/* z-value - from 0 (lowest) to 1 (highest) */
 	double z;
 	enum type {
+		/* drawn normally */
 		Simple = 0,
+		/* not drawn */
 		Transparent,
+		/* Blinking (for gate lights) */
 		Blink
 	} type;
 	/* This is the type of collision test to be performed on a tile */
@@ -96,10 +105,12 @@ struct tile {
 		 * (img_x, img_y), (img_x + w, img_y + h) is used to detect
 		 * collisions in a rectabgular tile */
 		Bitmap,
+		/* For transparent or special tiles */
 		NoCollision,
 		/* Collisions are detected using a special function */
 		Cannon
 	} collision_test;
+	/* What to do if there's a collision */
 	enum collision_type {
 		Kaboom = 0,
 		AirgenAction,
@@ -112,6 +123,7 @@ struct tile {
 	/* necessary for renderer, the number of the most recent frame in
 	 * which the tile was rendered */
 	unsigned int lframe;
+	/* additional data necessary for collision detection */
 	void *data;
 };
 
@@ -122,16 +134,18 @@ struct fan {
 	} power;
 	enum dir dir;
 	struct tile *base,
-		    *pipes, /* unused */
+		    *pipes,
 		    *act;
+	/* x position of the primary texture */
 	int tex_x;
 	double modifier;
 };
 struct magnet {
 	enum dir dir;
-	struct tile *base, /* unused */
+	struct tile *base,
 		    *magn,
 		    *act;
+	/* x position of the primary texture */
 	int tex_x;
 	double modifier;
 };
@@ -142,8 +156,9 @@ struct airgen {
 	} spin;
 	enum dir dir;
 	struct tile *base,
-		    *pipes, /* unused */
+		    *pipes,
 		    *act;
+	/* x position of the primary texture */
 	int tex_x;
 	int active;
 };
@@ -212,11 +227,11 @@ struct lgate {
 	int active;
 	int open;
 };
-enum freigh {
-	Freigh1 = 0,
-	Freigh2,
-	Freigh3,
-	Freigh4
+enum freight {
+	Freight1 = 0,
+	Freight2,
+	Freight3,
+	Freight4
 };
 struct airport {
 	struct tile *base,
@@ -228,18 +243,18 @@ struct airport {
 		Homebase = 1,
 		Key,
 		Fuel,
-		Freigh,
+		Freight,
 		Extras,
 	} type;
+	int has_left_arrow,
+	    has_right_arrow;
 	size_t num_cargo;
 	double transfer_time;
 	int sched_cargo_transfer;
 	int ship_touched;
-	int has_left_arrow,
-	    has_right_arrow;
 	union {
 		int key;
-		enum freigh freigh[10];
+		enum freight freight[10];
 		enum {
 			Turbo = 0,
 			Life,
@@ -254,7 +269,7 @@ struct cgl {
 		Full,
 		Demo
 	} type;
-	size_t num_all_freigh;
+	size_t num_all_freight;
 	size_t width, height;
 	size_t ntiles;
 	struct tile *tiles;
@@ -276,8 +291,9 @@ struct cgl {
 	struct airport *airports;
 	struct airport *hb;
 	block **blocks;
-	struct ship *ship;
+
 	double time;
+	struct ship *ship;
 	collision_map cmap;
 };
 

@@ -32,6 +32,13 @@ void free_cgl(struct cgl *cgl)
 		return;
 	free(cgl->tiles);
 	free(cgl->fans);
+	free(cgl->magnets);
+	free(cgl->airgens);
+	free(cgl->cannons);
+	free(cgl->bars);
+	free(cgl->gates);
+	free(cgl->lgates);
+	free(cgl->airports);
 	if (cgl->blocks) {
 		for (size_t j = 0; j < cgl->height; ++j) {
 			for (size_t i = 0; i < cgl->width; ++i)
@@ -72,14 +79,16 @@ struct cgl *read_cgl(const char *path, uint8_t **out_soin)
 		return NULL;
 	}
 	cgl = calloc(1, sizeof(*cgl));
-	cgl->tiles   = NULL;
-	cgl->fans    = NULL;
-	cgl->magnets = NULL;
-	cgl->airgens = NULL;
-	cgl->cannons = NULL;
-	cgl->bars    = NULL;
-	cgl->gates   = NULL;
-	cgl->blocks  = NULL;
+	cgl->tiles    = NULL;
+	cgl->fans     = NULL;
+	cgl->magnets  = NULL;
+	cgl->airgens  = NULL;
+	cgl->cannons  = NULL;
+	cgl->bars     = NULL;
+	cgl->gates    = NULL;
+	cgl->lgates   = NULL;
+	cgl->airports = NULL;
+	cgl->blocks   = NULL;
 	if (cgl_read_section_header("CGL1", fp) != 0)
 		goto error;
 	if (cgl_read_size(cgl, fp) != 0)
@@ -438,7 +447,7 @@ int cgl_read_##what(struct cgl *cgl, struct tile **out_tiles,               \
 	cgl->obj##s = calloc(num, sizeof(*cgl->obj##s));                    \
 	struct tile *tiles = calloc(howmany * num, sizeof(*tiles));         \
 	for (size_t i = 0; i < howmany * num; ++i)                          \
-		tiles[i].z = DYN_TILES_Z;                                             \
+		tiles[i].z = DYN_TILES_Z;                                   \
 	*out_tiles = tiles;                                                 \
 	for (size_t i = 0; i < num; ++i) {
 
@@ -463,7 +472,6 @@ BEGIN_CGL_READ_X(vent, VENT, fan, 3)
 	cgl->fans[i].pipes = &tiles[3*i + 1];
 	cgl->fans[i].act   = &tiles[3*i + 2];
 END_CGL_READ_X(vent, VENT, fan, 3)
-
 int cgl_read_one_vent(struct fan *fan, FILE *fp)
 {
 	int err;
@@ -495,7 +503,6 @@ BEGIN_CGL_READ_X(magn, MAGN, magnet, 3)
 	cgl->magnets[i].magn = &tiles[3*i + 1];
 	cgl->magnets[i].act  = &tiles[3*i + 2];
 END_CGL_READ_X(magn, MAGN, magnet, 3)
-
 int cgl_read_one_magn(struct magnet *magnet, FILE *fp)
 {
 	int err;
@@ -526,7 +533,6 @@ BEGIN_CGL_READ_X(dist, DIST, airgen, 3)
 	cgl->airgens[i].pipes = &tiles[3*i + 1];
 	cgl->airgens[i].act   = &tiles[3*i + 2];
 END_CGL_READ_X(dist, DIST, airgen, 3)
-
 int cgl_read_one_dist(struct airgen *airgen, FILE *fp)
 {
 	int err;
@@ -552,14 +558,12 @@ int cgl_read_one_dist(struct airgen *airgen, FILE *fp)
 	set_type(airgen->act, Transparent, RectPoint, AirgenAction, airgen);
 	return 0;
 }
-
 BEGIN_CGL_READ_X(cano, CANO, cannon, 4)
 	cgl->cannons[i].beg_base  = &tiles[4*i + 0];
 	cgl->cannons[i].beg_cano  = &tiles[4*i + 1];
 	cgl->cannons[i].end_base  = &tiles[4*i + 2];
 	cgl->cannons[i].end_catch = &tiles[4*i + 3];
 END_CGL_READ_X(cano, CANO, cannon, 4)
-
 int cgl_read_one_cano(struct cannon *cannon, FILE *fp)
 {
 	int err;
@@ -602,7 +606,6 @@ BEGIN_CGL_READ_X(pipe, PIPE, bar, 4)
 	cgl->bars[i].fbar = &tiles[4*i + 2];
 	cgl->bars[i].sbar = &tiles[4*i + 3];
 END_CGL_READ_X(pipe, PIPE, bar, 4)
-
 int cgl_read_one_pipe(struct bar *bar, FILE *fp)
 {
 	int err;
@@ -677,17 +680,6 @@ int cgl_read_one_pipe(struct bar *bar, FILE *fp)
 	return 0;
 }
 
-BEGIN_CGL_READ_X(onew, ONEW, gate, 8)
-	cgl->gates[i].base[0]  = &tiles[8*i + 0];
-	cgl->gates[i].base[1]  = &tiles[8*i + 1];
-	cgl->gates[i].base[2]  = &tiles[8*i + 2];
-	cgl->gates[i].base[3]  = &tiles[8*i + 3];
-	cgl->gates[i].base[4]  = &tiles[8*i + 4];
-	cgl->gates[i].bar      = &tiles[8*i + 5];
-	cgl->gates[i].arrow    = &tiles[8*i + 6];
-	cgl->gates[i].act      = &tiles[8*i + 7];
-END_CGL_READ_X(onew, ONEW, gate, 8)
-
 inline void parse_packed_tiles(const int16_t *data, size_t num, struct tile *tiles[],
 		const vector *dims)
 {
@@ -705,6 +697,16 @@ inline void parse_packed_tiles(const int16_t *data, size_t num, struct tile *til
 	}
 }
 
+BEGIN_CGL_READ_X(onew, ONEW, gate, 8)
+	cgl->gates[i].base[0]  = &tiles[8*i + 0];
+	cgl->gates[i].base[1]  = &tiles[8*i + 1];
+	cgl->gates[i].base[2]  = &tiles[8*i + 2];
+	cgl->gates[i].base[3]  = &tiles[8*i + 3];
+	cgl->gates[i].base[4]  = &tiles[8*i + 4];
+	cgl->gates[i].bar      = &tiles[8*i + 5];
+	cgl->gates[i].arrow    = &tiles[8*i + 6];
+	cgl->gates[i].act      = &tiles[8*i + 7];
+END_CGL_READ_X(onew, ONEW, gate, 8)
 int cgl_read_one_onew(struct gate *gate, FILE *fp)
 {
 	static const vector base_dims[][5] = {
@@ -777,6 +779,13 @@ int cgl_read_one_onew(struct gate *gate, FILE *fp)
 	return 0;
 }
 
+void set_light_tile(struct tile *light, int num, int x, int y)
+{
+	set_dims(light, x, y, 8, 8, LIGHTS_TEX_X + num*8, LIGHTS_TEX_Y);
+	set_type(light, Transparent, NoCollision, 0, NULL);
+	light->z = DYN_TILES_OVERLAY_Z;
+}
+
 BEGIN_CGL_READ_X(barr, BARR, lgate, 11)
 	cgl->lgates[i].base[0]  = &tiles[11*i + 0];
 	cgl->lgates[i].base[1]  = &tiles[11*i + 1];
@@ -790,13 +799,6 @@ BEGIN_CGL_READ_X(barr, BARR, lgate, 11)
 	cgl->lgates[i].light[3] = &tiles[11*i + 9];
 	cgl->lgates[i].act      = &tiles[11*i + 10];
 END_CGL_READ_X(barr, BARR, lgate, 11)
-
-void set_light_tile(struct tile *light, int num, int x, int y)
-{
-	set_dims(light, x, y, 8, 8, LIGHTS_TEX_X + num*8, LIGHTS_TEX_Y);
-	set_type(light, Transparent, NoCollision, 0, NULL);
-	light->z = DYN_TILES_OVERLAY_Z;
-}
 int cgl_read_one_barr(struct lgate *lgate, FILE *fp)
 {
 	static const vector base_dims[][5] = {
@@ -872,7 +874,6 @@ BEGIN_CGL_READ_X(lpts, LPTS, airport, 15)
 	for (size_t k = 0; k < 10; ++k)
 		cgl->airports[i].cargo[k] = &tiles[15*i + 5+k];
 END_CGL_READ_X(lpts, LPTS, airport, 15)
-
 int cgl_read_one_lpts(struct airport *airport, FILE *fp)
 {
 	static const int16_t larrow_data[] = {0, 0, 24, 32, 232, 360},
@@ -939,8 +940,8 @@ int cgl_read_one_lpts(struct airport *airport, FILE *fp)
 			STUFF_SIZE, STUFF_SIZE,
 			STUFF_TEX_X + buf[20+i]*16, STUFF_TEX_Y);
 		switch (airport->type) {
-		case Freigh:
-			airport->c.freigh[i] = buf[20+i] - 1;
+		case Freight:
+			airport->c.freight[i] = buf[20+i] - 1;
 			break;
 		case Extras:
 			airport->c.extras[i] = buf[20+i] - 5;
@@ -1017,13 +1018,14 @@ void cgl_preprocess(struct cgl *cgl)
 			cgl->blocks[j][i][is[i + j*cgl->width]] = NULL;
 	free(sizes);
 	free(is);
+	/* Find the homebase and count number of freightt */
 	for (size_t i = 0; i < cgl->nairports; ++i) {
 		switch (cgl->airports[i].type) {
 		case Homebase:
 			cgl->hb = &cgl->airports[i];
 			break;
-		case Freigh:
-			cgl->num_all_freigh += cgl->airports[i].num_cargo;
+		case Freight:
+			cgl->num_all_freight += cgl->airports[i].num_cargo;
 			break;
 		default:
 			break;

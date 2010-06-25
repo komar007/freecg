@@ -55,11 +55,11 @@ void osd_keys_init(struct osd_keys *k, struct osd_element *container,
 	for (int i = 0; i < 4; ++i)
 		k->keys[i] = _o(0, 17*i,  16, 16,  0.2,  256, 360+16*i,  16, 16,  0, gl.ttm);
 }
-void osd_freigh_init(struct osd_freigh *f, struct osd_element *container,
+void osd_freight_init(struct osd_freight *f, struct osd_element *container,
 		double x, double y, int tex_x, int tex_y)
 {
 	f->container = container;
-	f->max_freigh = gl.l->num_all_freigh;
+	f->max_freight = gl.l->num_all_freight;
 	int shelf_pos = 44;
 	struct osd_element *img, *shelf;
 	/* containter's width is updated in real-time, thus w = 0 */
@@ -67,11 +67,11 @@ void osd_freigh_init(struct osd_freigh *f, struct osd_element *container,
 	osdlib_make_children(container, 2, 1, &img, &shelf);
 	*img = _o(0, 0,  36, 18,  0.8,  tex_x, tex_y,  48, 24,  0, gl.ttm);
 	*shelf = _o(shelf_pos, 6, -shelf_pos, 12,  0.2,  4, 302, 1, 1, 0, gl.ttm);
-	osdlib_make_children(shelf, f->max_freigh, 0);
-	f->freigh = shelf->ch;
-	f->freigh[0] = _o(4, -2,  16, 16,  0.8,  80, 392,  16, 16, 1, gl.ttm);
-	for (size_t i = 1; i < f->max_freigh; ++i)
-		f->freigh[i] = _ro(&f->freigh[i-1], -3, 0,  16, 16,  0.8,  80, 392,  16, 16, 1, gl.ttm);
+	osdlib_make_children(shelf, f->max_freight, 0);
+	f->freight = shelf->ch;
+	f->freight[0] = _o(4, -2,  16, 16,  0.8,  80, 392,  16, 16, 1, gl.ttm);
+	for (size_t i = 1; i < f->max_freight; ++i)
+		f->freight[i] = _ro(&f->freight[i-1], -3, 0,  16, 16,  0.8,  80, 392,  16, 16, 1, gl.ttm);
 }
 void osd_init()
 {
@@ -86,13 +86,13 @@ void osd_init()
 	osd_keys_init(&osd.keys, key_cont, -12, 8);
 	/* panel */
 	*osd.panel = _o(142, -.1, -142, 32,  0.8,  0, 90,  1, 1,  0, gl.ttm);
-	struct osd_element *lfreigh, *sfreigh, *hbfreigh;
-	osdlib_make_children(osd.panel, 3, 1, &lfreigh, &sfreigh, &hbfreigh);
-	osd_freigh_init(&osd.freigh_level, lfreigh, 8, 8, 384, 400);
-	osd_freigh_init(&osd.freigh_ship, sfreigh, -12, 0, 432, 400);
-	sfreigh->rel = lfreigh;
-	osd_freigh_init(&osd.freigh_hb, hbfreigh, -12, 0, 480, 400);
-	hbfreigh->rel = sfreigh;
+	struct osd_element *lfreight, *sfreight, *hbfreight;
+	osdlib_make_children(osd.panel, 3, 1, &lfreight, &sfreight, &hbfreight);
+	osd_freight_init(&osd.freight_level, lfreight, 8, 8, 384, 400);
+	osd_freight_init(&osd.freight_ship, sfreight, -12, 0, 432, 400);
+	sfreight->rel = lfreight;
+	osd_freight_init(&osd.freight_hb, hbfreight, -12, 0, 480, 400);
+	hbfreight->rel = sfreight;
 	int pause_x = gl.win_w/2 - 264/2,
 	    pause_y = gl.win_h/2 - 120/2;
 	*osd.pause = _o(pause_x,pause_y, 264, 120, 0.8, 0, 90, 1, 1, 0, gl.ttm);
@@ -125,16 +125,16 @@ void osd_keys_step(struct osd_keys *k, const int *keys)
 		}
 	}
 }
-void osd_freigh_step(struct osd_freigh *f, const enum freigh *flist, size_t nfreigh)
+void osd_freight_step(struct osd_freight *f, const enum freight *flist, size_t nfreight)
 {
-	for (size_t i = 0; i < nfreigh; ++i) {
-		f->freigh[i].transparent = 0;
-		f->freigh[i].tex_x = 80 + 16*flist[i];
+	for (size_t i = 0; i < nfreight; ++i) {
+		f->freight[i].transparent = 0;
+		f->freight[i].tex_x = 80 + 16*flist[i];
 	}
-	for (size_t i = nfreigh; i < f->max_freigh; ++i)
-		f->freigh[i].transparent = 1;
+	for (size_t i = nfreight; i < f->max_freight; ++i)
+		f->freight[i].transparent = 1;
 	/* shelf length = number of freights + number of gaps + 2x margin(4) */
-	int shelf_len = f->max_freigh*16 + (f->max_freigh-1)*3 + 8;
+	int shelf_len = f->max_freight*16 + (f->max_freight-1)*3 + 8;
 	f->container->w = shelf_len + 44;
 }
 void osd_step()
@@ -143,21 +143,21 @@ void osd_step()
 	osd_fuel_step(&osd.fuel, ship->fuel);
 	osd_velocity_step(&osd.velocity, ship->vx, ship->vy);
 	osd_keys_step(&osd.keys, ship->keys);
-	size_t nfreigh = cg_freigh_remaining(gl.l);
-	enum freigh freigh[nfreigh];
+	size_t nfreight = cg_freight_remaining(gl.l);
+	enum freight freight[nfreight];
 	size_t k = 0;
 	for (size_t i = 0; i < gl.l->nairports; ++i) {
-		if (gl.l->airports[i].type == Freigh) {
+		if (gl.l->airports[i].type == Freight) {
 			struct airport *a = &gl.l->airports[i];
 			for (size_t j = 0; j < a->num_cargo; ++j)
-				freigh[k++] = a->c.freigh[j];
+				freight[k++] = a->c.freight[j];
 		}
 	}
-	osd_freigh_step(&osd.freigh_level, freigh, nfreigh);
-	osd.freigh_ship.max_freigh = ship->max_freigh;
-	osd_freigh_step(&osd.freigh_ship, ship->freigh, ship->num_freigh);
+	osd_freight_step(&osd.freight_level, freight, nfreight);
+	osd.freight_ship.max_freight = ship->max_freight;
+	osd_freight_step(&osd.freight_ship, ship->freight, ship->num_freight);
 	struct airport *hb = gl.l->hb;
-	osd_freigh_step(&osd.freigh_hb, hb->c.freigh, hb->num_cargo);
+	osd_freight_step(&osd.freight_hb, hb->c.freight, hb->num_cargo);
 }
 void osd_draw()
 {
