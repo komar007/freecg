@@ -52,6 +52,8 @@ void cg_init_ship(struct cgl *l)
 	l->ship->life = DEFAULT_LIFE;
 	l->ship->freight = calloc(l->num_all_freight,
 			sizeof(*l->ship->freight));
+	l->ship->max_vx = 42;
+	l->ship->max_vy = 72;
 }
 void cg_init(struct cgl *l)
 {
@@ -315,7 +317,9 @@ int cg_handle_collision_airport(struct ship *ship, struct airport *airport)
 	rect_to_tile(&airport->lbbox, &allowed);
 	ship_to_tile(ship, &stile);
 	if (discrete_rot(ship->rot) == ROT_UP &&
-			cg_collision_rect_point(&stile, &allowed))
+			cg_collision_rect_point(&stile, &allowed) &&
+			abs(ship->vx) < ship->max_vx &&
+			abs(ship->vy) < ship->max_vy)
 		airport->ship_touched = 1;
 	else
 		return 1;

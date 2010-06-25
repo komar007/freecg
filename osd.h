@@ -27,7 +27,10 @@ struct osd_fuel {
 };
 struct osd_velocity {
 	struct osd_element *xbar,
-			   *ybar;
+			   *ybar,
+			   *mxbar1,
+			   *mxbar2,
+			   *mybar;
 };
 struct osd_keys {
 	struct osd_element *keys;

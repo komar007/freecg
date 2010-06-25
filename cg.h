@@ -51,6 +51,7 @@ struct ship {
 	/* freight currently on board */
 	size_t num_freight;
 	struct freight *freight;
+	double max_vx, max_vy;
 	/* reference to the airport on which the ship is waiting */
 	struct airport *airport;
 	double fuel;

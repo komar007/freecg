@@ -42,9 +42,13 @@ void osd_velocity_init(struct osd_velocity *v, struct osd_element *container,
 		double x, double y)
 {
 	*container = _o(x,  y,  64, 64,  0.8,    0, 400,  64, 64,  0, gl.ttm);
-	osdlib_make_children(container, 2, 1, &v->xbar, &v->ybar);
+	osdlib_make_children(container, 5, 1,
+			&v->xbar, &v->ybar, &v->mxbar1, &v->mxbar2, &v->mybar);
 	*v->xbar   = _o(31, 16,   2, 32,  0.8,  384, 366,   2, 32,  0, gl.ttm);
 	*v->ybar   = _o(16, 31,  32,  2,  0.8,  384, 398,  32,  2,  0, gl.ttm);
+	*v->mxbar1 = _o(31, 25,   2, 14,  0.8,  386, 382,   2, 14,  0, gl.ttm);
+	*v->mxbar2 = _o(31, 25,   2, 14,  0.8,  386, 382,   2, 14,  0, gl.ttm);
+	*v->mybar  = _o(25, 31,  14,  2,  0.8,  386, 396,  14,  2,  0, gl.ttm);
 }
 void osd_keys_init(struct osd_keys *k, struct osd_element *container,
 		double x, double y)
@@ -125,10 +129,14 @@ void osd_fuel_step(struct osd_fuel *f, double fuel)
 	for (size_t i = (size_t)ceil(fuel); i < 16; ++i)
 		f->bars[i].a = 0.1;
 }
-void osd_velocity_step(struct osd_velocity *v, double vx, double vy)
+void osd_velocity_step(struct osd_velocity *v, double vx, double vy,
+		double max_vx, double max_vy)
 {
-	v->xbar->x = fmin(64, fmax(0, vx/3 + 31));
-	v->ybar->y = fmin(64, fmax(0, vy/3 + 31));
+	v->xbar->x   = fmin(64, fmax(0,  vx/3     + 31));
+	v->ybar->y   = fmin(64, fmax(0,  vy/3     + 31));
+	v->mxbar1->x = fmin(64, fmax(0,  max_vx/3 + 31));
+	v->mxbar2->x = fmin(64, fmax(0, -max_vx/3 + 31));
+	v->mybar->y  = fmin(64, fmax(0,  max_vy/3 + 31));
 }
 void osd_keys_step(struct osd_keys *k, const int *keys)
 {
@@ -165,7 +173,8 @@ void osd_step()
 {
 	struct ship *ship = gl.l->ship;
 	osd_fuel_step(&osd.fuel, ship->fuel);
-	osd_velocity_step(&osd.velocity, ship->vx, ship->vy);
+	osd_velocity_step(&osd.velocity, ship->vx, ship->vy,
+			ship->max_vx, ship->max_vy);
 	osd_keys_step(&osd.keys, ship->keys);
 	size_t nfreight = cg_freight_remaining(gl.l);
 	struct freight freight[nfreight];
