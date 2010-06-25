@@ -20,7 +20,7 @@ dep:
 -include Makefile.dep
 
 cgl_view: cgl_view.o cgl.o gfx.o graphics.o texmgr.o cg.o geometry.o osd.o osdlib.o
-	@echo LINK opencg
+	@echo LINK freecg
 	@$(CC) $(LIBS) -o cgl_view $^
 
 clean:

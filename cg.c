@@ -209,7 +209,7 @@ void cg_call_collision_handler(struct cg *cg, struct tile *tile)
 		cg_handle_collision_magnet(cg->ship, (struct magnet*)tile->data);
 		break;
 	case Kaboom:
-		//cg->ship->dead = 1;
+		cg->ship->dead = 1;
 		break;
 	}
 }
