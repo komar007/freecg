@@ -79,13 +79,13 @@ struct tile {
 	unsigned short w, h;
 	short tex_x, tex_y;
 	double z;
-	enum {
+	enum type {
 		Simple = 0,
 		Transparent,
 		Blink
 	} type;
 	/* This is the type of collision test to be performed on a tile */
-	enum {
+	enum collision_test {
 		/* The whole rectangular area defined by points (x, y) and
 		 * (x + w, y + h) is used to detect collisions */
 		Rect = 0,
@@ -100,7 +100,7 @@ struct tile {
 		/* Collisions are detected using a special function */
 		Cannon
 	} collision_test;
-	enum {
+	enum collision_type {
 		Kaboom = 0,
 		AirgenAction,
 		GateAction,

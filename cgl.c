@@ -466,6 +466,21 @@ int read_block(struct tile *tiles, size_t num, int x, int y, FILE* fp)
 
 /* Auxilliary functions to extract a single rectangle or tile description from
  * an array of int16_t */
+inline void set_dims(struct tile *t, int x, int y, int w, int h,
+		int tex_x, int tex_y)
+{
+	t->x = x, t->y = y;
+	t->w = w, t->h = h;
+	t->tex_x = tex_x, t->tex_y = tex_y;
+}
+inline void set_type(struct tile *t, enum type type, enum collision_test test,
+		enum collision_type action, void *data)
+{
+	t->type = type;
+	t->collision_test = test;
+	t->collision_type = action;
+	t->data = data;
+}
 inline void parse_point(const int16_t *data, vector *a, vector *b)
 {
 	a->x = data[0], a->y = data[1];
@@ -566,10 +581,7 @@ int cgl_read_one_vent(struct fan *fan, FILE *fp)
 	struct rect r;
 	parse_rect(buf2 + 0x0e, &r);
 	rect_to_tile(&r, fan->act);
-	fan->act->type = Transparent;
-	fan->act->collision_test = RectPoint;
-	fan->act->collision_type = FanAction;
-	fan->act->data = fan;
+	set_type(fan->act, Transparent, RectPoint, FanAction, fan);
 	return 0;
 }
 
@@ -600,10 +612,7 @@ int cgl_read_one_magn(struct magnet *magnet, FILE *fp)
 	struct rect r;
 	parse_rect(buf2 + 0x0e, &r);
 	rect_to_tile(&r, magnet->act);
-	magnet->act->type = Transparent;
-	magnet->act->collision_test = RectPoint;
-	magnet->act->collision_type = MagnetAction;
-	magnet->act->data = magnet;
+	set_type(magnet->act, Transparent, RectPoint, MagnetAction, magnet);
 	return 0;
 }
 
@@ -634,11 +643,8 @@ int cgl_read_one_dist(struct airgen *airgen, FILE *fp)
 	airgen->pipes->collision_test = Bitmap;
 	struct rect r;
 	parse_rect(buf2 + 0x0e, &r);
-	airgen->act->x = r.x, airgen->act->y = r.y;
-	airgen->act->w = r.w, airgen->act->h = r.h;
-	airgen->act->data = airgen;
-	airgen->act->type = Transparent;
-	airgen->act->collision_type = AirgenAction;
+	rect_to_tile(&r, airgen->act);
+	set_type(airgen->act, Transparent, RectPoint, AirgenAction, airgen);
 	return 0;
 }
 
@@ -717,49 +723,47 @@ int cgl_read_one_pipe(struct bar *bar, FILE *fp)
 	switch (bar->orientation) {
 	case Vertical:
 		parse_tile_minimal(buf2, bar->beg,
-				BAR_BASE_H, BAR_BASE_W, BAR_BEG_TEX_X, BAR_BEG_TEX_Y);
-		bar->end->x = bar->beg->x;
-		bar->end->y = bar->beg->y + height - BAR_BASE_W;
-		bar->end->tex_x = VBAR_END_TEX_X, bar->end->tex_y = VBAR_END_TEX_Y;
+			BAR_BASE_H, BAR_BASE_W, BAR_BEG_TEX_X, BAR_BEG_TEX_Y);
+		set_dims(bar->end,
+			bar->beg->x, bar->beg->y + height - BAR_BASE_W,
+			bar->beg->w, bar->beg->h,
+			VBAR_END_TEX_X, VBAR_END_TEX_Y);
 		/* fbar and sbar must take the whole space available, so that
 		 * cgl_preprocess assigns them to all blocks where they may
 		 * appear */
-		bar->fbar->x = bar->beg->x + (BAR_BASE_H - BAR_THICKNESS) / 2;
-		bar->fbar->y = bar->beg->y + BAR_BASE_W;
-		bar->fbar->w = BAR_THICKNESS;
-		bar->fbar->h = height - 2*BAR_BASE_W;
-		bar->fbar->tex_x = VBAR_TEX_X;
-		bar->fbar->tex_y = VBAR_TEX_Y + BAR_TEX_LEN - bar->fbar->h;
-		bar->sbar->x = bar->beg->x + (BAR_BASE_H - BAR_THICKNESS) / 2;
-		bar->sbar->y = bar->beg->y + BAR_BASE_W;
-		bar->sbar->w = BAR_THICKNESS;
-		bar->sbar->h = height - 2*BAR_BASE_W;
-		bar->sbar->tex_x = VBAR_TEX_X, bar->sbar->tex_y = VBAR_TEX_Y;
+		set_dims(bar->fbar,
+			bar->beg->x + (BAR_BASE_H - BAR_THICKNESS)/2,
+			bar->beg->y + BAR_BASE_W,
+			BAR_THICKNESS, height - 2*BAR_BASE_W,
+			VBAR_TEX_X, VBAR_TEX_Y + BAR_TEX_LEN - (height - 2*BAR_BASE_W));
+		set_dims(bar->sbar,
+			bar->beg->x + (BAR_BASE_H - BAR_THICKNESS)/2,
+			bar->beg->y + BAR_BASE_W,
+			BAR_THICKNESS, height - 2*BAR_BASE_W,
+			VBAR_TEX_X, VBAR_TEX_Y),
 		bar->len = height - 2*BAR_BASE_W;
 		break;
 	case Horizontal:
 		parse_tile_minimal(buf2, bar->beg,
 				BAR_BASE_W, BAR_BASE_H, BAR_BEG_TEX_X, BAR_BEG_TEX_Y);
-		bar->end->x = bar->beg->x + width - BAR_BASE_W;
-		bar->end->y = bar->beg->y;
-		bar->end->tex_x = HBAR_END_TEX_X, bar->end->tex_y = HBAR_END_TEX_Y;
+		set_dims(bar->end,
+			bar->beg->x + width - BAR_BASE_W, bar->beg->y,
+			bar->beg->w, bar->beg->h,
+			HBAR_END_TEX_X, HBAR_END_TEX_Y);
 		/* Same as in case Vertical */
-		bar->fbar->x = bar->beg->x + BAR_BASE_W;
-		bar->fbar->y = bar->beg->y + (BAR_BASE_H - BAR_THICKNESS) / 2;
-		bar->fbar->w = width - 2*BAR_BASE_W;
-		bar->fbar->h = BAR_THICKNESS;
-		bar->fbar->tex_x = HBAR_TEX_X + BAR_TEX_LEN - bar->fbar->w;;
-		bar->fbar->tex_y = HBAR_TEX_Y;
-		bar->sbar->x = bar->beg->x + BAR_BASE_W;
-		bar->sbar->y = bar->beg->y + (BAR_BASE_H - BAR_THICKNESS) / 2;
-		bar->sbar->w = width - 2*BAR_BASE_W;
-		bar->sbar->h = BAR_THICKNESS;
-		bar->sbar->tex_x = HBAR_TEX_X, bar->sbar->tex_y = HBAR_TEX_Y;
+		set_dims(bar->fbar,
+			bar->beg->x + BAR_BASE_W,
+			bar->beg->y + (BAR_BASE_H - BAR_THICKNESS)/2,
+			width - 2*BAR_BASE_W, BAR_THICKNESS,
+			HBAR_TEX_X + BAR_TEX_LEN - (width - 2*BAR_BASE_W), HBAR_TEX_Y);
+		set_dims(bar->sbar,
+			bar->beg->x + BAR_BASE_W,
+			bar->beg->y + (BAR_BASE_H - BAR_THICKNESS)/2,
+			width - 2*BAR_BASE_W, BAR_THICKNESS,
+			HBAR_TEX_X, HBAR_TEX_Y);
 		bar->len = width - 2*BAR_BASE_W;
 		break;
 	}
-	bar->end->w = bar->beg->w;
-	bar->end->h = bar->beg->h;
 	bar->btex_x = bar->beg->tex_x;
 	bar->etex_x = bar->end->tex_x;
 	bar->slen = BAR_MIN_LEN;
@@ -837,16 +841,10 @@ int cgl_read_one_onew(struct gate *gate, FILE *fp)
 	gate->bar->collision_test = Bitmap;
 	struct rect r;
 	parse_rect(buf2 + 0x1c, &r);
-	gate->act->x = r.x, gate->act->y = r.y;
-	gate->act->w = r.w, gate->act->h = r.h;
-	gate->act->type = Transparent;
-	gate->act->collision_test = RectPoint;
-	gate->act->collision_type = GateAction;
-	gate->act->data = gate;
-	if (!gate->has_end) {
-		gate->base[4]->type = Transparent;
-		gate->base[4]->collision_test = NoCollision;
-	}
+	rect_to_tile(&r, gate->act);
+	set_type(gate->act, Transparent, RectPoint, GateAction, gate);
+	if (!gate->has_end)
+		set_type(gate->base[4], Transparent, NoCollision, 0, NULL);
 	if (gate->type == GateLeft)
 		gate->bar->tex_x += GATE_BAR_LEN - gate->len;
 	if (gate->type == GateTop)
@@ -890,12 +888,8 @@ END_CGL_READ_X(barr, BARR, lgate, 11)
 
 void set_light_tile(struct tile *light, int num, int x, int y)
 {
-	light->x = x;
-	light->y = y;
-	light->w = light->h = 8;
-	light->tex_x = LIGHTS_TEX_X + num * 8;
-	light->tex_y = LIGHTS_TEX_Y;
-	light->type = Transparent;
+	set_dims(light, x, y, 8, 8, LIGHTS_TEX_X + num*8, LIGHTS_TEX_Y);
+	set_type(light, Transparent, NoCollision, 0, NULL);
 	light->z = DYN_TILES_OVERLAY_Z;
 }
 int cgl_read_one_barr(struct lgate *lgate, FILE *fp)
@@ -945,16 +939,10 @@ int cgl_read_one_barr(struct lgate *lgate, FILE *fp)
 	lgate->bar->collision_test = Bitmap;
 	struct rect r;
 	parse_rect(buf2 + 0x1c, &r);
-	lgate->act->x = r.x, lgate->act->y = r.y;
-	lgate->act->w = r.w, lgate->act->h = r.h;
-	lgate->act->type = Transparent;
-	lgate->act->collision_test = RectPoint;
-	lgate->act->collision_type = LGateAction;
-	lgate->act->data = lgate;
-	if (!lgate->has_end) {
-		lgate->base[4]->type = Transparent;
-		lgate->base[4]->collision_test = NoCollision;
-	}
+	rect_to_tile(&r, lgate->act);
+	set_type(lgate->act, Transparent, RectPoint, LGateAction, lgate);
+	if (!lgate->has_end)
+		set_type(lgate->base[4], Transparent, NoCollision, 0, NULL);
 	if (lgate->type == GateLeft)
 		lgate->bar->tex_x += GATE_BAR_LEN - lgate->len;
 	if (lgate->type == GateTop)
@@ -1003,41 +991,34 @@ int cgl_read_one_lpts(struct airport *airport, FILE *fp)
 	if (err)
 		return -EBADLPTS;
 	int stripe_tex_y = buf2[LPTS_NUM_SHORTS - 1];
-	printf("%i\n", stripe_tex_y);
 	parse_tile_minimal(buf2, airport->base,
 			buf2[2]*32, 20, buf2[3], buf2[4]);
-	airport->base->collision_type = AirportAction;
-	airport->base->data = airport;
+	set_type(airport->base, Simple, Rect, AirportAction, airport);
 	airport->base->y += 32;
-	airport->stripe[0]->x = airport->base->x + STRIPE_OFFS;
-	airport->stripe[0]->y = airport->base->y + STRIPE_OFFS;
-	airport->stripe[0]->w = airport->base->w - 2*STRIPE_OFFS -
-		STRIPE_END_W;
-	airport->stripe[0]->h = STRIPE_H;
-	airport->stripe[0]->tex_x = TILESET_W;
-	airport->stripe[0]->tex_y = stripe_tex_y - STRIPE_ORYG_Y;
+	set_dims(airport->stripe[0],
+		airport->base->x + STRIPE_OFFS,
+		airport->base->y + STRIPE_OFFS,
+		airport->base->w - 2*STRIPE_OFFS - STRIPE_END_W, STRIPE_H,
+		TILESET_W, stripe_tex_y - STRIPE_ORYG_Y);
 	airport->stripe[0]->z = DYN_TILES_OVERLAY_Z;
-
-	airport->stripe[1]->x = airport->stripe[0]->x + airport->stripe[0]->w;
-	airport->stripe[1]->y = airport->stripe[0]->y;
-	airport->stripe[1]->w = STRIPE_END_W;
-	airport->stripe[1]->h = STRIPE_H;
-	airport->stripe[1]->tex_x = STRIPE_ORYG_X + STRIPE_ORYG_W -
-		STRIPE_END_W;
-	airport->stripe[1]->tex_y = stripe_tex_y;
+	set_dims(airport->stripe[1],
+		airport->stripe[0]->x + airport->stripe[0]->w,
+		airport->stripe[0]->y,
+		STRIPE_END_W, STRIPE_H,
+		STRIPE_ORYG_X + STRIPE_ORYG_W - STRIPE_END_W, stripe_tex_y);
 	airport->stripe[1]->z = DYN_TILES_OVERLAY_Z;
 	if (airport->has_left_arrow) {
 		parse_tile_normal(larrow_data, airport->arrow[0]);
 		airport->arrow[0]->x = airport->base->x;
 		airport->arrow[0]->y = airport->base->y - 32;
-		airport->arrow[0]->collision_test = Bitmap;
+		set_type(airport->arrow[0], Simple, Bitmap, Kaboom, NULL);
 	}
 	if (airport->has_right_arrow) {
 		parse_tile_normal(rarrow_data, airport->arrow[1]);
 		airport->arrow[1]->x = airport->base->x +
 			airport->base->w - 24;
 		airport->arrow[1]->y = airport->base->y - 32;
-		airport->arrow[1]->collision_test = Bitmap;
+		set_type(airport->arrow[1], Simple, Bitmap, Kaboom, NULL);
 	}
 	nread = fread(buf, sizeof(uint8_t), 1, fp);
 	if (nread < 1)
@@ -1047,11 +1028,11 @@ int cgl_read_one_lpts(struct airport *airport, FILE *fp)
 	if (nread < LPTS_NUM_STUFF*3)
 		return -EBADLPTS;
 	for (size_t i = 0; i < airport->num_cargo; ++i) {
-		airport->cargo[i]->x = airport->base->x + buf[i];
-		airport->cargo[i]->y = airport->base->y - 32 + buf[10+i];
-		airport->cargo[i]->w = airport->cargo[i]->h = STUFF_SIZE;
-		airport->cargo[i]->tex_x = STUFF_TEX_X + buf[20+i]*16;
-		airport->cargo[i]->tex_y = STUFF_TEX_Y;
+		set_dims(airport->cargo[i],
+			airport->base->x + buf[i],
+			airport->base->y - 32 + buf[10+i],
+			STUFF_SIZE, STUFF_SIZE,
+			STUFF_TEX_X + buf[20+i]*16, STUFF_TEX_Y);
 		switch (airport->type) {
 		case Freigh:
 			airport->c.freigh[i] = buf[20+i] - 1;
