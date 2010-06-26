@@ -27,10 +27,10 @@
 struct glengine gl;
 void gl_draw_sprite(double, double, const struct tile*);
 
-void gl_init(struct cgl* l, struct texmgr *ttm, struct texmgr *ctm)
+void gl_init(struct cgl* l, struct texmgr *ttm, struct texmgr *ftm)
 {
 	gl.ttm = ttm;
-	gl.ctm = ctm;
+	gl.ftm = ftm;
 	gl.frame = 0;
 	gl.l = l;
 	gl.cam.scale = 1;

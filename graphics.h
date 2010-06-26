@@ -31,7 +31,7 @@ struct camera {
 };
 struct glengine {
 	struct texmgr *ttm,
-		      *ctm;
+		      *ftm;
 	struct drect viewport;
 	struct camera cam;
 	double win_w, win_h;

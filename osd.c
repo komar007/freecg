@@ -95,8 +95,16 @@ void osd_life_init(struct osd_life *l, struct osd_element *container,
 }
 void osd_init()
 {
+	const struct osdlib_font osd_font = {
+		.t = gl.ftm,
+		.w = 16,
+		.h = 16,
+		.tex_x = 0,
+		.tex_y = 0,
+		.offset = 32
+	};
 	osd.root = _o(0, 0, gl.win_w, gl.win_h, 1, 0, 0, 0, 0, 1, gl.ttm);
-	osdlib_make_children(&osd.root, 3, 1, &osd.rect, &osd.panel, &osd.gameover);
+	osdlib_make_children(&osd.root, 4, 1, &osd.rect, &osd.panel, &osd.gameover, &osd.victory);
 	/* left rect */
 	*osd.rect = _o(0,  -.1,  144, 80,  0.8,  0, 90,  1, 1,  0, gl.ttm);
 	struct osd_element *fuel_cont, *cross, *key_cont;
@@ -114,12 +122,18 @@ void osd_init()
 	osd_freight_init(&osd.freight_hb, hbfreight, -12, 0, 480, 400);
 	hbfreight->rel = sfreight;
 	osd_life_init(&osd.life, life, -8, 6);
-	int gameover_x = gl.win_w/2 - 264/2,
-	    gameover_y = gl.win_h/2 - 120/2;
-	*osd.gameover = _o(gameover_x, gameover_y, 264, 120, 0.8, 0, 90, 1, 1, 0, gl.ttm);
+	*osd.gameover = _o(0, 0, 160, 32, 0.8, 0, 90, 1, 1, TS, gl.ttm);
+	center_on_screen(osd.gameover);
 	struct osd_element *gameover_img;
 	osdlib_make_children(osd.gameover, 1, 1, &gameover_img);
-	*gameover_img = _o(48, 42, 168, 36, 0.55, 64, 408, 168, 36, 0, gl.ctm);
+	*gameover_img = _o(8, 8, 0, 0, 0.8, 0, 0, 0, 0, T, gl.ttm);
+	osdlib_make_text(gameover_img, &osd_font, "GAME OVER");
+	*osd.victory = _o(0, 0, 144, 32, 0.8, 0, 90, 1, 1, TS, gl.ttm);
+	center_on_screen(osd.victory);
+	struct osd_element *victory_img;
+	osdlib_make_children(osd.victory, 1, 1, &victory_img);
+	*victory_img = _o(8, 8, 0, 0, 0.8, 0, 0, 0, 0, T, gl.ttm);
+	osdlib_make_text(victory_img, &osd_font, "VICTORY!");
 }
 
 void osd_fuel_step(struct osd_fuel *f, double fuel)
@@ -153,11 +167,11 @@ void osd_keys_step(struct osd_keys *k, const int *keys)
 void osd_freight_step(struct osd_freight *f, const struct freight *flist, size_t nfreight)
 {
 	for (size_t i = 0; i < nfreight; ++i) {
-		f->freight[i].transparent = 0;
+		f->freight[i].tr = Opaque;
 		f->freight[i].tex_x = 80 + 16*flist[i].f;
 	}
 	for (size_t i = nfreight; i < f->max_freight; ++i)
-		f->freight[i].transparent = 1;
+		f->freight[i].tr = TransparentElement;
 	/* shelf length = number of freights + number of gaps + 2x margin(4) */
 	int shelf_len = f->max_freight*16 + (f->max_freight-1)*3 + 8;
 	f->container->w = shelf_len + 44;
@@ -165,9 +179,9 @@ void osd_freight_step(struct osd_freight *f, const struct freight *flist, size_t
 void osd_life_step(struct osd_life *l, size_t life)
 {
 	for (size_t i = 0; i < life; ++i)
-		l->ships[i].transparent = 0;
+		l->ships[i].tr = Opaque;
 	for (size_t i = life; i < l->max_life; ++i)
-		l->ships[i].transparent = 1;
+		l->ships[i].tr = TransparentElement;
 }
 void osd_step()
 {
@@ -192,6 +206,10 @@ void osd_step()
 	struct airport *hb = gl.l->hb;
 	osd_freight_step(&osd.freight_hb, hb->c.freight, hb->num_cargo);
 	osd_life_step(&osd.life, max(0, gl.l->ship->life));
+	if (gl.l->status == Victory)
+		osd.victory->tr = Opaque;
+	if (gl.l->status == Lost)
+		osd.gameover->tr = Opaque;
 }
 void osd_draw()
 {

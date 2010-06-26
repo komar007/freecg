@@ -23,8 +23,18 @@
 #include <stdlib.h>
 #include <float.h>
 
+enum transparency {
+	Opaque = 0,
+	TransparentElement,
+	TransparentSubtree
+};
+enum shortcuts {
+	O = Opaque,
+	T = TransparentElement,
+	TS = TransparentSubtree
+};
 struct osd_element {
-	int transparent;
+	enum transparency tr;
 	double x, y;
 	double w, h;
 	double a;
@@ -38,12 +48,20 @@ struct osd_element {
 	/* memoized x, y */
 	double rx, ry;
 };
+struct osdlib_font {
+	struct texmgr *t;
+	int tex_x, tex_y;
+	int w, h;
+	int offset;
+};
 void osdlib_draw(struct osd_element*, double, double, double, double, double);
+void osdlib_make_text(struct osd_element*, const struct osdlib_font*, const char*);
+void center_on_screen(struct osd_element*);
 
 /* create absolutely positioned element (relatively to the parent) */
 static inline struct osd_element _o(double x, double y, double w, double h,
 		double a, double tx, double ty, double tw, double th,
-		int tr, struct texmgr *t)
+		enum transparency tr, struct texmgr *t)
 {
 	struct osd_element e;
 	e.x = x, e.y = y, e.w = w, e.h = h, e.a = a, e.tex_x = tx,
@@ -52,7 +70,7 @@ static inline struct osd_element _o(double x, double y, double w, double h,
 	e.nch = 0;
 	e.ch = NULL;
 	e.rel = NULL;
-	e.transparent = tr;
+	e.tr = tr;
 	e.z = 0;
 	return e;
 }
@@ -60,7 +78,7 @@ static inline struct osd_element _o(double x, double y, double w, double h,
 /* create element relatively positioned to the sibling */
 static inline struct osd_element _ro(struct osd_element *s, double x, double y,
 		double w, double h, double a, double tx, double ty,
-		double tw, double th, int tr, struct texmgr *t)
+		double tw, double th, enum transparency tr, struct texmgr *t)
 {
 	struct osd_element e = _o(x, y, w, h, a, tx, ty, tw, th, tr, t);
 	e.rel = s;

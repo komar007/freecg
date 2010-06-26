@@ -134,7 +134,7 @@ int main(int argc, char *argv[])
 		fprintf(stderr, "read_gfx: %s\n", SDL_GetError());
 		abort();
 	}
-	SDL_Surface *png = load_png("test.png");
+	SDL_Surface *png = load_png("font.png");
 	if (!png) {
 		fprintf(stderr, "load_png: %s\n", SDL_GetError());
 		abort();
@@ -154,8 +154,8 @@ int main(int argc, char *argv[])
 	screen = SDL_SetVideoMode(SCREEN_W, SCREEN_H, 0, MODE);
 	gl_resize_viewport(screen->w, screen->h);
 	struct texmgr *ttm = tm_request_texture(gfx);
-	struct texmgr *ctrls = tm_request_texture(png);
-	gl_init(cgl, ttm, ctrls);
+	struct texmgr *fnt = tm_request_texture(png);
+	gl_init(cgl, ttm, fnt);
 	int t = SDL_GetTicks(),
 	    nt = t,
 	    time = t,

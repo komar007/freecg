@@ -28,7 +28,7 @@ void osdlib_make_children(struct osd_element *e, size_t num, int init, ...)
 	e->ch = calloc(num, sizeof(*e->ch));
 	e->nch = num;
 	for (size_t i = 0; i < num; ++i)
-		e->ch[i].transparent = 1;
+		e->ch[i].tr = TransparentSubtree;
 	if (!init)
 		return;
 	va_list ptrs;
@@ -36,6 +36,26 @@ void osdlib_make_children(struct osd_element *e, size_t num, int init, ...)
 	for (size_t i = 0; i < num; ++i)
 		*va_arg(ptrs, struct osd_element**) = &e->ch[i];
 	va_end(ptrs);
+}
+
+void osdlib_make_text(struct osd_element *e, const struct osdlib_font *font,
+		const char *str)
+{
+	size_t len = strlen(str);
+	e->w = len * font->w;
+	e->h = font->h;
+	osdlib_make_children(e, len, 0);
+	for (size_t i = 0; i < len; ++i) {
+		int tx = font->tex_x + font->w*(str[i] - font->offset);
+		e->ch[i] = _o(font->w*i, 0, font->w, font->h, e->a, tx, font->tex_y,
+				font->w, font->h, 0, font->t);
+	}
+}
+
+void center_on_screen(struct osd_element *e)
+{
+	e->x = gl.win_w/2 - e->w/2,
+	e->y = gl.win_h/2 - e->h/2;
 }
 
 /* recursively count position relative to sibling */
@@ -62,7 +82,7 @@ void osdlib_draw(struct osd_element *e, double px, double py,
 	x = e->rx >= 0 ? px + e->rx : px + pw + e->rx - w;
 	y = e->ry >= 0 ? py + e->ry : py + ph + e->ry - h;
 	z = pz + 0.01 + e->z;
-	if (!e->transparent) {
+	if (e->tr == Opaque) {
 		gl_bind_texture(e->t);
 		glBegin(GL_QUADS);
 		glColor4f(1, 1, 1, e->a);
@@ -83,7 +103,9 @@ void osdlib_draw(struct osd_element *e, double px, double py,
 	/* clean memoized vaules for children */
 	for (size_t i = 0; i < e->nch; ++i)
 		e->ch[i].rx = e->ch[i].ry = DBL_MAX;
-	/* recurse into the children */
-	for (size_t i = 0; i < e->nch; ++i)
-		osdlib_draw(&e->ch[i], x, y, w, h, z);
+	if (e->tr != TransparentSubtree) {
+		/* recurse into the children */
+		for (size_t i = 0; i < e->nch; ++i)
+			osdlib_draw(&e->ch[i], x, y, w, h, z);
+	}
 }
