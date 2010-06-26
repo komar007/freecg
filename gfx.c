@@ -20,8 +20,9 @@
 #include "gfx.h"
 #include <errno.h>
 #include <assert.h>
+#include <SDL/SDL_image.h>
 
-SDL_Surface *read_gfx(const char *path)
+SDL_Surface *load_gfx(const char *path)
 {
 	extern void fix_transparency(SDL_Surface*, int, int, int, int),
 	            fix_stripe(SDL_Surface*, int, int, int, int, int, int);
@@ -82,6 +83,19 @@ cleanup:
 	fclose(fp);
 	free(buffer);
 	return gfx;
+}
+
+SDL_Surface *load_png(const char *path)
+{
+	SDL_RWops *rw = SDL_RWFromFile(path, "rb");
+	SDL_Surface *png = IMG_LoadPNG_RW(rw);
+	if (!png) {
+		SDL_SetError("IMG_LoadPNG_RW: %s", IMG_GetError());
+		goto cleanup;
+	}
+cleanup:
+	SDL_FreeRW(rw);
+	return png;
 }
 
 void blitntimes(SDL_Surface *surf, int src_x, int src_y, int w, int h,

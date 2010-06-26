@@ -55,7 +55,7 @@ struct cg_osd {
 	struct osd_life life;
 	struct osd_element *rect,
 			   *panel,
-			   *pause;
+			   *gameover;
 };
 
 void osd_init();

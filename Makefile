@@ -1,6 +1,6 @@
 CC=gcc -g -ggdb
 WARN=-Wall -Wextra
-LIBS=-lm `sdl-config --libs` -lGL
+LIBS=-lm `sdl-config --libs` -lGL -lSDL_image
 CFLAGS=`sdl-config --cflags` -O2 -pedantic -std=c99 $(WARN)
 SOURCES=cgl.c gfx.c cgl_view.c graphics.c texmgr.c cg.c geometry.c osd.c osdlib.c
 HEADERS=cgl.h gfx.h texmgr.h graphics.h cg.h mathgeom.h basic_types.h osd.h osdlib.h

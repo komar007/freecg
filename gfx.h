@@ -90,7 +90,8 @@ enum gfx_consts {
 };
 typedef uint8_t collision_map[TILESET_H][TILESET_W];
 
-SDL_Surface *read_gfx(const char *path);
+SDL_Surface *load_gfx(const char*);
+SDL_Surface *load_png(const char*);
 int make_collision_map(const SDL_Surface *gfx, collision_map);
 
 #endif

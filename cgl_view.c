@@ -129,9 +129,14 @@ int main(int argc, char *argv[])
 		exit(-1);
 	}
 	SDL_Surface *screen;
-	SDL_Surface *gfx = read_gfx("data/GRAVITY.GFX");
+	SDL_Surface *gfx = load_gfx("data/GRAVITY.GFX");
 	if (!gfx) {
 		fprintf(stderr, "read_gfx: %s\n", SDL_GetError());
+		abort();
+	}
+	SDL_Surface *png = load_png("test.png");
+	if (!png) {
+		fprintf(stderr, "load_png: %s\n", SDL_GetError());
 		abort();
 	}
 	struct cgl *cgl = read_cgl(argv[1], NULL);
@@ -149,7 +154,8 @@ int main(int argc, char *argv[])
 	screen = SDL_SetVideoMode(SCREEN_W, SCREEN_H, 0, MODE);
 	gl_resize_viewport(screen->w, screen->h);
 	struct texmgr *ttm = tm_request_texture(gfx);
-	gl_init(cgl, ttm);
+	struct texmgr *ctrls = tm_request_texture(png);
+	gl_init(cgl, ttm, ctrls);
 	int t = SDL_GetTicks(),
 	    nt = t,
 	    time = t,

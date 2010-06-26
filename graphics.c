@@ -27,9 +27,10 @@
 struct glengine gl;
 void gl_draw_sprite(double, double, const struct tile*);
 
-void gl_init(struct cgl* l, struct texmgr *ttm)
+void gl_init(struct cgl* l, struct texmgr *ttm, struct texmgr *ctm)
 {
 	gl.ttm = ttm;
+	gl.ctm = ctm;
 	gl.frame = 0;
 	gl.l = l;
 	gl.cam.scale = 1;
@@ -77,6 +78,7 @@ void gl_draw_scene()
 	       y2 = fmin(gl.viewport.y + gl.viewport.h,
 			       gl.l->height * BLOCK_SIZE);
 	glColor4f(1, 1, 1, 1);
+	gl_bind_texture(gl.ttm);
 	gl_draw_ship();
 	glPushMatrix();
 	glTranslated(0, 0, 0.1);
