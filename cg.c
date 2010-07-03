@@ -116,6 +116,24 @@ void cg_step_kaboom(struct cgl *l)
 {
 	/* FIXME: step kaboom */
 }
+void cg_animate_objects(struct cgl *l, double time)
+{
+	extern void animate_fan(struct fan*, double),
+	            animate_magnet(struct magnet*, double),
+	            animate_airgen(struct airgen*, double),
+	            animate_bar(struct bar*, double),
+	            animate_key(struct airport*, double);
+	for (size_t i = 0; i < l->nmagnets; ++i)
+		animate_magnet(&l->magnets[i], time);
+	for (size_t i = 0; i < l->nfans; ++i)
+		animate_fan(&l->fans[i], time);
+	for (size_t i = 0; i < l->nairgens; ++i)
+		animate_airgen(&l->airgens[i], time);
+	for (size_t i = 0; i < l->nbars; ++i)
+		animate_bar(&l->bars[i], time);
+	for (size_t i = 0; i < l->nairports; ++i)
+		animate_key(&l->airports[i], time);
+}
 /* perform logic simulation of all objects */
 void cg_step_objects(struct cgl *l, double time, double dt)
 {
@@ -267,6 +285,7 @@ void cg_call_collision_handler(struct cgl *l, struct tile *tile)
 void cg_step(struct cgl *l, double time)
 {
 	double dt = time - l->time;
+	cg_animate_objects(l, time);
 	cg_step_objects(l, time, dt);
 	if (l->hb->num_cargo == l->num_all_freight) {
 		l->status = Victory;
@@ -632,6 +651,48 @@ void cg_step_magnet(struct magnet *magnet, struct ship *ship, double dt)
 		ship->vx += dv; break;
 	}
 	magnet->modifier = 0;
+}
+
+/* Animators (for static objects, whose animations do not influence the
+ * gameplay */
+static const int magnet_anim_order[] = {0, 1, 2, 1};
+static const int fan_anim_order[] = {0, 1, 2};
+static const int airgen_anim_order[] = {0, 1, 2, 3, 4, 5, 6, 7};
+static const int bar_anim_order[][2] = {{0, 1}, {1, 0}};
+static const int key_anim_order[] = {0, 1, 2, 3, 4, 5, 6, 7};
+void animate_fan(struct fan *fan, double time)
+{
+	int phase = round(time * FAN_ANIM_SPEED);
+	int cur_tex = fan_anim_order[phase % 3];
+	fan->base->tex_x = fan->tex_x + cur_tex * fan->base->w;
+}
+void animate_magnet(struct magnet *magnet, double time)
+{
+	int phase = round(time * MAGNET_ANIM_SPEED);
+	int cur_tex = magnet_anim_order[phase % 4];
+	magnet->magn->tex_x = magnet->tex_x + cur_tex * magnet->magn->w;
+}
+void animate_airgen(struct airgen *airgen, double time)
+{
+	int phase = round(time * AIRGEN_ANIM_SPEED);
+	int cur_tex = airgen_anim_order[phase % 8];
+	airgen->base->tex_x = airgen->tex_x + cur_tex * airgen->base->w;
+}
+void animate_bar(struct bar *bar, double time)
+{
+	int phase = round(time * BAR_ANIM_SPEED);
+	int cur_tex = bar_anim_order[0][phase % 2];
+	bar->beg->tex_x = bar->btex_x + cur_tex * BAR_TEX_OFFSET;
+	cur_tex = bar_anim_order[1][phase % 2];
+	bar->end->tex_x = bar->etex_x + cur_tex * BAR_TEX_OFFSET;
+}
+void animate_key(struct airport *airport, double time)
+{
+	if (airport->type != Key)
+		return;
+	int phase = round(time * KEY_ANIM_SPEED);
+	int cur_tex = key_anim_order[phase % 8];
+	airport->cargo[0]->tex_x = KEY_TEX_X + cur_tex * airport->cargo[0]->w;
 }
 /* ==================== /Object simulators ==================== */
 

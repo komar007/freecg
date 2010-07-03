@@ -66,9 +66,7 @@ void gl_draw_scene()
 {
 	extern void fix_lframes(struct cgl*),
 	            gl_draw_block(struct tile *[]),
-		    gl_draw_ship(void),
-		    animate_tiles();
-	animate_tiles();
+		    gl_draw_ship(void);
 	if (gl.frame == 0)
 		fix_lframes(gl.l);
 	double x1 = fmax(0, gl.viewport.x),
@@ -170,63 +168,4 @@ void gl_update_window()
 	glTranslated(0, 0, 2);
 	gl_draw_osd();
 	SDL_GL_SwapBuffers();
-}
-
-void animate_tiles()
-{
-	extern void animate_fan(struct fan*, double),
-	            animate_magnet(struct magnet*, double),
-	            animate_airgen(struct airgen*, double),
-	            animate_bar(struct bar*, double),
-	            animate_key(struct airport*, double);
-	for (size_t i = 0; i < gl.l->nmagnets; ++i)
-		animate_magnet(&gl.l->magnets[i], gl.l->time);
-	for (size_t i = 0; i < gl.l->nfans; ++i)
-		animate_fan(&gl.l->fans[i], gl.l->time);
-	for (size_t i = 0; i < gl.l->nairgens; ++i)
-		animate_airgen(&gl.l->airgens[i], gl.l->time);
-	for (size_t i = 0; i < gl.l->nbars; ++i)
-		animate_bar(&gl.l->bars[i], gl.l->time);
-	for (size_t i = 0; i < gl.l->nairports; ++i)
-		animate_key(&gl.l->airports[i], gl.l->time);
-}
-/* Animators */
-static const int magnet_anim_order[] = {0, 1, 2, 1};
-static const int fan_anim_order[] = {0, 1, 2};
-static const int airgen_anim_order[] = {0, 1, 2, 3, 4, 5, 6, 7};
-static const int bar_anim_order[][2] = {{0, 1}, {1, 0}};
-static const int key_anim_order[] = {0, 1, 2, 3, 4, 5, 6, 7};
-void animate_fan(struct fan *fan, double time)
-{
-	int phase = round(time * FAN_ANIM_SPEED);
-	int cur_tex = fan_anim_order[phase % 3];
-	fan->base->tex_x = fan->tex_x + cur_tex * fan->base->w;
-}
-void animate_magnet(struct magnet *magnet, double time)
-{
-	int phase = round(time * MAGNET_ANIM_SPEED);
-	int cur_tex = magnet_anim_order[phase % 4];
-	magnet->magn->tex_x = magnet->tex_x + cur_tex * magnet->magn->w;
-}
-void animate_airgen(struct airgen *airgen, double time)
-{
-	int phase = round(time * AIRGEN_ANIM_SPEED);
-	int cur_tex = airgen_anim_order[phase % 8];
-	airgen->base->tex_x = airgen->tex_x + cur_tex * airgen->base->w;
-}
-void animate_bar(struct bar *bar, double time)
-{
-	int phase = round(time * BAR_ANIM_SPEED);
-	int cur_tex = bar_anim_order[0][phase % 2];
-	bar->beg->tex_x = bar->btex_x + cur_tex * BAR_TEX_OFFSET;
-	cur_tex = bar_anim_order[1][phase % 2];
-	bar->end->tex_x = bar->etex_x + cur_tex * BAR_TEX_OFFSET;
-}
-void animate_key(struct airport *airport, double time)
-{
-	if (airport->type != Key)
-		return;
-	int phase = round(time * KEY_ANIM_SPEED);
-	int cur_tex = key_anim_order[phase % 8];
-	airport->cargo[0]->tex_x = KEY_TEX_X + cur_tex * airport->cargo[0]->w;
 }

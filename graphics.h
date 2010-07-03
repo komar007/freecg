@@ -53,16 +53,6 @@ static inline void gl_bind_texture(struct texmgr *tm)
 	}
 }
 
-/* Animators */
-enum graphics_config {
-	FAN_ANIM_SPEED = 15,
-	AIRGEN_ANIM_SPEED = 20,
-	MAGNET_ANIM_SPEED = 15,
-	BAR_ANIM_SPEED = 1,
-	BAR_TEX_OFFSET = 28,
-	KEY_ANIM_SPEED = 20,
-};
-
 #define BLINK_SPEED 1.8
 
 #endif
