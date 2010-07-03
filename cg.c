@@ -24,9 +24,10 @@
 #include <float.h>
 #include <assert.h>
 
-void airport_push_cargo(struct airport*);
+/* ==================== Ship ==================== */
 void cg_revert_held_freigh(struct cgl *l)
 {
+	extern void airport_push_cargo(struct airport*);
 	for (size_t i = 0; i < l->ship->num_freight; ++i)
 		airport_push_cargo(l->ship->freight[i].ap);
 	l->ship->num_freight = 0;
@@ -44,7 +45,7 @@ void cg_restart_ship(struct cgl *l)
 	l->ship->dead = 0;
 	cg_revert_held_freigh(l);
 }
-void cg_init_ship(struct cgl *l)
+void cg_ship_init(struct cgl *l)
 {
 	cg_restart_ship(l);
 	l->ship->has_turbo = 0;
@@ -52,23 +53,15 @@ void cg_init_ship(struct cgl *l)
 	l->ship->life = DEFAULT_LIFE;
 	l->ship->freight = calloc(l->num_all_freight,
 			sizeof(*l->ship->freight));
+	/* FIXME: Do something with it */
 	l->ship->max_vx = 42;
 	l->ship->max_vy = 72;
 }
-void cg_init(struct cgl *l)
-{
-	l->time = 0.0;
-	l->ship = calloc(1, sizeof(*l->ship));
-	cg_init_ship(l);
-	l->kaboom_end = -DBL_MAX;
-	l->status = Alive;
-}
-
 void cg_ship_set_engine(struct ship *ship, int eng)
 {
 	ship->engine = eng && ship->fuel > 0;
 }
-void cg_step_ship(struct ship* s, double dt)
+void cg_ship_step(struct ship* s, double dt)
 {
 	double ax = 0, ay = 0;
 	if (!s->airport)
@@ -100,7 +93,7 @@ void cg_step_ship(struct ship* s, double dt)
 	s->x += s->vx * dt;
 	s->y += s->vy * dt;
 }
-void cg_kill_ship(struct cgl *l)
+void cg_ship_kill(struct cgl *l)
 {
 	--l->ship->life;
 	l->ship->dead = 1;
@@ -111,53 +104,15 @@ void cg_ship_rotate(struct ship *s, double delta)
 	s->rot += delta;
 	normalize_angle(&s->rot);
 }
+/* ==================== /Ship ==================== */
 
-void cg_step_kaboom(struct cgl *l)
+void cg_init(struct cgl *l)
 {
-	/* FIXME: step kaboom */
-}
-void cg_animate_objects(struct cgl *l, double time)
-{
-	extern void animate_fan(struct fan*, double),
-	            animate_magnet(struct magnet*, double),
-	            animate_airgen(struct airgen*, double),
-	            animate_bar(struct bar*, double),
-	            animate_key(struct airport*, double);
-	for (size_t i = 0; i < l->nmagnets; ++i)
-		animate_magnet(&l->magnets[i], time);
-	for (size_t i = 0; i < l->nfans; ++i)
-		animate_fan(&l->fans[i], time);
-	for (size_t i = 0; i < l->nairgens; ++i)
-		animate_airgen(&l->airgens[i], time);
-	for (size_t i = 0; i < l->nbars; ++i)
-		animate_bar(&l->bars[i], time);
-	for (size_t i = 0; i < l->nairports; ++i)
-		animate_key(&l->airports[i], time);
-}
-/* perform logic simulation of all objects */
-void cg_step_objects(struct cgl *l, double time, double dt)
-{
-	extern void cg_step_airgen(struct airgen*, struct ship*, double),
-	            cg_step_bar(struct bar*, double, double),
-	            cg_step_gate(struct gate*, double),
-	            cg_step_lgate(struct lgate*, struct ship*, double),
-		    cg_step_airport(struct airport*, struct ship*, double),
-		    cg_step_fan(struct fan*, struct ship*, double),
-		    cg_step_magnet(struct magnet*, struct ship*, double);
-	for (size_t i = 0; i < l->nairgens; ++i)
-		cg_step_airgen(&l->airgens[i], l->ship, dt);
-	for (size_t i = 0; i < l->nbars; ++i)
-		cg_step_bar(&l->bars[i], time, dt);
-	for (size_t i = 0; i < l->ngates; ++i)
-		cg_step_gate(&l->gates[i], dt);
-	for (size_t i = 0; i < l->nlgates; ++i)
-		cg_step_lgate(&l->lgates[i], l->ship, dt);
-	for (size_t i = 0; i < l->nairports; ++i)
-		cg_step_airport(&l->airports[i], l->ship, time);
-	for (size_t i = 0; i < l->nfans; ++i)
-		cg_step_fan(&l->fans[i], l->ship, dt);
-	for (size_t i = 0; i < l->nmagnets; ++i)
-		cg_step_magnet(&l->magnets[i], l->ship, dt);
+	l->time = 0.0;
+	l->ship = calloc(1, sizeof(*l->ship));
+	cg_ship_init(l);
+	l->kaboom_end = -DBL_MAX;
+	l->status = Alive;
 }
 
 /* ==================== Collision detectors ==================== */
@@ -279,14 +234,61 @@ void cg_call_collision_handler(struct cgl *l, struct tile *tile)
 	/* remember that collision detection handler may be called multiple
 	 * times per step! */
 	if (killed && !l->ship->dead)
-		cg_kill_ship(l);
+		cg_ship_kill(l);
 }
 
+void cg_kaboom_step(struct cgl *l)
+{
+	/* FIXME: step kaboom */
+}
+void cg_objects_animate(struct cgl *l, double time)
+{
+	extern void animate_fan(struct fan*, double),
+	            animate_magnet(struct magnet*, double),
+	            animate_airgen(struct airgen*, double),
+	            animate_bar(struct bar*, double),
+	            animate_key(struct airport*, double);
+	for (size_t i = 0; i < l->nmagnets; ++i)
+		animate_magnet(&l->magnets[i], time);
+	for (size_t i = 0; i < l->nfans; ++i)
+		animate_fan(&l->fans[i], time);
+	for (size_t i = 0; i < l->nairgens; ++i)
+		animate_airgen(&l->airgens[i], time);
+	for (size_t i = 0; i < l->nbars; ++i)
+		animate_bar(&l->bars[i], time);
+	for (size_t i = 0; i < l->nairports; ++i)
+		animate_key(&l->airports[i], time);
+}
+/* perform logic simulation of all objects */
+void cg_objects_step(struct cgl *l, double time, double dt)
+{
+	extern void cg_step_airgen(struct airgen*, struct ship*, double),
+	            cg_step_bar(struct bar*, double, double),
+	            cg_step_gate(struct gate*, double),
+	            cg_step_lgate(struct lgate*, struct ship*, double),
+		    cg_step_airport(struct airport*, struct ship*, double),
+		    cg_step_fan(struct fan*, struct ship*, double),
+		    cg_step_magnet(struct magnet*, struct ship*, double);
+	for (size_t i = 0; i < l->nairgens; ++i)
+		cg_step_airgen(&l->airgens[i], l->ship, dt);
+	for (size_t i = 0; i < l->nbars; ++i)
+		cg_step_bar(&l->bars[i], time, dt);
+	for (size_t i = 0; i < l->ngates; ++i)
+		cg_step_gate(&l->gates[i], dt);
+	for (size_t i = 0; i < l->nlgates; ++i)
+		cg_step_lgate(&l->lgates[i], l->ship, dt);
+	for (size_t i = 0; i < l->nairports; ++i)
+		cg_step_airport(&l->airports[i], l->ship, time);
+	for (size_t i = 0; i < l->nfans; ++i)
+		cg_step_fan(&l->fans[i], l->ship, dt);
+	for (size_t i = 0; i < l->nmagnets; ++i)
+		cg_step_magnet(&l->magnets[i], l->ship, dt);
+}
 void cg_step(struct cgl *l, double time)
 {
 	double dt = time - l->time;
-	cg_animate_objects(l, time);
-	cg_step_objects(l, time, dt);
+	cg_objects_animate(l, time);
+	cg_objects_step(l, time, dt);
 	if (l->hb->num_cargo == l->num_all_freight) {
 		l->status = Victory;
 		goto end;
@@ -294,11 +296,11 @@ void cg_step(struct cgl *l, double time)
 	if (l->status == Lost)
 		goto end;
 	if (!l->ship->dead) {
-		cg_step_ship(l->ship, dt);
+		cg_ship_step(l->ship, dt);
 		cg_handle_collisions(l);
 	} else {
 		if (l->kaboom_end > time) {
-			cg_step_kaboom(l);
+			cg_kaboom_step(l);
 		} else {
 			if (l->ship->life == -1)
 				l->status = Lost;
@@ -587,6 +589,8 @@ void cg_step_airport(struct airport *airport, struct ship *ship, double time)
 	}
 	airport->ship_touched = 0;
 }
+
+/* ==================== Cargo operations ==================== */
 void airport_pop_cargo(struct airport *airport)
 {
 	--airport->num_cargo;
@@ -611,6 +615,8 @@ void ship_unload_freight(struct ship *ship, struct airport *airport)
 	airport->c.freight[airport->num_cargo++] =
 		ship->freight[--ship->num_freight];
 }
+/* ==================== /Cargo operations ==================== */
+
 void airport_schedule_transfer(struct airport *airport, double time)
 {
 	airport->sched_cargo_transfer = 1;
@@ -652,9 +658,10 @@ void cg_step_magnet(struct magnet *magnet, struct ship *ship, double dt)
 	}
 	magnet->modifier = 0;
 }
+/* ==================== /Object simulators ==================== */
 
-/* Animators (for static objects, whose animations do not influence the
- * gameplay */
+/* ==================== Object animators ==================== */
+/* For static objects, whose animations do not influence the gameplay */
 static const int magnet_anim_order[] = {0, 1, 2, 1};
 static const int fan_anim_order[] = {0, 1, 2};
 static const int airgen_anim_order[] = {0, 1, 2, 3, 4, 5, 6, 7};
@@ -694,9 +701,9 @@ void animate_key(struct airport *airport, double time)
 	int cur_tex = key_anim_order[phase % 8];
 	airport->cargo[0]->tex_x = KEY_TEX_X + cur_tex * airport->cargo[0]->w;
 }
-/* ==================== /Object simulators ==================== */
+/* ==================== /Object animators ==================== */
 
-size_t cg_freight_remaining(struct cgl *l)
+size_t cg_freight_remaining(const struct cgl *l)
 {
 	size_t nfreight = 0;
 	for (size_t i = 0; i < l->nairports; ++i) {
@@ -704,4 +711,15 @@ size_t cg_freight_remaining(struct cgl *l)
 			nfreight += l->airports[i].num_cargo;
 	}
 	return nfreight;
+}
+void cg_get_freight_airports(const struct cgl *l, struct freight f[])
+{
+	size_t k = 0;
+	for (size_t i = 0; i < l->nairports; ++i) {
+		if (l->airports[i].type == Freight) {
+			struct airport *a = &l->airports[i];
+			for (size_t j = 0; j < a->num_cargo; ++j)
+				f[k++] = a->c.freight[j];
+		}
+	}
 }

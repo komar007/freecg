@@ -192,14 +192,7 @@ void osd_step()
 	osd_keys_step(&osd.keys, ship->keys);
 	size_t nfreight = cg_freight_remaining(gl.l);
 	struct freight freight[nfreight];
-	size_t k = 0;
-	for (size_t i = 0; i < gl.l->nairports; ++i) {
-		if (gl.l->airports[i].type == Freight) {
-			struct airport *a = &gl.l->airports[i];
-			for (size_t j = 0; j < a->num_cargo; ++j)
-				freight[k++] = a->c.freight[j];
-		}
-	}
+	cg_get_freight_airports(gl.l, freight);
 	osd_freight_step(&osd.freight_level, freight, nfreight);
 	osd.freight_ship.max_freight = ship->max_freight;
 	osd_freight_step(&osd.freight_ship, ship->freight, ship->num_freight);

@@ -74,7 +74,7 @@ void cg_init(struct cgl*);
 void cg_step(struct cgl*, double);
 void cg_ship_set_engine(struct ship*, int);
 void cg_ship_rotate(struct ship*, double);
-size_t cg_freight_remaining(struct cgl*);
-
+size_t cg_freight_remaining(const struct cgl*);
+void cg_get_freight_airports(const struct cgl*, struct freight[]);
 
 #endif
