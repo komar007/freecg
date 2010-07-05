@@ -43,10 +43,11 @@ void o_init(struct osd_element *e)
 	e->rel = NULL;
 	e->parent = NULL;
 }
-void o_img(struct osd_element *e, struct texmgr *tm,
+void o_img(struct osd_element *e, struct texmgr *tm, double a,
 		int x, int y, int w, int h)
 {
 	e->t = tm;
+	e->a = a;
 	e->tex_x = x, e->tex_y = y;
 	e->tex_w = w, e->tex_h = h;
 }
