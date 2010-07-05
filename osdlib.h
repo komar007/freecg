@@ -23,30 +23,37 @@
 #include <stdlib.h>
 #include <float.h>
 
-enum transparency {
+enum transparency_model {
 	Opaque = 0,
 	TransparentElement,
 	TransparentSubtree
 };
-enum shortcuts {
-	O = Opaque,
-	T = TransparentElement,
-	TS = TransparentSubtree
+enum side {
+	Begin = 0,	/* top or left */
+	End		/* bottom or right */
+};
+struct coord {
+	enum side orig,
+		  rel;
+	double v;
 };
 struct osd_element {
-	enum transparency tr;
-	double x, y;
+	enum transparency_model tr;
+	struct coord x, y;
 	double w, h;
 	double a;
 	double z;
+	struct texmgr *t;
 	int tex_x, tex_y;
 	int tex_w, tex_h;
-	struct texmgr *t;
 	size_t nch;
 	struct osd_element *ch;
-	struct osd_element *rel;
-	/* memoized x, y */
+	struct osd_element *parent,
+			   *rel;
+	/* memoized x, y, w, h, z */
 	double rx, ry;
+	double rw, rh;
+	double rz;
 };
 struct osdlib_font {
 	struct texmgr *t;
@@ -54,37 +61,61 @@ struct osdlib_font {
 	int w, h;
 	int offset;
 };
-void osdlib_draw(struct osd_element*, double, double, double, double, double);
+void osdlib_draw(struct osd_element*);
 void osdlib_make_text(struct osd_element*, const struct osdlib_font*, const char*);
 void center_on_screen(struct osd_element*);
 
 /* create absolutely positioned element (relatively to the parent) */
-static inline struct osd_element _o(double x, double y, double w, double h,
-		double a, double tx, double ty, double tw, double th,
-		enum transparency tr, struct texmgr *t)
+static inline void _o(struct osd_element *e, double x, double y,
+		double w, double h, double a, double tx, double ty,
+		double tw, double th, enum transparency_model tr, struct texmgr *t)
 {
-	struct osd_element e;
-	e.x = x, e.y = y, e.w = w, e.h = h, e.a = a, e.tex_x = tx,
-		e.tex_y = ty, e.tex_w = tw, e.tex_h = th, e.t = t;
-	e.rx = e.ry = DBL_MAX;
-	e.nch = 0;
-	e.ch = NULL;
-	e.rel = NULL;
-	e.tr = tr;
-	e.z = 0;
-	return e;
+	e->x.v = x, e->y.v = y, e->w = w, e->h = h, e->a = a, e->tex_x = tx,
+		e->tex_y = ty, e->tex_w = tw, e->tex_h = th, e->t = t;
+	if (x < 0) {
+		e->x.orig = End;
+		e->x.rel = End;
+	}
+	if (y < 0) {
+		e->y.orig = End;
+		e->y.rel = End;
+	}
+	e->rx = e->ry = DBL_MAX;
+	e->nch = 0;
+	e->ch = NULL;
+	e->rel = NULL;
+	e->tr = tr;
+	e->z = 0;
 }
 
 /* create element relatively positioned to the sibling */
-static inline struct osd_element _ro(struct osd_element *s, double x, double y,
-		double w, double h, double a, double tx, double ty,
-		double tw, double th, enum transparency tr, struct texmgr *t)
+static inline void _ro(struct osd_element *e, struct osd_element *s,
+		double x, double y, double w, double h, double a,
+		double tx, double ty, double tw, double th,
+		enum transparency_model tr, struct texmgr *t)
 {
-	struct osd_element e = _o(x, y, w, h, a, tx, ty, tw, th, tr, t);
-	e.rel = s;
-	return e;
+	_o(e, x, y, w, h, a, tx, ty, tw, th, tr, t);
+	if (x < 0) {
+		e->x.orig = Begin;
+		e->x.rel = End;
+		e->x.v = -e->x.v;
+	}
+	if (y < 0) {
+		e->y.orig = Begin;
+		e->y.rel = End;
+		e->y.v = -e->y.v;
+	}
+	e->rel = s;
 }
 
 void osdlib_make_children(struct osd_element*, size_t, int, ...);
+
+enum shortcuts {
+	O = Opaque,
+	T = TransparentElement,
+	TS = TransparentSubtree,
+	B = Begin,
+	E = End
+};
 
 #endif

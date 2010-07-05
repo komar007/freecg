@@ -25,10 +25,12 @@
 
 void osdlib_make_children(struct osd_element *e, size_t num, int init, ...)
 {
-	e->ch = calloc(num, sizeof(*e->ch));
 	e->nch = num;
-	for (size_t i = 0; i < num; ++i)
+	e->ch = calloc(num, sizeof(*e->ch));
+	for (size_t i = 0; i < num; ++i) {
 		e->ch[i].tr = TransparentSubtree;
+		e->ch[i].parent = e;
+	}
 	if (!init)
 		return;
 	va_list ptrs;
@@ -36,6 +38,52 @@ void osdlib_make_children(struct osd_element *e, size_t num, int init, ...)
 	for (size_t i = 0; i < num; ++i)
 		*va_arg(ptrs, struct osd_element**) = &e->ch[i];
 	va_end(ptrs);
+}
+
+double relative_dimension(double dim, double pdim)
+{
+	if (dim > 0)
+		return dim;
+	else
+		return pdim + dim;
+}
+double relative_coord(struct coord coord, double dim,
+		double pcoord, double pdim)
+{
+	double rel;
+	rel = pcoord;
+	if (coord.rel == End)
+		rel += pdim;
+	if (coord.orig == End)
+		rel -= dim;
+	return rel + coord.v;
+}
+void osdlib_count_absolute(struct osd_element *e)
+{
+	if (e->rx != DBL_MAX)
+		return;
+	double pw, ph, px, py, pz;
+	if (e->rel) {
+		osdlib_count_absolute(e->rel);
+		pw = e->rel->rw, ph = e->rel->rh;
+		px = e->rel->rx, py = e->rel->ry;
+		pz = e->rel->rz;
+	} else if (e->parent) {
+		osdlib_count_absolute(e->parent);
+		pw = e->parent->rw, ph = e->parent->rh;
+		px = e->parent->rx, py = e->parent->ry;
+		pz = e->parent->rz + 0.01;
+	} else {
+		pw = gl.win_w, ph = gl.win_h;
+		px = 0, py = 0;
+		pz = 0;
+	}
+	e->rw = relative_dimension(e->w, pw);
+	e->rh = relative_dimension(e->h, ph);
+	e->rx = relative_coord(e->x, e->w, px, pw);
+	e->ry = relative_coord(e->y, e->h, py, ph);
+	e->rz = pz + e->z;
+	/* FIXME: consider a */
 }
 
 void osdlib_make_text(struct osd_element *e, const struct osdlib_font *font,
@@ -47,65 +95,52 @@ void osdlib_make_text(struct osd_element *e, const struct osdlib_font *font,
 	osdlib_make_children(e, len, 0);
 	for (size_t i = 0; i < len; ++i) {
 		int tx = font->tex_x + font->w*(str[i] - font->offset);
-		e->ch[i] = _o(font->w*i, 0, font->w, font->h, e->a, tx, font->tex_y,
+		_o(&e->ch[i], font->w*i, 0, font->w, font->h, e->a, tx, font->tex_y,
 				font->w, font->h, 0, font->t);
 	}
 }
 
 void center_on_screen(struct osd_element *e)
 {
-	e->x = gl.win_w/2 - e->w/2,
-	e->y = gl.win_h/2 - e->h/2;
+	e->x.v = gl.win_w/2 - e->rw/2,
+	e->y.v = gl.win_h/2 - e->rh/2;
 }
 
-/* recursively count position relative to sibling */
-void count_rel(struct osd_element *e)
+void osdlib_draw_rec(struct osd_element *e)
 {
-	if (e->rx != DBL_MAX)
-		return;
-	if (e->rel) {
-		count_rel(e->rel);
-		e->rx = e->x >= 0 ? e->x + e->rel->rx : e->rel->rx + e->rel->w - e->x;
-		e->ry = e->y >= 0 ? e->y + e->rel->ry : e->rel->ry + e->rel->h - e->y;
-	} else {
-		e->rx = e->x;
-		e->ry = e->y;
-	}
-}
-void osdlib_draw(struct osd_element *e, double px, double py,
-		double pw, double ph, double pz)
-{
-	double x, y, z, w, h;
-	w = e->w > 0 ? e->w : pw + e->w;
-	h = e->h > 0 ? e->h : ph + e->h;
-	count_rel(e);
-	x = e->rx >= 0 ? px + e->rx : px + pw + e->rx - w;
-	y = e->ry >= 0 ? py + e->ry : py + ph + e->ry - h;
-	z = pz + 0.01 + e->z;
+	osdlib_count_absolute(e);
 	if (e->tr == Opaque) {
 		gl_bind_texture(e->t);
 		glBegin(GL_QUADS);
 		glColor4f(1, 1, 1, e->a);
 		tm_coord_tl(e->t, e->tex_x, e->tex_y,
 				e->tex_w, e->tex_h);
-		glVertex3d(x, y, z);
+		glVertex3d(e->rx, e->ry, e->rz);
 		tm_coord_bl(e->t, e->tex_x, e->tex_y,
 				e->tex_w, e->tex_h);
-		glVertex3d(x, y + h, z);
+		glVertex3d(e->rx, e->ry + e->rh, e->rz);
 		tm_coord_br(e->t, e->tex_x, e->tex_y,
 				e->tex_w, e->tex_h);
-		glVertex3d(x + w, y + h, z);
+		glVertex3d(e->rx + e->rw, e->ry + e->rh, e->rz);
 		tm_coord_tr(e->t, e->tex_x, e->tex_y,
 				e->tex_w, e->tex_h);
-		glVertex3d(x + w, y, z);
+		glVertex3d(e->rx + e->rw, e->ry, e->rz);
 		glEnd();
 	}
-	/* clean memoized vaules for children */
-	for (size_t i = 0; i < e->nch; ++i)
-		e->ch[i].rx = e->ch[i].ry = DBL_MAX;
 	if (e->tr != TransparentSubtree) {
 		/* recurse into the children */
 		for (size_t i = 0; i < e->nch; ++i)
-			osdlib_draw(&e->ch[i], x, y, w, h, z);
+			osdlib_draw_rec(&e->ch[i]);
 	}
+}
+void mark_as_unvisited(struct osd_element *e)
+{
+	e->rx = DBL_MAX;
+	for (size_t i = 0; i < e->nch; ++i)
+		mark_as_unvisited(&e->ch[i]);
+}
+void osdlib_draw(struct osd_element *e)
+{
+	mark_as_unvisited(e);
+	osdlib_draw_rec(e);
 }
