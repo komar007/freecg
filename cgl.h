@@ -305,7 +305,6 @@ struct cgl {
 	struct ship *ship;
 	double kaboom_end;
 	enum game_status status;
-	collision_map cmap;
 };
 
 struct cgl *read_cgl(const char*, uint8_t**);

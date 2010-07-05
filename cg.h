@@ -77,4 +77,6 @@ void cg_ship_rotate(struct ship*, double);
 size_t cg_freight_remaining(const struct cgl*);
 void cg_get_freight_airports(const struct cgl*, struct freight[]);
 
+extern collision_map cmap;
+
 #endif

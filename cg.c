@@ -24,6 +24,8 @@
 #include <float.h>
 #include <assert.h>
 
+collision_map cmap;
+
 /* ==================== Ship ==================== */
 void cg_revert_held_freigh(struct cgl *l)
 {
@@ -128,26 +130,26 @@ int cg_collision_rect_point(const struct tile *ship, const struct tile *tile)
 }
 /* check if tile t's bounding box collides with the ship within rectangle r,
  * knowing that r's origin in collision map is (img_x, img_y) */
-int cg_collision_rect(const struct cgl *l, const struct rect *r,
-		int img_x, int img_y, __attribute__((unused)) const struct tile *t)
+int cg_collision_rect(const struct rect *r, int img_x, int img_y,
+		__attribute__((unused)) const struct tile *t)
 {
 	for (unsigned j = 0; j < r->h; ++j)
 		for (unsigned i = 0; i < r->w; ++i)
-			if (l->cmap[img_y + j][img_x + i])
+			if (cmap[img_y + j][img_x + i])
 				return 1;
 	return 0;
 }
 /* check if tile t collides with the ship within the rectangle r, knowing
  * that r's origin in collision map is (img_x, img_y) */
-int cg_collision_bitmap(const struct cgl *l, const struct rect *r,
-	int img_x, int img_y, const struct tile *t)
+int cg_collision_bitmap(const struct rect *r, int img_x, int img_y,
+		const struct tile *t)
 {
 	int tile_img_x = t->tex_x + (r->x - t->x),
 	    tile_img_y = t->tex_y + (r->y - t->y);
 	for (unsigned j = 0; j < r->h; ++j)
 		for (unsigned i = 0; i < r->w; ++i)
-			if (l->cmap[img_y + j][img_x + i] &&
-			    l->cmap[tile_img_y + j][tile_img_x + i])
+			if (cmap[img_y + j][img_x + i] &&
+			    cmap[tile_img_y + j][tile_img_x + i])
 				return 1;
 	return 0;
 }
@@ -183,10 +185,10 @@ void cg_handle_collisions_block(struct cgl *l, block blk)
 			coll = cg_collision_rect_point(&stile, blk[i]);
 			break;
 		case Rect:
-			coll = cg_collision_rect(l, &r, img_x, img_y, blk[i]);
+			coll = cg_collision_rect(&r, img_x, img_y, blk[i]);
 			break;
 		case Bitmap:
-			coll = cg_collision_bitmap(l, &r, img_x, img_y, blk[i]);
+			coll = cg_collision_bitmap(&r, img_x, img_y, blk[i]);
 			break;
 		case Cannon:
 			/* FIXME */
