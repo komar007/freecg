@@ -146,7 +146,7 @@ int main(int argc, char *argv[])
 	}
 	cgl_preprocess(cgl);
 	cg_init(cgl);
-	make_collision_map(gfx, cgl->cmap);
+	make_collision_map(gfx, cmap);
 	if (SDL_Init(SDL_INIT_VIDEO) != 0) {
 		fprintf(stderr, "SDL failed: %s\n", SDL_GetError());
 		abort();
