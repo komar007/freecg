@@ -61,11 +61,15 @@ struct osdlib_font {
 	int w, h;
 	int offset;
 };
+struct coord c(enum side, enum side, double);
+void o_init(struct osd_element*);
+void o_img(struct osd_element*, struct texmgr*, int, int, int, int);
+void o_pos(struct osd_element*, struct coord, struct coord,
+		double, double, enum transparency_model);
+void osdlib_make_children(struct osd_element*, size_t, int, ...);
 void osdlib_draw(struct osd_element*);
-void osdlib_make_text(struct osd_element*, const struct osdlib_font*, const char*);
-void center_on_screen(struct osd_element*);
 
-/* create absolutely positioned element (relatively to the parent) */
+/* DEPRECATED create absolutely positioned element (relatively to the parent) */
 static inline void _o(struct osd_element *e, double x, double y,
 		double w, double h, double a, double tx, double ty,
 		double tw, double th, enum transparency_model tr, struct texmgr *t)
@@ -80,15 +84,10 @@ static inline void _o(struct osd_element *e, double x, double y,
 		e->y.orig = End;
 		e->y.rel = End;
 	}
-	e->rx = e->ry = DBL_MAX;
-	e->nch = 0;
-	e->ch = NULL;
-	e->rel = NULL;
 	e->tr = tr;
-	e->z = 0;
 }
 
-/* create element relatively positioned to the sibling */
+/* DEPRECATED create element relatively positioned to the sibling */
 static inline void _ro(struct osd_element *e, struct osd_element *s,
 		double x, double y, double w, double h, double a,
 		double tx, double ty, double tw, double th,
@@ -108,7 +107,9 @@ static inline void _ro(struct osd_element *e, struct osd_element *s,
 	e->rel = s;
 }
 
-void osdlib_make_children(struct osd_element*, size_t, int, ...);
+/* DEPRECATED */
+void osdlib_make_text(struct osd_element*, const struct osdlib_font*, const char*);
+void center_on_screen(struct osd_element*);
 
 enum shortcuts {
 	O = Opaque,

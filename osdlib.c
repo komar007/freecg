@@ -23,12 +23,47 @@
 #include <stdarg.h>
 #include <float.h>
 
+struct coord c(enum side rel, enum side orig, double val)
+{
+	struct coord r = {
+		.rel = rel,
+		.orig = orig,
+		.v = val
+	};
+	return r;
+}
+
+/* Inits an osd_element. Must be called on each root element */
+void o_init(struct osd_element *e)
+{
+	e->tr  = Opaque;
+	e->rx  = DBL_MAX;
+	e->z   = 0;
+	e->nch = 0;
+	e->rel = NULL;
+	e->parent = NULL;
+}
+void o_img(struct osd_element *e, struct texmgr *tm,
+		int x, int y, int w, int h)
+{
+	e->t = tm;
+	e->tex_x = x, e->tex_y = y;
+	e->tex_w = w, e->tex_h = h;
+}
+void o_pos(struct osd_element *e, struct coord x, struct coord y,
+		double w, double h, enum transparency_model tr)
+{
+	e->x = x, e->y = y;
+	e->w = w, e->h = h;
+	e->tr = tr;
+}
+/* Creates children positioned relatively to the parent and inits them */
 void osdlib_make_children(struct osd_element *e, size_t num, int init, ...)
 {
 	e->nch = num;
-	e->ch = calloc(num, sizeof(*e->ch));
+	e->ch  = calloc(num, sizeof(*e->ch));
 	for (size_t i = 0; i < num; ++i) {
-		e->ch[i].tr = TransparentSubtree;
+		o_init(&e->ch[i]);
 		e->ch[i].parent = e;
 	}
 	if (!init)
@@ -85,27 +120,6 @@ void osdlib_count_absolute(struct osd_element *e)
 	e->rz = pz + e->z;
 	/* FIXME: consider a */
 }
-
-void osdlib_make_text(struct osd_element *e, const struct osdlib_font *font,
-		const char *str)
-{
-	size_t len = strlen(str);
-	e->w = len * font->w;
-	e->h = font->h;
-	osdlib_make_children(e, len, 0);
-	for (size_t i = 0; i < len; ++i) {
-		int tx = font->tex_x + font->w*(str[i] - font->offset);
-		_o(&e->ch[i], font->w*i, 0, font->w, font->h, e->a, tx, font->tex_y,
-				font->w, font->h, 0, font->t);
-	}
-}
-
-void center_on_screen(struct osd_element *e)
-{
-	e->x.v = gl.win_w/2 - e->rw/2,
-	e->y.v = gl.win_h/2 - e->rh/2;
-}
-
 void osdlib_draw_rec(struct osd_element *e)
 {
 	osdlib_count_absolute(e);
@@ -143,4 +157,25 @@ void osdlib_draw(struct osd_element *e)
 {
 	mark_as_unvisited(e);
 	osdlib_draw_rec(e);
+}
+
+/* from old osdlib... */
+void osdlib_make_text(struct osd_element *e, const struct osdlib_font *font,
+		const char *str)
+{
+	size_t len = strlen(str);
+	e->w = len * font->w;
+	e->h = font->h;
+	osdlib_make_children(e, len, 0);
+	for (size_t i = 0; i < len; ++i) {
+		int tx = font->tex_x + font->w*(str[i] - font->offset);
+		_o(&e->ch[i], font->w*i, 0, font->w, font->h, e->a, tx, font->tex_y,
+				font->w, font->h, 0, font->t);
+	}
+}
+
+void center_on_screen(struct osd_element *e)
+{
+	e->x.v = gl.win_w/2 - e->rw/2,
+	e->y.v = gl.win_h/2 - e->rh/2;
 }
