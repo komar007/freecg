@@ -99,16 +99,17 @@ void osdlib_count_absolute(struct osd_element *e)
 	if (e->rx != DBL_MAX)
 		return;
 	double pw, ph, px, py, pz;
-	if (e->rel) {
-		osdlib_count_absolute(e->rel);
-		pw = e->rel->rw, ph = e->rel->rh;
-		px = e->rel->rx, py = e->rel->ry;
-		pz = e->rel->rz;
-	} else if (e->parent) {
+	if (e->parent) {
 		osdlib_count_absolute(e->parent);
 		pw = e->parent->rw, ph = e->parent->rh;
-		px = e->parent->rx, py = e->parent->ry;
-		pz = e->parent->rz + 0.01;
+		if (e->rel) {
+			osdlib_count_absolute(e->rel);
+			px = e->rel->rx, py = e->rel->ry;
+			pz = e->rel->rz;
+		} else {
+			px = e->parent->rx, py = e->parent->ry;
+			pz = e->parent->rz + 0.01;
+		}
 	} else {
 		pw = gl.win_w, ph = gl.win_h;
 		px = 0, py = 0;
@@ -116,8 +117,8 @@ void osdlib_count_absolute(struct osd_element *e)
 	}
 	e->rw = relative_dimension(e->w, pw);
 	e->rh = relative_dimension(e->h, ph);
-	e->rx = relative_coord(e->x, e->w, px, pw);
-	e->ry = relative_coord(e->y, e->h, py, ph);
+	e->rx = relative_coord(e->x, e->w, px, e->rel ? e->rel->rw : pw);
+	e->ry = relative_coord(e->y, e->h, py, e->rel ? e->rel->rh : ph);
 	e->rz = pz + e->z;
 	/* FIXME: consider a */
 }
