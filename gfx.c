@@ -93,6 +93,7 @@ SDL_Surface *load_png(const char *path)
 		SDL_SetError("IMG_LoadPNG_RW: %s", IMG_GetError());
 		goto cleanup;
 	}
+	SDL_SetAlpha(png, 0, 255);
 cleanup:
 	SDL_FreeRW(rw);
 	return png;
