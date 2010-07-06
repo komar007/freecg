@@ -97,7 +97,6 @@ void cg_ship_step(struct ship* s, double dt)
 }
 void cg_ship_kill(struct cgl *l)
 {
-	--l->ship->life;
 	l->ship->dead = 1;
 	l->kaboom_end = l->time + 1;
 }
@@ -304,6 +303,7 @@ void cg_step(struct cgl *l, double time)
 		if (l->kaboom_end > time) {
 			cg_kaboom_step(l);
 		} else {
+			--l->ship->life;
 			if (l->ship->life == -1)
 				l->status = Lost;
 			else
