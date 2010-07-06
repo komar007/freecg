@@ -203,6 +203,19 @@ void osdlib_draw(struct osd_element *e)
 	osdlib_draw_rec(e);
 }
 
+void osdlib_free_rec(struct osd_element *e)
+{
+	for (size_t i = 0; i < e->nch; ++i)
+		osdlib_free_rec(&e->ch[i]);
+	if (e->nch > 0)
+		free(e->ch);
+}
+void osdlib_free(struct osd_element *e)
+{
+	osdlib_free_rec(e);
+	free(e);
+}
+
 /* from old osdlib... */
 void osdlib_make_text(struct osd_element *e, const struct osdlib_font *font,
 		const char *str)

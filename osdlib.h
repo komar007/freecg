@@ -76,6 +76,7 @@ void o_set(struct osd_element*, struct osd_element*, struct coord, struct coord,
 		double, double, enum transparency_model);
 void osdlib_make_children(struct osd_element*, size_t, int, ...);
 void osdlib_draw(struct osd_element*);
+void osdlib_free(struct osd_element*);
 
 /* DEPRECATED create absolutely positioned element (relatively to the parent) */
 static inline void _o(struct osd_element *e, double x, double y,

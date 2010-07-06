@@ -139,6 +139,11 @@ int main(int argc, char *argv[])
 		fprintf(stderr, "load_png: %s\n", SDL_GetError());
 		abort();
 	}
+	SDL_Surface *osd = load_png("osd.png");
+	if (!osd) {
+		fprintf(stderr, "load_png: %s\n", SDL_GetError());
+		abort();
+	}
 	struct cgl *cgl = read_cgl(argv[1], NULL);
 	if (!cgl) {
 		fprintf(stderr, "read_cgl: %s\n", SDL_GetError());
@@ -155,7 +160,8 @@ int main(int argc, char *argv[])
 	gl_resize_viewport(screen->w, screen->h);
 	struct texmgr *ttm = tm_request_texture(gfx);
 	struct texmgr *fnt = tm_request_texture(png);
-	gl_init(cgl, ttm, fnt);
+	struct texmgr *otm = tm_request_texture(osd);
+	gl_init(cgl, ttm, fnt, otm);
 	int t = SDL_GetTicks(),
 	    nt = t,
 	    time = t,

@@ -45,7 +45,7 @@ struct osd_life {
 	size_t max_life;
 };
 struct cg_osd {
-	struct osd_element root;
+	struct osd_element *root;
 	struct osd_fuel fuel;
 	struct osd_velocity velocity;
 	struct osd_keys keys;
@@ -62,5 +62,6 @@ struct cg_osd {
 void osd_init();
 void osd_step();
 void osd_draw();
+void osd_free();
 
 #endif

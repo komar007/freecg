@@ -121,23 +121,24 @@ void osd_init()
 		.tex_y = 0,
 		.offset = 32
 	};
-	o_init(&osd.root); o_set(&osd.root, NULL, pad(L,0), pad(T,0), 0, 0, TE);
-	osdlib_make_children(&osd.root, 4, 1,
+	osd.root = calloc(1, sizeof(*osd.root));
+	o_init(osd.root); o_set(osd.root, NULL, pad(L,0), pad(T,0), 0, 0, TE);
+	osdlib_make_children(osd.root, 4, 1,
 			&osd.rect, &osd.panel, &osd.gameover, &osd.victory);
 	/* left rect */
-	o_set(osd.rect, NULL, pad(L,0), pad(B,0), 144, 80, O);
-	o_img(osd.rect, gl.ttm, 0.8, 0, 90, 1, 1);
+	o_set(osd.rect, NULL, pad(L,0), pad(B,0), 150, 80, O);
+	o_img(osd.rect, gl.otm, 1.0, 0, 0, 150, 80);
 	struct osd_element *fuel_cont, *cross, *key_cont;
 	osdlib_make_children(osd.rect, 3, 1, &fuel_cont, &cross, &key_cont);
-	o_pos(fuel_cont, NULL, pad(L,12), pad(T,10));
+	o_pos(fuel_cont, NULL, pad(L,8), pad(T,10));
 	osd_fuel_init(&osd.fuel, fuel_cont);
 	o_pos(cross, NULL, center(), pad(T,8));
 	osd_velocity_init(&osd.velocity, cross);
-	o_pos(key_cont, NULL, pad(R,12), pad(T,8));
+	o_pos(key_cont, NULL, pad(R,14), pad(T,8));
 	osd_keys_init(&osd.keys, key_cont);
 	/* panel */
-	o_set(osd.panel, osd.rect, margin(R,0), pad(B,0), -144, 32, O);
-	o_img(osd.panel, gl.ttm, 0.8, 0, 90, 1, 1);
+	o_set(osd.panel, osd.rect, margin(R,0), pad(B,0), -150, 32, O);
+	o_img(osd.panel, gl.otm, 1, 152, 48, 2, 32);
 	struct osd_element *lfreight, *sfreight, *hbfreight, *life;
 	osdlib_make_children(osd.panel, 4, 1,
 			&lfreight, &sfreight, &hbfreight, &life);
@@ -158,7 +159,7 @@ void osd_init()
 	_o(gameover_img, 8, 8, 0, 0, 0.8, 0, 0, 0, 0, TE, gl.ttm);
 	osdlib_make_text(gameover_img, &osd_font, "GAME OVER");
 	_o(osd.victory, 0, 0, 144, 32, 0.8, 0, 90, 1, 1, TS, gl.ttm);
-	o_pos(osd.gameover, NULL, center(), center());
+	o_pos(osd.victory, NULL, center(), center());
 	struct osd_element *victory_img;
 	osdlib_make_children(osd.victory, 1, 1, &victory_img);
 	_o(victory_img, 8, 8, 0, 0, 0.8, 0, 0, 0, 0, TE, gl.ttm);
@@ -236,5 +237,10 @@ void osd_step()
 }
 void osd_draw()
 {
-	osdlib_draw(&osd.root);
+	osdlib_draw(osd.root);
+}
+
+void osd_free()
+{
+	osdlib_free(osd.root);
 }

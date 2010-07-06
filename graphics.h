@@ -31,7 +31,8 @@ struct camera {
 };
 struct glengine {
 	struct texmgr *ttm,
-		      *ftm;
+		      *ftm,
+		      *otm;
 	struct drect viewport;
 	struct camera cam;
 	double win_w, win_h;
@@ -41,7 +42,7 @@ struct glengine {
 };
 extern struct glengine gl;
 
-void gl_init(struct cgl*, struct texmgr*, struct texmgr*);
+void gl_init(struct cgl*, struct texmgr*, struct texmgr*, struct texmgr*);
 void gl_resize_viewport(double, double);
 void gl_update_window();
 
