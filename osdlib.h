@@ -71,7 +71,7 @@ void o_init(struct osd_element*);
 void o_img(struct osd_element*, struct texmgr*, double,
 		int, int, int, int);
 void o_pos(struct osd_element*, struct osd_element*, struct coord, struct coord);
-void o_dim(struct osd_element*, double, double);
+void o_dim(struct osd_element*, double, double, enum transparency_model);
 void o_set(struct osd_element*, struct osd_element*, struct coord, struct coord,
 		double, double, enum transparency_model);
 void osdlib_make_children(struct osd_element*, size_t, int, ...);

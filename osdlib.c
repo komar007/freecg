@@ -83,17 +83,18 @@ void o_pos(struct osd_element *e, struct osd_element *rel,
 	e->x = x, e->y = y;
 	e->rel = rel;
 }
-void o_dim(struct osd_element *e, double w, double h)
+void o_dim(struct osd_element *e, double w, double h,
+		enum transparency_model tr)
 {
 	e->w = w, e->h = h;
+	e->tr = tr;
 }
 void o_set(struct osd_element *e, struct osd_element *rel,
 		struct coord x, struct coord y,
 		double w, double h, enum transparency_model tr)
 {
 	o_pos(e, rel, x, y);
-	o_dim(e, w, h);
-	e->tr = tr;
+	o_dim(e, w, h, tr);
 }
 /* Creates children positioned relatively to the parent and inits them */
 void osdlib_make_children(struct osd_element *e, size_t num, int init, ...)
