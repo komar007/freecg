@@ -22,7 +22,12 @@
 #include "texmgr.h"
 #include <stdarg.h>
 #include <float.h>
+#include <assert.h>
 
+/* General relative coordinate constructor
+ * rel  - relation to parent/sibling
+ * orig - relation to self
+ */
 struct coord c(enum side rel, enum side orig, double val)
 {
 	struct coord r = {
@@ -31,6 +36,27 @@ struct coord c(enum side rel, enum side orig, double val)
 		.v = val
 	};
 	return r;
+}
+/* relative to sibling with margin */
+struct coord margin(enum side s, double m)
+{
+	assert(s != Center);
+	if (s == Begin)
+		return c(Begin, End,  -m);
+	else
+		return c(End,   Begin, m);
+}
+struct coord pad(enum side s, double m)
+{
+	assert(s != Center);
+	if (s == Begin)
+		return c(Begin, Begin, m);
+	else
+		return c(End,   End,  -m);
+}
+struct coord center()
+{
+	return c(C,C,0);
 }
 
 /* Inits an osd_element. Must be called on each root element */
@@ -51,43 +77,22 @@ void o_img(struct osd_element *e, struct texmgr *tm, double a,
 	e->tex_x = x, e->tex_y = y;
 	e->tex_w = w, e->tex_h = h;
 }
-void o_pos(struct osd_element *e, struct coord x, struct coord y)
+void o_pos(struct osd_element *e, struct osd_element *rel,
+		struct coord x, struct coord y)
 {
 	e->x = x, e->y = y;
+	e->rel = rel;
 }
 void o_dim(struct osd_element *e, double w, double h)
 {
 	e->w = w, e->h = h;
 }
-void o_set(struct osd_element *e, struct coord x, struct coord y,
+void o_set(struct osd_element *e, struct osd_element *rel,
+		struct coord x, struct coord y,
 		double w, double h, enum transparency_model tr)
 {
-	o_pos(e, x, y);
+	o_pos(e, rel, x, y);
 	o_dim(e, w, h);
-	e->tr = tr;
-}
-void o_flt(struct osd_element *e, struct osd_element *rel,
-		enum dir dir, int margin, enum transparency_model tr)
-{
-	e->rel = rel;
-	switch (dir) {
-	case Right:
-		e->x = c(E,B, margin);
-		e->y = c(B,B, 0);
-		break;
-	case Left:
-		e->x = c(B,E, -margin);
-		e->y = c(B,B, 0);
-		break;
-	case Up:
-		e->x = c(B,B, 0);
-		e->y = c(B,E, -margin);
-		break;
-	case Down:
-		e->x = c(B,B, 0);
-		e->y = c(E,B, margin);
-		break;
-	}
 	e->tr = tr;
 }
 /* Creates children positioned relatively to the parent and inits them */
@@ -122,8 +127,12 @@ double relative_coord(struct coord coord, double dim,
 	rel = pcoord;
 	if (coord.rel == End)
 		rel += pdim;
+	else if (coord.rel == Center)
+		rel += pdim/2;
 	if (coord.orig == End)
 		rel -= dim;
+	else if (coord.orig == Center)
+		rel -= dim/2;
 	return rel + coord.v;
 }
 void osdlib_count_absolute(struct osd_element *e)
@@ -206,10 +215,4 @@ void osdlib_make_text(struct osd_element *e, const struct osdlib_font *font,
 		_o(&e->ch[i], font->w*i, 0, font->w, font->h, e->a, tx, font->tex_y,
 				font->w, font->h, 0, font->t);
 	}
-}
-
-void center_on_screen(struct osd_element *e)
-{
-	e->x.v = gl.win_w/2 - e->rw/2,
-	e->y.v = gl.win_h/2 - e->rh/2;
 }

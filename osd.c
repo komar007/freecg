@@ -27,7 +27,7 @@ static struct cg_osd osd;
 void osd_fuel_init(struct osd_fuel *f, struct osd_element *container)
 {
 	o_dim(container, 16, 64);
-	container->tr = T;
+	container->tr = TE;
 	osdlib_make_children(container, 16, 0);
 	f->bars = container->ch;
 	_o(&f->bars[15], 0, 0,  16, 3,  0.8,  388, 387,  16, 3, 0, gl.ttm);
@@ -54,21 +54,22 @@ void osd_velocity_init(struct osd_velocity *v, struct osd_element *container)
 void osd_keys_init(struct osd_keys *k, struct osd_element *container)
 {
 	o_dim(container, 16, 64);
-	container->tr = T;
+	container->tr = TE;
 	osdlib_make_children(container, 4, 0);
 	k->keys = container->ch;
 	for (int i = 0; i < 4; ++i)
 		_o(&k->keys[i], 0, 17*i,  16, 16,  0.2,  256, 360+16*i,  16, 16,  0, gl.ttm);
 }
 void osd_freight_init(struct osd_freight *f, struct osd_element *container,
-		struct coord x, struct coord y, int tex_x, int tex_y)
+		int tex_x, int tex_y)
 {
 	f->container = container;
 	f->max_freight = gl.l->num_all_freight;
 	int shelf_pos = 44;
 	struct osd_element *img, *shelf;
 	/* containter's width is updated in real-time, thus w = 0 */
-	o_set(container, x, y, 0, 18, T);
+	o_dim(container, 0, 18);
+	container->tr = TE;
 	osdlib_make_children(container, 2, 1, &img, &shelf);
 	_o(img, 0, 0,  36, 18,  0.6,  tex_x, tex_y,  48, 24,  0, gl.ttm);
 	_o(shelf, shelf_pos, 6, -shelf_pos, 12,  0.2,  4, 302, 1, 1, 0, gl.ttm);
@@ -78,13 +79,13 @@ void osd_freight_init(struct osd_freight *f, struct osd_element *container,
 	for (size_t i = 1; i < f->max_freight; ++i)
 		_ro(&f->freight[i], &f->freight[i-1], -3, 0,  16, 16,  0.8,  80, 392,  16, 16, 1, gl.ttm);
 }
-void osd_life_init(struct osd_life *l, struct osd_element *container,
-		double x, double y)
+void osd_life_init(struct osd_life *l, struct osd_element *container)
 {
 	l->max_life = gl.l->num_1ups + DEFAULT_LIFE;
 	int cwidth  = (l->max_life-1)*14 + SHIP_W + 2*2;
 	int cheight = SHIP_H;
-	_o(container, x, y, cwidth, cheight,  0,  4, 302, 1, 1,  0, gl.ttm);
+	o_dim(container, cwidth, cheight);
+	container->tr = TE;
 	osdlib_make_children(container, l->max_life, 0);
 	l->ships = container->ch;
 	for (size_t i = 0; i < l->max_life; ++i) {
@@ -104,48 +105,49 @@ void osd_init()
 		.tex_y = 0,
 		.offset = 32
 	};
-	o_init(&osd.root); o_set(&osd.root, c(B,B,0), c(B,B,0), 0, 0, T);
+	o_init(&osd.root); o_set(&osd.root, NULL, pad(L,0), pad(T,0), 0, 0, TE);
 	osdlib_make_children(&osd.root, 4, 1,
 			&osd.rect, &osd.panel, &osd.gameover, &osd.victory);
 	/* left rect */
-	o_set(osd.rect, c(B,B,0), c(E,E,0), 144, 80, O);
+	o_set(osd.rect, NULL, pad(L,0), pad(B,0), 144, 80, O);
 	o_img(osd.rect, gl.ttm, 0.8, 0, 90, 1, 1);
 	struct osd_element *fuel_cont, *cross, *key_cont;
 	osdlib_make_children(osd.rect, 3, 1, &fuel_cont, &cross, &key_cont);
-	o_pos(fuel_cont, c(B,B,12), c(B,B,8));
+	o_pos(fuel_cont, NULL, pad(L,12), pad(T,8));
 	osd_fuel_init(&osd.fuel, fuel_cont);
-	o_pos(cross, c(B,B,40), c(B,B,8));
+	o_pos(cross, NULL, center(), pad(T,8));
 	osd_velocity_init(&osd.velocity, cross);
-	o_pos(key_cont, c(E,E,-12), c(B,B,8));
+	o_pos(key_cont, NULL, pad(R,12), pad(T,8));
 	osd_keys_init(&osd.keys, key_cont);
 	/* panel */
-	osd.panel->rel = osd.rect;
-	o_set(osd.panel, c(E,B,0), c(E,E,0), -144, 32, O);
+	o_set(osd.panel, osd.rect, margin(R,0), pad(B,0), -144, 32, O);
 	o_img(osd.panel, gl.ttm, 0.8, 0, 90, 1, 1);
 	struct osd_element *lfreight, *sfreight, *hbfreight, *life;
 	osdlib_make_children(osd.panel, 4, 1,
 			&lfreight, &sfreight, &hbfreight, &life);
-	osd_freight_init(&osd.freight_level, lfreight,
-			c(B,B,8), c(B,B,8), 384, 400);
-	osd_freight_init(&osd.freight_ship, sfreight,
-			c(E,B,12),c(B,B,0), 432, 400);
-	sfreight->rel = lfreight;
-	osd_freight_init(&osd.freight_hb, hbfreight,
-			c(E,B,12), c(B,B,0), 480, 400);
-	hbfreight->rel = sfreight;
-	osd_life_init(&osd.life, life, -8, 6);
+	o_pos(lfreight, NULL, pad(L,8), center());
+	osd_freight_init(&osd.freight_level, lfreight, 384, 400);
+	o_pos(sfreight, lfreight, margin(R,12),pad(T,0));
+	osd_freight_init(&osd.freight_ship, sfreight, 432, 400);
+	o_pos(hbfreight, sfreight, margin(R,12), pad(T,0));
+	osd_freight_init(&osd.freight_hb, hbfreight, 480, 400);
+	o_pos(life, NULL, pad(R,8), pad(T,6));
+	osd_life_init(&osd.life, life);
+
+	/* DEPRECATED (labels will go to menu) */
 	_o(osd.gameover, 0, 0, 160, 32, 0.8, 0, 90, 1, 1, TS, gl.ttm);
-	center_on_screen(osd.gameover);
+	o_pos(osd.gameover, NULL, center(), center());
 	struct osd_element *gameover_img;
 	osdlib_make_children(osd.gameover, 1, 1, &gameover_img);
-	_o(gameover_img, 8, 8, 0, 0, 0.8, 0, 0, 0, 0, T, gl.ttm);
+	_o(gameover_img, 8, 8, 0, 0, 0.8, 0, 0, 0, 0, TE, gl.ttm);
 	osdlib_make_text(gameover_img, &osd_font, "GAME OVER");
 	_o(osd.victory, 0, 0, 144, 32, 0.8, 0, 90, 1, 1, TS, gl.ttm);
-	center_on_screen(osd.victory);
+	o_pos(osd.gameover, NULL, center(), center());
 	struct osd_element *victory_img;
 	osdlib_make_children(osd.victory, 1, 1, &victory_img);
-	_o(victory_img, 8, 8, 0, 0, 0.8, 0, 0, 0, 0, T, gl.ttm);
+	_o(victory_img, 8, 8, 0, 0, 0.8, 0, 0, 0, 0, TE, gl.ttm);
 	osdlib_make_text(victory_img, &osd_font, "VICTORY!");
+	/* /DEPRECATED */
 }
 
 void osd_fuel_step(struct osd_fuel *f, double fuel)
