@@ -51,11 +51,19 @@ void o_img(struct osd_element *e, struct texmgr *tm, double a,
 	e->tex_x = x, e->tex_y = y;
 	e->tex_w = w, e->tex_h = h;
 }
-void o_pos(struct osd_element *e, struct coord x, struct coord y,
-		double w, double h, enum transparency_model tr)
+void o_pos(struct osd_element *e, struct coord x, struct coord y)
 {
 	e->x = x, e->y = y;
+}
+void o_dim(struct osd_element *e, double w, double h)
+{
 	e->w = w, e->h = h;
+}
+void o_set(struct osd_element *e, struct coord x, struct coord y,
+		double w, double h, enum transparency_model tr)
+{
+	o_pos(e, x, y);
+	o_dim(e, w, h);
 	e->tr = tr;
 }
 void o_flt(struct osd_element *e, struct osd_element *rel,
