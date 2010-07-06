@@ -58,6 +58,30 @@ void o_pos(struct osd_element *e, struct coord x, struct coord y,
 	e->w = w, e->h = h;
 	e->tr = tr;
 }
+void o_flt(struct osd_element *e, struct osd_element *rel,
+		enum dir dir, int margin, enum transparency_model tr)
+{
+	e->rel = rel;
+	switch (dir) {
+	case Right:
+		e->x = c(E,B, margin);
+		e->y = c(B,B, 0);
+		break;
+	case Left:
+		e->x = c(B,E, -margin);
+		e->y = c(B,B, 0);
+		break;
+	case Up:
+		e->x = c(B,B, 0);
+		e->y = c(B,E, -margin);
+		break;
+	case Down:
+		e->x = c(B,B, 0);
+		e->y = c(E,B, margin);
+		break;
+	}
+	e->tr = tr;
+}
 /* Creates children positioned relatively to the parent and inits them */
 void osdlib_make_children(struct osd_element *e, size_t num, int init, ...)
 {
