@@ -143,8 +143,8 @@ void osd_init()
 	osdlib_make_children(osd.root, 5, 1,
 		&orect, &opanel, &otimer, &ogameover, &ovictory);
 	/* left rect */
-	o_set(orect, NULL, pad(L,0), pad(B,0), 150, 80, O);
-	o_img(orect, gl.otm, 1.0, 0, 0, 150, 80);
+	o_set(orect, NULL, pad(L,0), pad(B,0), 151, 80, O);
+	o_img(orect, gl.otm, 1.0, 0, 0, 151, 80);
 	struct osd_element *fuel_cont, *cross, *key_cont;
 	osdlib_make_children(orect, 3, 1, &fuel_cont, &cross, &key_cont);
 	o_pos(fuel_cont, NULL, pad(L,8), pad(T,10));
@@ -154,7 +154,7 @@ void osd_init()
 	o_pos(key_cont, NULL, pad(R,14), pad(T,8));
 	osd_keys_init(&osd.keys, key_cont);
 	/* panel */
-	o_set(opanel, orect, margin(R,0), pad(B,0), -150, 32, O);
+	o_set(opanel, orect, margin(R,0), pad(B,0), -151, 32, O);
 	o_img(opanel, gl.otm, 1, 152, 48, 2, 32);
 	struct osd_element *lfreight, *sfreight, *hbfreight, *life;
 	osdlib_make_children(opanel, 4, 1,
@@ -172,11 +172,11 @@ void osd_init()
 	osd_timer_init(&osd.timer, otimer, 96);
 
 	struct animation t = {
-		.val_start = 32,
-		.val_end = opanel->y.v,
+		.val_start = 80,
+		.val_end = orect->y.v,
 		.time_start = 0,
-		.time_end = 1.5,
-		.val = &opanel->y.v,
+		.time_end = 0.5,
+		.val = &orect->y.v,
 		.e = ease_atan,
 		.running = 1
 	};
