@@ -189,7 +189,7 @@ int main(int argc, char *argv[])
 		}
 		gl.cam.x = cgl->ship->x;
 		gl.cam.y = cgl->ship->y;
-		gl_update_window();
+		gl_update_window(time / 1000.0);
 	}
 	free_cgl(cgl);
 	return 0;
