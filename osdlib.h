@@ -39,6 +39,14 @@ struct coord {
 		  rel;
 	double v;
 };
+typedef double (*ease_function)(double);
+struct animation {
+	int running;
+	double val_start, val_end;
+	double time_start, time_end;
+	ease_function e;
+	double *val;
+};
 struct osd_element {
 	enum transparency_model tr;
 	struct coord x, y;
@@ -74,11 +82,15 @@ void o_pos(struct osd_element*, struct osd_element*, struct coord, struct coord)
 void o_dim(struct osd_element*, double, double, enum transparency_model);
 void o_set(struct osd_element*, struct osd_element*, struct coord, struct coord,
 		double, double, enum transparency_model);
+void o_txt(struct osd_element*, const struct osdlib_font*, const char*);
 void osdlib_make_children(struct osd_element*, size_t, int, ...);
 void osdlib_draw(struct osd_element*);
 void osdlib_free(struct osd_element*);
 
-void o_txt(struct osd_element*, const struct osdlib_font*, const char*);
+void animation_step(struct animation*, double);
+double ease_sin(double x);
+double ease_linear(double);
+double ease_atan(double);
 
 /* DEPRECATED create absolutely positioned element (relatively to the parent) */
 static inline void _o(struct osd_element *e, double x, double y,

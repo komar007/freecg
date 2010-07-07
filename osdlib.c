@@ -23,6 +23,7 @@
 #include <stdarg.h>
 #include <float.h>
 #include <assert.h>
+#include <math.h>
 
 /* General relative coordinate constructor
  * rel  - relation to parent/sibling
@@ -216,8 +217,22 @@ void osdlib_free(struct osd_element *e)
 	free(e);
 }
 
-/* Higher level functions */
+void animation_step(struct animation *anim, double time)
+{
+	if (!anim->running || time < anim->time_start)
+		return;
+	if (time > anim->time_end) {
+		*anim->val = anim->val_end;
+		anim->running = 0;
+		return;
+	}
+	double length = anim->time_end - anim->time_start,
+	       delta  = anim->val_end - anim->val_start,
+	       phase  = time - anim->time_start;
+	*anim->val = anim->val_start + delta * anim->e(phase/length);
+}
 
+/* Higher level functions */
 void o_txt(struct osd_element *e, const struct osdlib_font *font,
 		const char *str)
 {
@@ -250,4 +265,19 @@ void osdlib_make_text(struct osd_element *e, const struct osdlib_font *font,
 		_o(&e->ch[i], font->w*i, 0, font->w, font->h, e->a, tx, font->tex_y,
 				font->w, font->h, 0, font->tm);
 	}
+}
+
+/* Ease functions */
+double ease_sin(double x)
+{
+	return sin(M_PI*(x-0.5))/2 + 0.5;
+}
+double ease_linear(double x)
+{
+	return x;
+}
+double ease_atan(double x)
+{
+	const double coef = 7;
+	return atan((x-0.5)*coef)/atan(coef/2)/2 + 0.5;
 }

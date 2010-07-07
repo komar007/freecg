@@ -171,6 +171,17 @@ void osd_init()
 	o_pos(otimer, NULL, center(), pad(T,0));
 	osd_timer_init(&osd.timer, otimer, 96);
 
+	struct animation t = {
+		.val_start = 32,
+		.val_end = opanel->y.v,
+		.time_start = 0,
+		.time_end = 1.5,
+		.val = &opanel->y.v,
+		.e = ease_atan,
+		.running = 1
+	};
+	osd.test_anim = t;
+
 	/* DEPRECATED (labels will go to menu) */
 	_o(ogameover, 0, 0, 160, 32, 0.8, 0, 90, 1, 1, TS, gl.ttm);
 	o_pos(ogameover, NULL, center(), center());
@@ -239,10 +250,12 @@ void osd_life_step(struct osd_life *l, size_t life)
 void osd_timer_step(struct osd_timer *t, double time)
 {
 	char time_str[8];
-	sprintf(time_str, "%.2d:%.2d", (int)time/60, (int)time%60);
+	int min = (int)time / 60,
+	    sec = (int)time % 60;
+	sprintf(time_str, "%.2d:%.2d", min, sec);
 	o_txt(t->time, &osd.font, time_str);
 }
-void osd_step()
+void osd_step(double time)
 {
 	struct ship *ship = gl.l->ship;
 	osd_fuel_step(&osd.fuel, ship->fuel);
@@ -264,6 +277,7 @@ void osd_step()
 		osd.victory->tr = Opaque;
 	if (gl.l->status == Lost)
 		osd.gameover->tr = Opaque;
+	animation_step(&osd.test_anim, time);
 }
 void osd_draw()
 {

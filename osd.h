@@ -62,6 +62,7 @@ struct cg_osd {
 	/* deprecated */
 	struct osd_element *victory,
 			   *gameover;
+	struct animation test_anim;
 };
 
 void osd_init();

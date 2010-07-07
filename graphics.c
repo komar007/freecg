@@ -154,13 +154,13 @@ void gl_dispatch_drawing(const struct tile *tile)
 	}
 }
 
-void gl_draw_osd()
+void gl_draw_osd(double time)
 {
-	osd_step();
+	osd_step(time);
 	osd_draw();
 }
 
-void gl_update_window()
+void gl_update_window(double time)
 {
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	glLoadIdentity();
@@ -168,6 +168,6 @@ void gl_update_window()
 	gl_draw_scene();
 	glLoadIdentity();
 	glTranslated(0, 0, 2);
-	gl_draw_osd();
+	gl_draw_osd(time);
 	SDL_GL_SwapBuffers();
 }
