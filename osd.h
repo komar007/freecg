@@ -44,7 +44,11 @@ struct osd_life {
 	struct osd_element *ships;
 	size_t max_life;
 };
+struct osd_timer {
+	struct osd_element *time;
+};
 struct cg_osd {
+	struct osdlib_font font;
 	struct osd_element *root;
 	struct osd_fuel fuel;
 	struct osd_velocity velocity;
@@ -52,11 +56,12 @@ struct cg_osd {
 	struct osd_freight freight_level,
 			  freight_ship,
 			  freight_hb;
+	struct osd_timer timer;
 	struct osd_life life;
-	struct osd_element *rect,
-			   *panel,
-			   *gameover,
-			   *victory;
+
+	/* deprecated */
+	struct osd_element *victory,
+			   *gameover;
 };
 
 void osd_init();

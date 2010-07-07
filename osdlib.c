@@ -216,6 +216,27 @@ void osdlib_free(struct osd_element *e)
 	free(e);
 }
 
+/* Higher level functions */
+
+void o_txt(struct osd_element *e, const struct osdlib_font *font,
+		const char *str)
+{
+	osdlib_free_rec(e);
+	size_t len = strlen(str);
+	o_dim(e, len*font->w, font->h, TE);
+	osdlib_make_children(e, len, 0);
+	struct osd_element *chr = e->ch;
+	o_set(&chr[0], NULL, pad(L,0), pad(T,0), font->w, font->h, O);
+	for (size_t i = 1; i < len; ++i)
+		o_set(&chr[i], &chr[i-1], margin(R,0), pad(T,0),
+				font->w, font->h, O);
+	for (size_t i = 0; i < len; ++i) {
+		int tx = font->tex_x + font->w*(str[i] - font->offset);
+		o_img(&chr[i], font->tm, 1.0, tx, font->tex_y,
+				font->w, font->h);
+	}
+}
+
 /* from old osdlib... */
 void osdlib_make_text(struct osd_element *e, const struct osdlib_font *font,
 		const char *str)
@@ -227,6 +248,6 @@ void osdlib_make_text(struct osd_element *e, const struct osdlib_font *font,
 	for (size_t i = 0; i < len; ++i) {
 		int tx = font->tex_x + font->w*(str[i] - font->offset);
 		_o(&e->ch[i], font->w*i, 0, font->w, font->h, e->a, tx, font->tex_y,
-				font->w, font->h, 0, font->t);
+				font->w, font->h, 0, font->tm);
 	}
 }

@@ -58,10 +58,10 @@ struct osd_element {
 	double rz;
 };
 struct osdlib_font {
-	struct texmgr *t;
+	struct texmgr *tm;
 	int tex_x, tex_y;
 	int w, h;
-	int offset;
+	size_t offset;
 };
 struct coord c(enum side, enum side, double);
 struct coord margin(enum side, double);
@@ -77,6 +77,8 @@ void o_set(struct osd_element*, struct osd_element*, struct coord, struct coord,
 void osdlib_make_children(struct osd_element*, size_t, int, ...);
 void osdlib_draw(struct osd_element*);
 void osdlib_free(struct osd_element*);
+
+void o_txt(struct osd_element*, const struct osdlib_font*, const char*);
 
 /* DEPRECATED create absolutely positioned element (relatively to the parent) */
 static inline void _o(struct osd_element *e, double x, double y,
