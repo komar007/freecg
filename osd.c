@@ -271,8 +271,7 @@ void osd_step(double time)
 	struct airport *hb = gl.l->hb;
 	osd_freight_step(&osd.freight_hb, hb->c.freight, hb->num_cargo);
 	osd_life_step(&osd.life, max(0, gl.l->ship->life));
-	/* FIXME: use real time, not game time */
-	osd_timer_step(&osd.timer, gl.l->time);
+	osd_timer_step(&osd.timer, time);
 	if (gl.l->status == Victory)
 		osd.victory->tr = Opaque;
 	if (gl.l->status == Lost)
