@@ -159,8 +159,8 @@ void osdlib_count_absolute(struct osd_element *e)
 	}
 	e->rw = relative_dimension(e->w, pw);
 	e->rh = relative_dimension(e->h, ph);
-	e->rx = relative_coord(e->x, e->w, px, e->rel ? e->rel->rw : pw);
-	e->ry = relative_coord(e->y, e->h, py, e->rel ? e->rel->rh : ph);
+	e->rx = relative_coord(e->x, e->rw, px, e->rel ? e->rel->rw : pw);
+	e->ry = relative_coord(e->y, e->rh, py, e->rel ? e->rel->rh : ph);
 	e->rz = pz + e->z;
 	/* FIXME: consider a */
 }
