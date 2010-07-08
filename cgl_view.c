@@ -17,6 +17,7 @@
  */
 
 #include "graphics.h"
+#include "osd.h"
 #include "texmgr.h"
 #include "gfx.h"
 #include "cg.h"
@@ -98,6 +99,9 @@ void process_event(SDL_Event *e)
 			break;
 		case SDLK_UP:
 			cg_ship_set_engine(gl.l->ship, 1);
+			break;
+		case SDLK_o:
+			osd_toggle();
 			break;
 		default:
 			break;

@@ -329,6 +329,6 @@ double ease_linear(double x)
 }
 double ease_atan(double x)
 {
-	const double coef = 7;
+	const double coef = 5;
 	return atan((x-0.5)*coef)/atan(coef/2)/2 + 0.5;
 }

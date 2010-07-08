@@ -62,6 +62,7 @@ struct osd_timer {
 	struct osd_element *time;
 };
 struct cg_osd {
+	int visible;
 	struct osd_layer *layer;
 	struct osdlib_font font;
 
@@ -78,6 +79,8 @@ void osd_init();
 void osd_step();
 void osd_draw();
 void osd_free();
-void osd_set_visibility(int);
+void osd_show();
+void osd_hide();
+void osd_toggle();
 
 #endif

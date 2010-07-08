@@ -137,6 +137,7 @@ void osd_init()
 		.offset = 32
 	};
 	osd.font = f;
+	osd.visible = 0;
 	struct osd_element *orect, *opanel, *otimer, *ogameover, *ovictory;
 	osd.layer = calloc(1, sizeof(*osd.layer));
 	osdlib_init(osd.layer, gl.win_w, gl.win_h);
@@ -173,7 +174,7 @@ void osd_init()
 	/* timer */
 	o_pos(otimer, NULL, center(), pad(T,-32));
 	osd_timer_init(&osd.timer, otimer, 96);
-	osd_set_visibility(1);
+	osd_show();
 
 	/* DEPRECATED (labels will go to menu) */
 	_o(ogameover, 0, 0, 160, 32, 0.8, 0, 90, 1, 1, TS, gl.ttm);
@@ -280,17 +281,38 @@ void osd_free()
 {
 	osdlib_free(osd.layer);
 }
-void osd_set_visibility(int v)
+void osd_show()
 {
+	if (osd.visible)
+		return;
 	double t = osd.layer->time;
 	struct animation *a;
-	double spos, epos;
-	spos = v ? 80 : 0, epos = v ? 0 : 80;
 	a = anim(Abs, Abs, &osd.shipinfo.container->y.v, ease_atan,
-			spos, epos, t, t+0.5);
+			osd.shipinfo.container->h, 0, t, t+0.5);
 	osdlib_add_animation(osd.layer, a);
-	spos = v ? -32 : 0, epos = v ? 0 : -32;
 	a = anim(Abs, Abs, &osd.timer.container->y.v, ease_atan,
-			spos, epos, t+0.25, t+0.75);
+			-osd.timer.container->h, 0, t+0.25, t+0.75);
 	osdlib_add_animation(osd.layer, a);
+	osd.visible = 1;
+}
+void osd_hide()
+{
+	if (!osd.visible)
+		return;
+	double t = osd.layer->time;
+	struct animation *a;
+	a = anim(Abs, Abs, &osd.shipinfo.container->y.v, ease_atan,
+			0, osd.shipinfo.container->h, t+0.25, t+0.75);
+	osdlib_add_animation(osd.layer, a);
+	a = anim(Abs, Abs, &osd.timer.container->y.v, ease_atan,
+			0, -osd.timer.container->h, t, t+0.5);
+	osdlib_add_animation(osd.layer, a);
+	osd.visible = 0;
+}
+void osd_toggle()
+{
+	if (osd.visible)
+		osd_hide();
+	else
+		osd_show();
 }
