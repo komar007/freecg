@@ -77,7 +77,8 @@ void osd_freight_init(struct osd_freight *f, struct osd_element *container,
 	f->container = container;
 	struct osd_element *img, *shelf;
 	/* containter's width is updated in real-time, thus w = 0 */
-	o_dim(container, 0, 18, TransparentElement);
+	int cont_width = 5 + 44;
+	o_dim(container, cont_width, 18, TransparentElement);
 	osdlib_make_children(container, 2, 1, &img, &shelf);
 	o_set(img, NULL, pad(L,0), pad(T,0), 36, 18, O);
 	o_img(img, gl.ttm, 0.6, tex_x, tex_y, 48, 24);
@@ -170,6 +171,7 @@ void osd_init()
 	o_pos(hbfreight, sfreight, margin(R,12), pad(T,0));
 	osd_freight_init(&osd.panel.hbfreight, hbfreight, 480, 400);
 	o_pos(life, NULL, pad(R,8), pad(T,6));
+	life->z = 0.01;
 	osd_life_init(&osd.panel.life, life);
 	/* timer */
 	o_pos(otimer, NULL, center(), pad(T,-32));
@@ -230,9 +232,14 @@ void osd_freight_step(struct osd_freight *f, const struct freight *flist, size_t
 	}
 	for (size_t i = nfreight; i < f->max_freight; ++i)
 		f->freight[i].tr = TransparentElement;
-	/* shelf length = number of freights + number of gaps + 2x margin(4) */
-	int shelf_len = f->max_freight*16 + (f->max_freight-1)*3 + 8;
-	f->container->w = shelf_len + 44;
+	if (f->max_freight > f->old_max_freight) {
+		double t = osd.layer->time;
+		int shelf_delta = (f->max_freight-f->old_max_freight)*(16+3);
+		struct animation *a = anim(Rel, Rel, &f->container->w, ease_atan,
+				0, shelf_delta, t, t+0.5);
+		osdlib_add_animation(osd.layer, a);
+		f->old_max_freight = f->max_freight;
+	}
 }
 void osd_life_step(struct osd_life *l, size_t life)
 {

@@ -179,7 +179,7 @@ void osdlib_count_absolute(struct osd_layer *l, struct osd_element *e)
 	e->rh = relative_dimension(e->h, ph);
 	e->rx = relative_coord(e->x, e->rw, px, e->rel ? e->rel->rw : pw);
 	e->ry = relative_coord(e->y, e->rh, py, e->rel ? e->rel->rh : ph);
-	e->rz = pz + e->z;
+	e->rz = pz + e->z/100;
 	/* FIXME: consider a */
 }
 void osdlib_draw_rec(struct osd_layer *l, struct osd_element *e)

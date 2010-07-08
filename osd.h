@@ -43,6 +43,7 @@ struct osd_shipinfo {
 };
 struct osd_freight {
 	size_t max_freight;
+	size_t old_max_freight;
 	struct osd_element *freight;
 	struct osd_element *container;
 };
