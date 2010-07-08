@@ -48,8 +48,8 @@ struct osd_timer {
 	struct osd_element *time;
 };
 struct cg_osd {
+	struct osd_layer *root;
 	struct osdlib_font font;
-	struct osd_element *root;
 	struct osd_fuel fuel;
 	struct osd_velocity velocity;
 	struct osd_keys keys;

@@ -71,10 +71,18 @@ struct osdlib_font {
 	int w, h;
 	size_t offset;
 };
+struct osd_layer {
+	double w, h;
+	struct osd_element *root;
+};
 struct coord c(enum side, enum side, double);
 struct coord margin(enum side, double);
 struct coord pad(enum side, double);
 struct coord center();
+void osdlib_init(struct osd_layer*, double, double);
+void osdlib_draw(struct osd_layer*);
+void osdlib_free(struct osd_layer*);
+void osdlib_make_children(struct osd_element*, size_t, int, ...);
 void o_init(struct osd_element*);
 void o_img(struct osd_element*, struct texmgr*, double,
 		int, int, int, int);
@@ -83,9 +91,6 @@ void o_dim(struct osd_element*, double, double, enum transparency_model);
 void o_set(struct osd_element*, struct osd_element*, struct coord, struct coord,
 		double, double, enum transparency_model);
 void o_txt(struct osd_element*, const struct osdlib_font*, const char*);
-void osdlib_make_children(struct osd_element*, size_t, int, ...);
-void osdlib_draw(struct osd_element*);
-void osdlib_free(struct osd_element*);
 
 void animation_step(struct animation*, double);
 double ease_sin(double x);
@@ -130,18 +135,15 @@ static inline void _ro(struct osd_element *e, struct osd_element *s,
 	e->rel = s;
 }
 
-/* DEPRECATED */
-void osdlib_make_text(struct osd_element*, const struct osdlib_font*, const char*);
-
 enum shortcuts {
-	O = Opaque,
-	TE = TransparentElement,
-	TS = TransparentSubtree,
-	L = Begin,
-	T = Begin,
-	C = Center,
-	R = End,
-	B = End,
+       O = Opaque,
+       TE = TransparentElement,
+       TS = TransparentSubtree,
+       L = Begin,
+       T = Begin,
+       C = Center,
+       R = End,
+       B = End,
 };
 
 #endif

@@ -25,6 +25,7 @@
 #include <assert.h>
 #include <math.h>
 
+/* ==================== Positioning ==================== */
 /* General relative coordinate constructor
  * rel  - relation to parent/sibling
  * orig - relation to self
@@ -60,6 +61,7 @@ struct coord center()
 	return c(C,C,0);
 }
 
+/* ==================== Element setters ==================== */
 /* Inits an osd_element. Must be called on each root element */
 void o_init(struct osd_element *e)
 {
@@ -97,6 +99,15 @@ void o_set(struct osd_element *e, struct osd_element *rel,
 	o_pos(e, rel, x, y);
 	o_dim(e, w, h, tr);
 }
+
+/* ==================== Osdlib functions ==================== */
+void osdlib_init(struct osd_layer *layer, double w, double h)
+{
+	layer->w = w, layer->h = h;
+	layer->root = calloc(1, sizeof(*layer->root));
+	o_init(layer->root); o_set(layer->root, NULL, pad(L,0), pad(T,0), 0, 0, TE);
+}
+
 /* Creates children positioned relatively to the parent and inits them */
 void osdlib_make_children(struct osd_element *e, size_t num, int init, ...)
 {
@@ -137,16 +148,16 @@ double relative_coord(struct coord coord, double dim,
 		rel -= dim/2;
 	return rel + coord.v;
 }
-void osdlib_count_absolute(struct osd_element *e)
+void osdlib_count_absolute(struct osd_layer *l, struct osd_element *e)
 {
 	if (e->rx != DBL_MAX)
 		return;
 	double pw, ph, px, py, pz;
 	if (e->parent) {
-		osdlib_count_absolute(e->parent);
+		osdlib_count_absolute(l, e->parent);
 		pw = e->parent->rw, ph = e->parent->rh;
 		if (e->rel) {
-			osdlib_count_absolute(e->rel);
+			osdlib_count_absolute(l, e->rel);
 			px = e->rel->rx, py = e->rel->ry;
 			pz = e->rel->rz;
 		} else {
@@ -154,7 +165,7 @@ void osdlib_count_absolute(struct osd_element *e)
 			pz = e->parent->rz + 0.01;
 		}
 	} else {
-		pw = gl.win_w, ph = gl.win_h;
+		pw = l->w, ph = l->h;
 		px = 0, py = 0;
 		pz = 0;
 	}
@@ -165,9 +176,9 @@ void osdlib_count_absolute(struct osd_element *e)
 	e->rz = pz + e->z;
 	/* FIXME: consider a */
 }
-void osdlib_draw_rec(struct osd_element *e)
+void osdlib_draw_rec(struct osd_layer *l, struct osd_element *e)
 {
-	osdlib_count_absolute(e);
+	osdlib_count_absolute(l, e);
 	if (e->tr == Opaque) {
 		gl_bind_texture(e->t);
 		glBegin(GL_QUADS);
@@ -189,7 +200,7 @@ void osdlib_draw_rec(struct osd_element *e)
 	if (e->tr != TransparentSubtree) {
 		/* recurse into the children */
 		for (size_t i = 0; i < e->nch; ++i)
-			osdlib_draw_rec(&e->ch[i]);
+			osdlib_draw_rec(l, &e->ch[i]);
 	}
 }
 void mark_as_unvisited(struct osd_element *e)
@@ -198,10 +209,10 @@ void mark_as_unvisited(struct osd_element *e)
 	for (size_t i = 0; i < e->nch; ++i)
 		mark_as_unvisited(&e->ch[i]);
 }
-void osdlib_draw(struct osd_element *e)
+void osdlib_draw(struct osd_layer *l)
 {
-	mark_as_unvisited(e);
-	osdlib_draw_rec(e);
+	mark_as_unvisited(l->root);
+	osdlib_draw_rec(l, l->root);
 }
 
 void osdlib_free_rec(struct osd_element *e)
@@ -211,12 +222,14 @@ void osdlib_free_rec(struct osd_element *e)
 	if (e->nch > 0)
 		free(e->ch);
 }
-void osdlib_free(struct osd_element *e)
+void osdlib_free(struct osd_layer *l)
 {
-	osdlib_free_rec(e);
-	free(e);
+	osdlib_free_rec(l->root);
+	free(l->root);
+	free(l);
 }
 
+/* ==================== Animations ==================== */
 void animation_step(struct animation *anim, double time)
 {
 	if (!anim->running || time < anim->time_start)
@@ -232,7 +245,7 @@ void animation_step(struct animation *anim, double time)
 	*anim->val = anim->val_start + delta * anim->e(phase/length);
 }
 
-/* Higher level functions */
+/* ==================== Higher level functions ==================== */
 void o_txt(struct osd_element *e, const struct osdlib_font *font,
 		const char *str)
 {
@@ -252,22 +265,7 @@ void o_txt(struct osd_element *e, const struct osdlib_font *font,
 	}
 }
 
-/* from old osdlib... */
-void osdlib_make_text(struct osd_element *e, const struct osdlib_font *font,
-		const char *str)
-{
-	size_t len = strlen(str);
-	e->w = len * font->w;
-	e->h = font->h;
-	osdlib_make_children(e, len, 0);
-	for (size_t i = 0; i < len; ++i) {
-		int tx = font->tex_x + font->w*(str[i] - font->offset);
-		_o(&e->ch[i], font->w*i, 0, font->w, font->h, e->a, tx, font->tex_y,
-				font->w, font->h, 0, font->tm);
-	}
-}
-
-/* Ease functions */
+/* ==================== Ease functions ==================== */
 double ease_sin(double x)
 {
 	return sin(M_PI*(x-0.5))/2 + 0.5;

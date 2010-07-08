@@ -139,8 +139,8 @@ void osd_init()
 	osd.font = f;
 	struct osd_element *orect, *opanel, *otimer, *ogameover, *ovictory;
 	osd.root = calloc(1, sizeof(*osd.root));
-	o_init(osd.root); o_set(osd.root, NULL, pad(L,0), pad(T,0), 0, 0, TE);
-	osdlib_make_children(osd.root, 5, 1,
+	osdlib_init(osd.root, gl.win_w, gl.win_h);
+	osdlib_make_children(osd.root->root, 5, 1,
 		&orect, &opanel, &otimer, &ogameover, &ovictory);
 	/* left rect */
 	o_set(orect, NULL, pad(L,0), pad(B,0), 151, 80, O);
