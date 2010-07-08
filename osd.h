@@ -23,6 +23,7 @@
 #include "osdlib.h"
 
 struct osd_fuel {
+	size_t old_nfuel;
 	struct osd_element *bars;
 };
 struct osd_velocity {

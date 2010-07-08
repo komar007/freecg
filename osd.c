@@ -30,16 +30,16 @@ void osd_fuel_init(struct osd_fuel *f, struct osd_element *container)
 	osdlib_make_children(container, 16, 0);
 	f->bars = container->ch;
 	o_set(&f->bars[15], NULL, pad(L,0), pad(T,0), 16, 3, O);
-	o_img(&f->bars[15], gl.ttm, 0.8, 388, 387, 16, 3);
+	o_img(&f->bars[15], gl.ttm, 0.2, 388, 387, 16, 3);
 	for (int i = 14; i >= 0; --i)
 		o_set(&f->bars[i], &f->bars[i+1], pad(L,0), margin(B,1),
 				16, 3, O);
 	for (int i = 14; i >= 10; --i)
-		o_img(&f->bars[i], gl.ttm, 0.8, 388, 387, 16, 3);
+		o_img(&f->bars[i], gl.ttm, 0.2, 388, 387, 16, 3);
 	for (int i = 9; i >= 4; --i)
-		o_img(&f->bars[i], gl.ttm, 0.8, 388, 390, 16, 3);
+		o_img(&f->bars[i], gl.ttm, 0.2, 388, 390, 16, 3);
 	for (int i = 3; i >= 0; --i)
-		o_img(&f->bars[i], gl.ttm, 0.8, 388, 393, 16, 3);
+		o_img(&f->bars[i], gl.ttm, 0.2, 388, 393, 16, 3);
 }
 void osd_velocity_init(struct osd_velocity *v, struct osd_element *container)
 {
@@ -198,10 +198,27 @@ void osd_init()
 
 void osd_fuel_step(struct osd_fuel *f, double fuel)
 {
-	for (size_t i = 0; i < (size_t)ceil(fuel); ++i)
-		f->bars[i].a = 0.8;
-	for (size_t i = (size_t)ceil(fuel); i < 16; ++i)
-		f->bars[i].a = 0.1;
+	size_t nfuel = (size_t)ceil(fuel);
+	double t = osd.layer->time;
+	if (nfuel == f->old_nfuel)
+		return;
+	else if (nfuel > f->old_nfuel)
+		for (size_t i = f->old_nfuel; i < nfuel; ++i) {
+			int dt = i - f->old_nfuel;
+			struct animation *a = anim(Rel, Abs,
+					&f->bars[i].a, ease_atan,
+					0, 0.8, t+0.125*dt, t+0.125*dt+0.25);
+			osdlib_add_animation(osd.layer, a);
+		}
+	else
+		for (size_t i = nfuel; i < f->old_nfuel; ++i) {
+			int dt = i - nfuel;
+			struct animation *a = anim(Rel, Abs,
+					&f->bars[i].a, ease_atan,
+					0, 0.2, t+0.125*dt, t+0.125*dt+0.5);
+			osdlib_add_animation(osd.layer, a);
+		}
+	f->old_nfuel = nfuel;
 }
 void osd_velocity_step(struct osd_velocity *v, double vx, double vy,
 		double max_vx, double max_vy)
