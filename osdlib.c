@@ -106,6 +106,7 @@ void osdlib_init(struct osd_layer *layer, double w, double h)
 	layer->w = w, layer->h = h;
 	layer->root = calloc(1, sizeof(*layer->root));
 	o_init(layer->root); o_set(layer->root, NULL, pad(L,0), pad(T,0), 0, 0, TE);
+	layer->animation_list = NULL;
 }
 
 /* Creates children positioned relatively to the parent and inits them */
@@ -125,7 +126,12 @@ void osdlib_make_children(struct osd_element *e, size_t num, int init, ...)
 		*va_arg(ptrs, struct osd_element**) = &e->ch[i];
 	va_end(ptrs);
 }
-
+void osdlib_step(struct osd_layer *l, double time)
+{
+	extern void osdlib_animations_step(struct osd_layer*, double);
+	osdlib_animations_step(l, time);
+	l->time = time;
+}
 double relative_dimension(double dim, double pdim)
 {
 	if (dim > 0)
@@ -230,6 +236,11 @@ void osdlib_free(struct osd_layer *l)
 }
 
 /* ==================== Animations ==================== */
+void osdlib_add_animation(struct osd_layer *l, struct animation *anim)
+{
+	anim->next = l->animation_list;
+	l->animation_list = anim;
+}
 void animation_step(struct animation *anim, double time)
 {
 	if (!anim->running || time < anim->time_start)
@@ -243,6 +254,38 @@ void animation_step(struct animation *anim, double time)
 	       delta  = anim->val_end - anim->val_start,
 	       phase  = time - anim->time_start;
 	*anim->val = anim->val_start + delta * anim->e(phase/length);
+}
+void osdlib_animations_step(struct osd_layer *l, double time)
+{
+	struct animation dummy = {
+		.next = l->animation_list
+	};
+	struct animation *cur  = dummy.next,
+			 *prev = &dummy;
+	while (cur != NULL) {
+		animation_step(cur, time);
+		if (!cur->running) {
+			prev->next = cur->next;
+			free(cur);
+			cur = prev->next;
+		} else {
+			prev = cur;
+			cur = cur->next;
+		}
+	}
+	l->animation_list = dummy.next;
+}
+struct animation *anim(enum anim_mode mode, double *var, ease_function e,
+		double vstart, double vend, double tstart, double tend)
+{
+	struct animation *a = calloc(1, sizeof(*a));
+	a->val = var;
+	a->val_start  = vstart, a->val_end  = vend;
+	a->time_start = tstart, a->time_end = tend;
+	a->e = e;
+	a->mode = mode;
+	a->running = 1;
+	return a;
 }
 
 /* ==================== Higher level functions ==================== */

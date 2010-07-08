@@ -39,13 +39,20 @@ struct coord {
 		  rel;
 	double v;
 };
+enum anim_mode {
+	Absolute = 0,
+	Relative
+};
 typedef double (*ease_function)(double);
 struct animation {
+	enum anim_mode mode;
 	int running;
 	double val_start, val_end;
 	double time_start, time_end;
 	ease_function e;
 	double *val;
+	/* linked list */
+	struct animation *next;
 };
 struct osd_element {
 	enum transparency_model tr;
@@ -73,13 +80,16 @@ struct osdlib_font {
 };
 struct osd_layer {
 	double w, h;
+	double time;
 	struct osd_element *root;
+	struct animation *animation_list;
 };
 struct coord c(enum side, enum side, double);
 struct coord margin(enum side, double);
 struct coord pad(enum side, double);
 struct coord center();
 void osdlib_init(struct osd_layer*, double, double);
+void osdlib_step(struct osd_layer*, double);
 void osdlib_draw(struct osd_layer*);
 void osdlib_free(struct osd_layer*);
 void osdlib_make_children(struct osd_element*, size_t, int, ...);
@@ -92,7 +102,9 @@ void o_set(struct osd_element*, struct osd_element*, struct coord, struct coord,
 		double, double, enum transparency_model);
 void o_txt(struct osd_element*, const struct osdlib_font*, const char*);
 
-void animation_step(struct animation*, double);
+void osdlib_add_animation(struct osd_layer*, struct animation*);
+struct animation *anim(enum anim_mode, double*, ease_function,
+		double, double, double, double);
 double ease_sin(double x);
 double ease_linear(double);
 double ease_atan(double);

@@ -171,16 +171,11 @@ void osd_init()
 	o_pos(otimer, NULL, center(), pad(T,0));
 	osd_timer_init(&osd.timer, otimer, 96);
 
-	struct animation t = {
-		.val_start = 80,
-		.val_end = orect->y.v,
-		.time_start = 0,
-		.time_end = 0.5,
-		.val = &orect->y.v,
-		.e = ease_atan,
-		.running = 1
-	};
-	osd.test_anim = t;
+	osdlib_add_animation(osd.root, anim(Absolute, &orect->y.v, ease_atan,
+				80, orect->y.v, 0, 0.5));
+	osdlib_add_animation(osd.root, anim(Absolute, &otimer->y.v, ease_atan,
+				-32, orect->y.v, 0.5, 1));
+	otimer->y.v = -32;
 
 	/* DEPRECATED (labels will go to menu) */
 	_o(ogameover, 0, 0, 160, 32, 0.8, 0, 90, 1, 1, TS, gl.ttm);
@@ -276,7 +271,7 @@ void osd_step(double time)
 		osd.victory->tr = Opaque;
 	if (gl.l->status == Lost)
 		osd.gameover->tr = Opaque;
-	animation_step(&osd.test_anim, time);
+	osdlib_step(osd.root, time);
 }
 void osd_draw()
 {
