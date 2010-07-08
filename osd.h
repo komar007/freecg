@@ -35,6 +35,12 @@ struct osd_velocity {
 struct osd_keys {
 	struct osd_element *keys;
 };
+struct osd_shipinfo {
+	struct osd_element *container;
+	struct osd_fuel     fuel;
+	struct osd_velocity velocity;
+	struct osd_keys     keys;
+};
 struct osd_freight {
 	size_t max_freight;
 	struct osd_element *freight;
@@ -44,20 +50,24 @@ struct osd_life {
 	struct osd_element *ships;
 	size_t max_life;
 };
+struct osd_panel {
+	struct osd_element *container;
+	struct osd_freight lfreight,
+			   sfreight,
+			   hbfreight;
+	struct osd_life    life;
+};
 struct osd_timer {
+	struct osd_element *container;
 	struct osd_element *time;
 };
 struct cg_osd {
-	struct osd_layer *root;
+	struct osd_layer *layer;
 	struct osdlib_font font;
-	struct osd_fuel fuel;
-	struct osd_velocity velocity;
-	struct osd_keys keys;
-	struct osd_freight freight_level,
-			  freight_ship,
-			  freight_hb;
-	struct osd_timer timer;
-	struct osd_life life;
+
+	struct osd_shipinfo shipinfo;
+	struct osd_panel    panel;
+	struct osd_timer    timer;
 
 	/* deprecated */
 	struct osd_element *victory,
@@ -68,5 +78,6 @@ void osd_init();
 void osd_step();
 void osd_draw();
 void osd_free();
+void osd_set_visibility(int);
 
 #endif

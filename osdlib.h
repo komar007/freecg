@@ -40,12 +40,13 @@ struct coord {
 	double v;
 };
 enum anim_mode {
-	Absolute = 0,
-	Relative
+	Abs = 0,
+	Rel
 };
 typedef double (*ease_function)(double);
 struct animation {
-	enum anim_mode mode;
+	enum anim_mode smode,
+		       emode;
 	int running;
 	double val_start, val_end;
 	double time_start, time_end;
@@ -103,7 +104,8 @@ void o_set(struct osd_element*, struct osd_element*, struct coord, struct coord,
 void o_txt(struct osd_element*, const struct osdlib_font*, const char*);
 
 void osdlib_add_animation(struct osd_layer*, struct animation*);
-struct animation *anim(enum anim_mode, double*, ease_function,
+struct animation *anim(enum anim_mode, enum anim_mode,
+		double*, ease_function,
 		double, double, double, double);
 double ease_sin(double x);
 double ease_linear(double);

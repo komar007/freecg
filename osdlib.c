@@ -250,6 +250,14 @@ void animation_step(struct animation *anim, double time)
 		anim->running = 0;
 		return;
 	}
+	if (anim->smode == Rel) {
+		anim->smode = Abs;
+		anim->val_start += *anim->val;
+	}
+	if (anim->emode == Rel) {
+		anim->emode = Abs;
+		anim->val_end += *anim->val;
+	}
 	double length = anim->time_end - anim->time_start,
 	       delta  = anim->val_end - anim->val_start,
 	       phase  = time - anim->time_start;
@@ -275,7 +283,8 @@ void osdlib_animations_step(struct osd_layer *l, double time)
 	}
 	l->animation_list = dummy.next;
 }
-struct animation *anim(enum anim_mode mode, double *var, ease_function e,
+struct animation *anim(enum anim_mode smode, enum anim_mode emode,
+		double *var, ease_function e,
 		double vstart, double vend, double tstart, double tend)
 {
 	struct animation *a = calloc(1, sizeof(*a));
@@ -283,7 +292,8 @@ struct animation *anim(enum anim_mode mode, double *var, ease_function e,
 	a->val_start  = vstart, a->val_end  = vend;
 	a->time_start = tstart, a->time_end = tend;
 	a->e = e;
-	a->mode = mode;
+	a->smode = smode;
+	a->emode = emode;
 	a->running = 1;
 	return a;
 }

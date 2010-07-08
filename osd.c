@@ -138,21 +138,24 @@ void osd_init()
 	};
 	osd.font = f;
 	struct osd_element *orect, *opanel, *otimer, *ogameover, *ovictory;
-	osd.root = calloc(1, sizeof(*osd.root));
-	osdlib_init(osd.root, gl.win_w, gl.win_h);
-	osdlib_make_children(osd.root->root, 5, 1,
+	osd.layer = calloc(1, sizeof(*osd.layer));
+	osdlib_init(osd.layer, gl.win_w, gl.win_h);
+	osdlib_make_children(osd.layer->root, 5, 1,
 		&orect, &opanel, &otimer, &ogameover, &ovictory);
+	osd.shipinfo.container = orect;
+	osd.panel.container = opanel;
+	osd.timer.container = otimer;
 	/* left rect */
-	o_set(orect, NULL, pad(L,0), pad(B,0), 151, 80, O);
+	o_set(orect, NULL, pad(L,0), pad(B,80)/*hidden*/, 151, 80, O);
 	o_img(orect, gl.otm, 1.0, 0, 0, 151, 80);
 	struct osd_element *fuel_cont, *cross, *key_cont;
 	osdlib_make_children(orect, 3, 1, &fuel_cont, &cross, &key_cont);
 	o_pos(fuel_cont, NULL, pad(L,8), pad(T,10));
-	osd_fuel_init(&osd.fuel, fuel_cont);
+	osd_fuel_init(&osd.shipinfo.fuel, fuel_cont);
 	o_pos(cross, NULL, center(), pad(T,8));
-	osd_velocity_init(&osd.velocity, cross);
+	osd_velocity_init(&osd.shipinfo.velocity, cross);
 	o_pos(key_cont, NULL, pad(R,14), pad(T,8));
-	osd_keys_init(&osd.keys, key_cont);
+	osd_keys_init(&osd.shipinfo.keys, key_cont);
 	/* panel */
 	o_set(opanel, orect, margin(R,0), pad(B,0), -151, 32, O);
 	o_img(opanel, gl.otm, 1, 152, 48, 2, 32);
@@ -160,22 +163,17 @@ void osd_init()
 	osdlib_make_children(opanel, 4, 1,
 			&lfreight, &sfreight, &hbfreight, &life);
 	o_pos(lfreight, NULL, pad(L,8), c(C,C,1));
-	osd_freight_init(&osd.freight_level, lfreight, 384, 400);
+	osd_freight_init(&osd.panel.lfreight, lfreight, 384, 400);
 	o_pos(sfreight, lfreight, margin(R,12),pad(T,0));
-	osd_freight_init(&osd.freight_ship, sfreight, 432, 400);
+	osd_freight_init(&osd.panel.sfreight, sfreight, 432, 400);
 	o_pos(hbfreight, sfreight, margin(R,12), pad(T,0));
-	osd_freight_init(&osd.freight_hb, hbfreight, 480, 400);
+	osd_freight_init(&osd.panel.hbfreight, hbfreight, 480, 400);
 	o_pos(life, NULL, pad(R,8), pad(T,6));
-	osd_life_init(&osd.life, life);
+	osd_life_init(&osd.panel.life, life);
 	/* timer */
-	o_pos(otimer, NULL, center(), pad(T,0));
+	o_pos(otimer, NULL, center(), pad(T,-32));
 	osd_timer_init(&osd.timer, otimer, 96);
-
-	osdlib_add_animation(osd.root, anim(Absolute, &orect->y.v, ease_atan,
-				80, orect->y.v, 0, 0.5));
-	osdlib_add_animation(osd.root, anim(Absolute, &otimer->y.v, ease_atan,
-				-32, orect->y.v, 0.5, 1));
-	otimer->y.v = -32;
+	osd_set_visibility(1);
 
 	/* DEPRECATED (labels will go to menu) */
 	_o(ogameover, 0, 0, 160, 32, 0.8, 0, 90, 1, 1, TS, gl.ttm);
@@ -253,32 +251,46 @@ void osd_timer_step(struct osd_timer *t, double time)
 void osd_step(double time)
 {
 	struct ship *ship = gl.l->ship;
-	osd_fuel_step(&osd.fuel, ship->fuel);
-	osd_velocity_step(&osd.velocity, ship->vx, ship->vy,
+	osd_fuel_step(&osd.shipinfo.fuel, ship->fuel);
+	osd_velocity_step(&osd.shipinfo.velocity, ship->vx, ship->vy,
 			ship->max_vx, ship->max_vy);
-	osd_keys_step(&osd.keys, ship->keys);
+	osd_keys_step(&osd.shipinfo.keys, ship->keys);
 	size_t nfreight = cg_freight_remaining(gl.l);
 	struct freight freight[nfreight];
 	cg_get_freight_airports(gl.l, freight);
-	osd_freight_step(&osd.freight_level, freight, nfreight);
-	osd.freight_ship.max_freight = ship->max_freight;
-	osd_freight_step(&osd.freight_ship, ship->freight, ship->num_freight);
+	osd_freight_step(&osd.panel.lfreight, freight, nfreight);
+	osd.panel.sfreight.max_freight = ship->max_freight;
+	osd_freight_step(&osd.panel.sfreight, ship->freight, ship->num_freight);
 	struct airport *hb = gl.l->hb;
-	osd_freight_step(&osd.freight_hb, hb->c.freight, hb->num_cargo);
-	osd_life_step(&osd.life, max(0, gl.l->ship->life));
+	osd_freight_step(&osd.panel.hbfreight, hb->c.freight, hb->num_cargo);
+	osd_life_step(&osd.panel.life, max(0, gl.l->ship->life));
 	osd_timer_step(&osd.timer, time);
 	if (gl.l->status == Victory)
 		osd.victory->tr = Opaque;
 	if (gl.l->status == Lost)
 		osd.gameover->tr = Opaque;
-	osdlib_step(osd.root, time);
+	osdlib_step(osd.layer, time);
 }
 void osd_draw()
 {
-	osdlib_draw(osd.root);
+	osdlib_draw(osd.layer);
 }
 
 void osd_free()
 {
-	osdlib_free(osd.root);
+	osdlib_free(osd.layer);
+}
+void osd_set_visibility(int v)
+{
+	double t = osd.layer->time;
+	struct animation *a;
+	double spos, epos;
+	spos = v ? 80 : 0, epos = v ? 0 : 80;
+	a = anim(Abs, Abs, &osd.shipinfo.container->y.v, ease_atan,
+			spos, epos, t, t+0.5);
+	osdlib_add_animation(osd.layer, a);
+	spos = v ? -32 : 0, epos = v ? 0 : -32;
+	a = anim(Abs, Abs, &osd.timer.container->y.v, ease_atan,
+			spos, epos, t+0.25, t+0.75);
+	osdlib_add_animation(osd.layer, a);
 }
