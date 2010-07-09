@@ -258,7 +258,9 @@ void osd_freight_step(struct osd_freight *f, const struct freight *flist, size_t
 void osd_life_step(struct osd_life *l, size_t life)
 {
 	double t = osd.layer->time;
-	if (life > l->old_life)
+	if (life == l->old_life)
+		return;
+	else if (life > l->old_life)
 		for (size_t i = l->old_life; i < life; ++i) {
 			int dt = i - l->old_life;
 			struct animation *a = anim(Rel, Abs,
@@ -270,7 +272,7 @@ void osd_life_step(struct osd_life *l, size_t life)
 					0, 0, t+0.25*dt, t+0.25*dt+0.25);
 			osdlib_add_animation(osd.layer, a);
 		}
-	else if (life < l->old_life)
+	else
 		for (size_t i = life; i < l->old_life; ++i) {
 			int dt = i - life;
 			struct animation *a = anim(Rel, Abs,
