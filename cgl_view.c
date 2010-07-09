@@ -44,8 +44,8 @@ void process_event(SDL_Event *e)
 		break;
 	case SDL_MOUSEMOTION:
 		if (mouse) {
-			gl.cam.x -= e->motion.xrel/gl.cam.scale;
-			gl.cam.y -= e->motion.yrel/gl.cam.scale;
+			gl.cam.nx -= e->motion.xrel/gl.cam.scale;
+			gl.cam.ny -= e->motion.yrel/gl.cam.scale;
 		}
 		break;
 	case SDL_MOUSEBUTTONUP:
@@ -191,8 +191,8 @@ int main(int argc, char *argv[])
 			t += nt;
 			fr = gl.frame;
 		}
-		gl.cam.x = cgl->ship->x;
-		gl.cam.y = cgl->ship->y;
+		gl.cam.nx = cgl->ship->x + SHIP_W/2.0;
+		gl.cam.ny = cgl->ship->y + SHIP_H/2.0;
 		gl_update_window(time / 1000.0);
 	}
 	free_cgl(cgl);

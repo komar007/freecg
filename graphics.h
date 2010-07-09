@@ -27,9 +27,11 @@
 
 struct camera {
 	double x, y;
+	double nx, ny;
 	double scale;
 };
 struct glengine {
+	double time;
 	struct texmgr *ttm,
 		      *ftm,
 		      *otm;
@@ -55,5 +57,6 @@ static inline void gl_bind_texture(struct texmgr *tm)
 }
 
 #define BLINK_SPEED 1.8
+#define CAM_SPEED 2
 
 #endif

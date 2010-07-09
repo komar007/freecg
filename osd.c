@@ -125,7 +125,6 @@ void osd_timer_init(struct osd_timer *t, struct osd_element *container, int w)
 	o_img(bleft,   gl.otm, 1.0,  0, 81, 8, 24);
 	o_img(bcenter, gl.otm, 1.0,  8, 81, 1, 24);
 	o_img(bright,  gl.otm, 1.0, 13, 81, 8, 24);
-	o_txt(t->time, &osd.font, "18:12");
 }
 void osd_init()
 {

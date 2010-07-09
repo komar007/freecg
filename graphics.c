@@ -24,6 +24,8 @@
 #include <assert.h>
 #include <math.h>
 
+/* ==================== Gamefield graphics ==================== */
+
 struct glengine gl;
 void gl_draw_sprite(double, double, const struct tile*);
 
@@ -36,6 +38,8 @@ void gl_init(struct cgl* l, struct texmgr *ttm, struct texmgr *ftm,
 	gl.frame = 0;
 	gl.l = l;
 	gl.cam.scale = 1;
+	gl.cam.x = l->width  * BLOCK_SIZE / 2;
+	gl.cam.y = l->height * BLOCK_SIZE / 2;
 	glEnable(GL_TEXTURE_2D);
 	glEnable(GL_DEPTH_TEST);
 	glEnable(GL_BLEND);
@@ -69,6 +73,7 @@ void gl_draw_scene()
 	extern void fix_lframes(struct cgl*),
 	            gl_draw_block(struct tile *[]),
 		    gl_draw_ship(void);
+	gl_look_at(gl.cam.x, gl.cam.y, gl.cam.scale);
 	if (gl.frame == 0)
 		fix_lframes(gl.l);
 	double x1 = fmax(0, gl.viewport.x),
@@ -154,20 +159,32 @@ void gl_dispatch_drawing(const struct tile *tile)
 	}
 }
 
+/* ==================== General graphics ==================== */
+
 void gl_draw_osd(double time)
 {
 	osd_step(time);
 	osd_draw();
 }
-
+void gl_cam_step(double dt)
+{
+	double dest_x = fmin(gl.l->width*BLOCK_SIZE  - gl.viewport.w/2,
+			fmax(gl.viewport.w/2, gl.cam.nx)),
+	       dest_y = fmin(gl.l->height*BLOCK_SIZE - gl.viewport.h/2,
+			fmax(gl.viewport.h/2, gl.cam.ny));
+	gl.cam.x += (dest_x - gl.cam.x) * CAM_SPEED * dt;
+	gl.cam.y += (dest_y - gl.cam.y) * CAM_SPEED * dt;
+}
 void gl_update_window(double time)
 {
+	double dt = time - gl.time;
+	gl_cam_step(dt);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	glLoadIdentity();
-	gl_look_at(gl.cam.x, gl.cam.y, gl.cam.scale);
 	gl_draw_scene();
 	glLoadIdentity();
 	glTranslated(0, 0, 2);
 	gl_draw_osd(time);
 	SDL_GL_SwapBuffers();
+	gl.time = time;
 }
