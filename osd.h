@@ -49,6 +49,7 @@ struct osd_freight {
 	struct osd_element *container;
 };
 struct osd_life {
+	size_t old_life;
 	struct osd_element *ships;
 	size_t max_life;
 };

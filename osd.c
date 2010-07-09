@@ -101,12 +101,10 @@ void osd_life_init(struct osd_life *l, struct osd_element *container)
 	o_dim(container, cwidth, cheight, TransparentElement);
 	osdlib_make_children(container, l->max_life, 0);
 	l->ships = container->ch;
-	o_set(&l->ships[0], NULL, pad(R,0), pad(T,0), SHIP_W, SHIP_H, O);
-	for (size_t i = 1; i < l->max_life; ++i)
-		o_set(&l->ships[i], &l->ships[i-1], margin(L,-10), pad(T,0),
-				SHIP_W, SHIP_H, O);
 	for (size_t i = 0; i < l->max_life; ++i) {
-		o_img(&l->ships[i], gl.ttm, 0.5,
+		o_set(&l->ships[i], NULL, pad(R, (signed)i*(SHIP_W-10)), pad(T,0),
+				SHIP_W, SHIP_H, O);
+		o_img(&l->ships[i], gl.ttm, 0,
 				SHIP_ON_IMG_X + 12*SHIP_W*(i%2), SHIP_ON_IMG_Y,
 				SHIP_W, SHIP_H);
 		l->ships[i].z = i*0.01;
@@ -259,10 +257,28 @@ void osd_freight_step(struct osd_freight *f, const struct freight *flist, size_t
 }
 void osd_life_step(struct osd_life *l, size_t life)
 {
-	for (size_t i = 0; i < life; ++i)
-		l->ships[i].tr = Opaque;
-	for (size_t i = life; i < l->max_life; ++i)
-		l->ships[i].tr = TransparentElement;
+	double t = osd.layer->time;
+	if (life > l->old_life)
+		for (size_t i = l->old_life; i < life; ++i) {
+			int dt = i - l->old_life;
+			struct animation *a = anim(Rel, Abs,
+					&l->ships[i].a, ease_atan,
+					0, 0.5, t+0.25*dt, t+0.25*dt+0.25);
+			osdlib_add_animation(osd.layer, a);
+			l->ships[i].a = 0;
+			a = anim(Abs, Rel, &l->ships[i].x.v, ease_atan,
+					0, 0, t+0.25*dt, t+0.25*dt+0.25);
+			osdlib_add_animation(osd.layer, a);
+		}
+	else if (life < l->old_life)
+		for (size_t i = life; i < l->old_life; ++i) {
+			int dt = i - life;
+			struct animation *a = anim(Rel, Abs,
+					&l->ships[i].a, ease_atan,
+					0, 0, t+0.125*dt, t+0.125*dt+0.5);
+			osdlib_add_animation(osd.layer, a);
+		}
+	l->old_life = life;
 }
 void osd_timer_step(struct osd_timer *t, double time)
 {
