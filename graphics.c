@@ -46,6 +46,7 @@ void gl_init(struct cgl* l, struct texmgr *ttm, struct texmgr *ftm,
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 	glClearColor(0.1, 0.1, 0.1, 1);
 	osd_init();
+	SDL_ShowCursor(SDL_DISABLE);
 }
 void gl_resize_viewport(double w, double h)
 {
@@ -172,8 +173,10 @@ void gl_cam_step(double dt)
 			fmax(gl.viewport.w/2, gl.cam.nx)),
 	       dest_y = fmin(gl.l->height*BLOCK_SIZE - gl.viewport.h/2,
 			fmax(gl.viewport.h/2, gl.cam.ny));
-	gl.cam.x += (dest_x - gl.cam.x) * CAM_SPEED * dt;
-	gl.cam.y += (dest_y - gl.cam.y) * CAM_SPEED * dt;
+	if (abs(gl.cam.x - dest_x) > 2)
+		gl.cam.x += (dest_x - gl.cam.x) * CAM_SPEED * dt;
+	if (abs(gl.cam.y - dest_y) > 2)
+		gl.cam.y += (dest_y - gl.cam.y) * CAM_SPEED * dt;
 }
 void gl_update_window(double time)
 {
