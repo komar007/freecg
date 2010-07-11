@@ -750,7 +750,9 @@ int cgl_read_one_onew(struct gate *gate, FILE *fp)
 	parse_rect(buf2 + 0x1c, &r);
 	rect_to_tile(&r, gate->act);
 	set_type(gate->act, Transparent, RectPoint, GateAction, gate);
-	if (!gate->has_end)
+	if (gate->has_end)
+		set_type(gate->base[4], Simple, Bitmap, Kaboom, NULL);
+	else
 		set_type(gate->base[4], Transparent, NoCollision, 0, NULL);
 	if (gate->type == GateLeft)
 		gate->bar->tex_x += GATE_BAR_LEN - gate->len;
@@ -848,7 +850,9 @@ int cgl_read_one_barr(struct lgate *lgate, FILE *fp)
 	parse_rect(buf2 + 0x1c, &r);
 	rect_to_tile(&r, lgate->act);
 	set_type(lgate->act, Transparent, RectPoint, LGateAction, lgate);
-	if (!lgate->has_end)
+	if (lgate->has_end)
+		set_type(lgate->base[4], Simple, Bitmap, Kaboom, NULL);
+	else
 		set_type(lgate->base[4], Transparent, NoCollision, 0, NULL);
 	if (lgate->type == GateLeft)
 		lgate->bar->tex_x += GATE_BAR_LEN - lgate->len;
