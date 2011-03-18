@@ -29,8 +29,8 @@
 #include <math.h>
 
 #define MODE SDL_OPENGL
-#define SCREEN_W 1024
-#define SCREEN_H 768
+#define SCREEN_W 800
+#define SCREEN_H 600
 #define SCALE_STEP 0.2
 #define SCALE_ASTEP 0.01
 
@@ -128,8 +128,8 @@ void process_event(SDL_Event *e)
 
 int main(int argc, char *argv[])
 {
-	if (argc != 2) {
-		printf("Usage: %s file.cgl\n", argv[0]);
+	if (!(argc == 2 || argc == 4)) {
+		printf("Usage: %s file.cgl [width height]\n", argv[0]);
 		exit(-1);
 	}
 	SDL_Surface *screen;
@@ -160,7 +160,16 @@ int main(int argc, char *argv[])
 		fprintf(stderr, "SDL failed: %s\n", SDL_GetError());
 		abort();
 	}
-	screen = SDL_SetVideoMode(SCREEN_W, SCREEN_H, 0, MODE);
+	if (argc == 4) {
+		int w = atoi(argv[2]),
+		    h = atoi(argv[3]);
+		if (w && h)
+			screen = SDL_SetVideoMode(w, h, 0, MODE);
+		else
+			fprintf(stderr, "Wrong resolution");
+	} else {
+		screen = SDL_SetVideoMode(SCREEN_W, SCREEN_H, 0, MODE);
+	}
 	gl_resize_viewport(screen->w, screen->h);
 	struct texmgr *ttm = tm_request_texture(gfx);
 	struct texmgr *fnt = tm_request_texture(png);
@@ -179,7 +188,7 @@ int main(int argc, char *argv[])
 		time = SDL_GetTicks();
 		nt = time - t;
 		cg_step(cgl, time / 1000.0);
-		if (nt > 100) {
+		if (nt > 5000) {
 			printf("%d frames in %d ms - %.1f fps\n",
 					gl.frame - fr, nt, (float)(gl.frame - fr) / nt * 1000);
 			if (cgl->status == Lost)
