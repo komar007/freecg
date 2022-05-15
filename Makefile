@@ -1,3 +1,5 @@
+SHELL=/bin/bash
+
 CC=gcc -g -ggdb
 WARN=-Wall -Wextra
 LIBS=-lm `sdl-config --libs` -lGL -lSDL_image
@@ -21,7 +23,7 @@ dep:
 
 cgl_view: cgl_view.o cgl.o gfx.o graphics.o texmgr.o cg.o geometry.o osd.o osdlib.o
 	@echo LINK freecg
-	@$(CC) $(LIBS) -o cgl_view $^
+	@$(CC) -o cgl_view $^ $(LIBS)
 
 clean:
 	rm -fr *.o cgl_view
