@@ -574,6 +574,7 @@ int cgl_read_one_cano(struct cannon *cannon, FILE *fp)
 	nread = fread(buf, sizeof(uint8_t), CANO_HDR_SIZE, fp);
 	if (nread < CANO_HDR_SIZE)
 		return -EBADCANO;
+	cannon->dir = buf[0] & 0x03;
 	err = read_short((int16_t*)buf2, 1, fp);
 	if (err)
 		return -EBADCANO;
@@ -586,7 +587,6 @@ int cgl_read_one_cano(struct cannon *cannon, FILE *fp)
 	err = read_short((int16_t*)buf2, CANO_NUM_SHORTS, fp);
 	if (err)
 		return -EBADCANO;
-	cannon->dir = buf[0] & 0x03;
 	parse_point(buf2 + 0x00, &cannon->beg, &cannon->end);
 	parse_tile_minimal(buf2 + 0x04, cannon->beg_base,
 			24, 24, 512, 188);
